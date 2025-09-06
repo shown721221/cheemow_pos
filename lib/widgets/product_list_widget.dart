@@ -47,16 +47,9 @@ class ProductListWidget extends StatelessWidget {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(
-                          Icons.inventory_2,
-                          size: 64,
-                          color: Colors.grey,
-                        ),
+                        Icon(Icons.inventory_2, size: 64, color: Colors.grey),
                         SizedBox(height: 16),
-                        Text(
-                          '暫無商品資料',
-                          style: TextStyle(color: Colors.grey),
-                        ),
+                        Text('暫無商品資料', style: TextStyle(color: Colors.grey)),
                         SizedBox(height: 8),
                         Text(
                           '請匯入CSV檔案',

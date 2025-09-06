@@ -49,7 +49,7 @@ class ShoppingCartWidget extends StatelessWidget {
             ],
           ),
           SizedBox(height: 8),
-          
+
           // 購物車項目
           Expanded(
             child: cartItems.isEmpty
@@ -63,10 +63,7 @@ class ShoppingCartWidget extends StatelessWidget {
                           color: Colors.grey,
                         ),
                         SizedBox(height: 16),
-                        Text(
-                          '購物車是空的',
-                          style: TextStyle(color: Colors.grey),
-                        ),
+                        Text('購物車是空的', style: TextStyle(color: Colors.grey)),
                         SizedBox(height: 8),
                         Text(
                           '點擊商品或掃描條碼新增',
@@ -106,7 +103,8 @@ class ShoppingCartWidget extends StatelessWidget {
                                 // 商品資訊區域 - 使用 Expanded 佔用剩餘空間
                                 Expanded(
                                   child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       Text(
                                         item.product.name,
@@ -117,7 +115,9 @@ class ShoppingCartWidget extends StatelessWidget {
                                         overflow: TextOverflow.ellipsis,
                                       ),
                                       SizedBox(height: 6),
-                                      SmallPriceDisplay(amount: item.product.price),
+                                      SmallPriceDisplay(
+                                        amount: item.product.price,
+                                      ),
                                     ],
                                   ),
                                 ),
@@ -127,18 +127,25 @@ class ShoppingCartWidget extends StatelessWidget {
                                   child: Column(
                                     children: [
                                       Row(
-                                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.spaceEvenly,
                                         children: [
                                           InkWell(
-                                            onTap: () => onDecreaseQuantity(index),
+                                            onTap: () =>
+                                                onDecreaseQuantity(index),
                                             child: Container(
                                               width: 24,
                                               height: 24,
                                               decoration: BoxDecoration(
                                                 shape: BoxShape.circle,
-                                                border: Border.all(color: Colors.grey),
+                                                border: Border.all(
+                                                  color: Colors.grey,
+                                                ),
                                               ),
-                                              child: Icon(Icons.remove, size: 16),
+                                              child: Icon(
+                                                Icons.remove,
+                                                size: 16,
+                                              ),
                                             ),
                                           ),
                                           Text(
@@ -149,13 +156,16 @@ class ShoppingCartWidget extends StatelessWidget {
                                             ),
                                           ),
                                           InkWell(
-                                            onTap: () => onIncreaseQuantity(index),
+                                            onTap: () =>
+                                                onIncreaseQuantity(index),
                                             child: Container(
                                               width: 24,
                                               height: 24,
                                               decoration: BoxDecoration(
                                                 shape: BoxShape.circle,
-                                                border: Border.all(color: Colors.grey),
+                                                border: Border.all(
+                                                  color: Colors.grey,
+                                                ),
                                               ),
                                               child: Icon(Icons.add, size: 16),
                                             ),
@@ -164,10 +174,16 @@ class ShoppingCartWidget extends StatelessWidget {
                                       ),
                                       SizedBox(height: 4),
                                       Row(
-                                        mainAxisAlignment: MainAxisAlignment.center,
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
                                         children: [
-                                          Text('小計: ', style: TextStyle(fontSize: 11)),
-                                          SmallPriceDisplay(amount: item.subtotal),
+                                          Text(
+                                            '小計: ',
+                                            style: TextStyle(fontSize: 11),
+                                          ),
+                                          SmallPriceDisplay(
+                                            amount: item.subtotal,
+                                          ),
                                         ],
                                       ),
                                     ],
@@ -181,7 +197,7 @@ class ShoppingCartWidget extends StatelessWidget {
                     },
                   ),
           ),
-          
+
           // 底部統計和結帳
           if (cartItems.isNotEmpty) ...[
             Divider(thickness: 2),
@@ -223,10 +239,7 @@ class ShoppingCartWidget extends StatelessWidget {
                     child: ElevatedButton.icon(
                       onPressed: onCheckout,
                       icon: Icon(Icons.payment),
-                      label: Text(
-                        '結帳',
-                        style: TextStyle(fontSize: 18),
-                      ),
+                      label: Text('結帳', style: TextStyle(fontSize: 18)),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.green,
                         foregroundColor: Colors.white,

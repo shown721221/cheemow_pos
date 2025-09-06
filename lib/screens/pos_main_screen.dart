@@ -115,8 +115,6 @@ class _PosMainScreenState extends State<PosMainScreen> {
     );
   }
 
-
-
   int get totalAmount {
     return cartItems.fold(0, (total, item) => total + item.subtotal);
   }
