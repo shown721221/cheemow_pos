@@ -54,6 +54,27 @@ class LocalDatabaseService {
     await _prefs!.setString('products', jsonEncode(productsJson));
   }
 
+  /// 合併匯入的商品（用於CSV匯入）
+  /// 相同ID的商品會被更新，新ID的商品會被新增
+  Future<void> mergeImportedProducts(List<Product> importedProducts) async {
+    final existingProducts = await getProducts();
+    final Map<String, Product> productMap = {};
+    
+    // 將現有商品加入Map（以ID為key）
+    for (final product in existingProducts) {
+      productMap[product.id] = product;
+    }
+    
+    // 合併或新增匯入的商品
+    for (final importedProduct in importedProducts) {
+      productMap[importedProduct.id] = importedProduct; // 相同ID會覆蓋
+    }
+    
+    // 儲存合併後的商品列表
+    final mergedProducts = productMap.values.toList();
+    await saveProducts(mergedProducts);
+  }
+
   /// 取得所有商品
   Future<List<Product>> getProducts() async {
     if (_prefs == null) return [];

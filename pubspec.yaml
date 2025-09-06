@@ -38,6 +38,12 @@ dependencies:
   # 本地資料儲存
   shared_preferences: ^2.2.2
   
+  # CSV檔案處理
+  csv: ^6.0.0
+  
+  # 檔案選擇器
+  file_picker: ^8.0.0+1
+  
   # 藍芽功能（未來可能需要）
   # flutter_bluetooth_serial: ^0.4.0
 

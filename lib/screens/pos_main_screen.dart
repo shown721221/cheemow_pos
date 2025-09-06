@@ -7,6 +7,7 @@ import '../models/product.dart';
 import '../models/cart_item.dart';
 import '../services/local_database_service.dart';
 import '../services/bluetooth_scanner_service.dart';
+import '../services/csv_import_service.dart';
 
 class PosMainScreen extends StatefulWidget {
   @override
@@ -235,6 +236,198 @@ class _PosMainScreenState extends State<PosMainScreen> {
     return cartItems.fold(0, (total, item) => total + item.quantity);
   }
 
+  /// CSV匯入功能
+  Future<void> _importCsvData() async {
+    // 顯示loading
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(
+        child: CircularProgressIndicator(),
+      ),
+    );
+
+    try {
+      final result = await CsvImportService.importFromFile();
+      
+      // 關閉loading
+      Navigator.pop(context);
+      
+      if (result.cancelled) {
+        return; // 使用者取消，不顯示任何訊息
+      }
+      
+      if (result.success) {
+        // 重新載入商品資料
+        await _loadProducts();
+        
+        // 顯示匯入結果
+        _showImportResultDialog(result);
+      } else {
+        // 顯示錯誤訊息
+        _showErrorDialog('匯入失敗', result.errorMessage ?? '未知錯誤');
+      }
+    } catch (e) {
+      // 關閉loading
+      Navigator.pop(context);
+      _showErrorDialog('匯入失敗', e.toString());
+    }
+  }
+
+  /// 顯示匯入結果對話框
+  void _showImportResultDialog(CsvImportResult result) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Row(
+          children: [
+            Icon(
+              result.hasErrors ? Icons.warning : Icons.check_circle,
+              color: result.hasErrors ? Colors.orange : Colors.green,
+            ),
+            SizedBox(width: 8),
+            Text('匯入完成'),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('檔案：${result.fileName}'),
+            SizedBox(height: 8),
+            Text(result.statusMessage),
+            if (result.hasErrors) ...[
+              SizedBox(height: 16),
+              Text(
+                '錯誤詳情：',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              SizedBox(height: 8),
+              Container(
+                height: 150,
+                width: double.maxFinite,
+                decoration: BoxDecoration(
+                  border: Border.all(color: Colors.grey),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Scrollbar(
+                  child: ListView.builder(
+                    itemCount: result.errors.length,
+                    itemBuilder: (context, index) => Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      child: Text(
+                        result.errors[index],
+                        style: TextStyle(fontSize: 12),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('確定'),
+          ),
+          if (result.hasErrors)
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+                _showCsvFormatHelp();
+              },
+              child: Text('查看格式說明'),
+            ),
+        ],
+      ),
+    );
+  }
+
+  /// 顯示錯誤對話框
+  void _showErrorDialog(String title, String message) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Row(
+          children: [
+            Icon(Icons.error, color: Colors.red),
+            SizedBox(width: 8),
+            Text(title),
+          ],
+        ),
+        content: Text(message),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('確定'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              _showCsvFormatHelp();
+            },
+            child: Text('查看格式說明'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// 顯示CSV格式說明
+  void _showCsvFormatHelp() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('CSV格式說明'),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'CSV檔案格式要求：',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              SizedBox(height: 8),
+              Text('1. 第一行必須是標頭：id,barcode,name,price,category,stock'),
+              Text('2. 每一行代表一個商品'),
+              Text('3. 欄位說明：'),
+              Text('   • id: 商品唯一識別碼'),
+              Text('   • barcode: 商品條碼'),
+              Text('   • name: 商品名稱'),
+              Text('   • price: 價格（整數，單位：台幣元）'),
+              Text('   • category: 商品分類'),
+              Text('   • stock: 庫存數量（整數）'),
+              SizedBox(height: 16),
+              Text(
+                '範例：',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              Container(
+                padding: EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.grey[100],
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Text(
+                  CsvImportService.generateSampleCsv(),
+                  style: TextStyle(fontSize: 12, fontFamily: 'monospace'),
+                ),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('確定'),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -245,12 +438,7 @@ class _PosMainScreenState extends State<PosMainScreen> {
         actions: [
           IconButton(
             icon: Icon(Icons.file_upload),
-            onPressed: () {
-              // TODO: 實作CSV匯入功能
-              ScaffoldMessenger.of(
-                context,
-              ).showSnackBar(SnackBar(content: Text('CSV匯入功能開發中')));
-            },
+            onPressed: _importCsvData,
             tooltip: '匯入CSV商品資料',
           ),
         ],
