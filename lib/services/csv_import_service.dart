@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 import 'dart:typed_data';
 import 'package:csv/csv.dart';
 import 'package:file_picker/file_picker.dart';
@@ -6,16 +7,15 @@ import '../models/product.dart';
 import 'local_database_service.dart';
 
 class CsvImportService {
-  static const String _expectedHeader = 'id,barcode,name,price,category,stock';
-  
   /// 選擇並匯入CSV檔案
   static Future<CsvImportResult> importFromFile() async {
     try {
       // 選擇檔案
       FilePickerResult? result = await FilePicker.platform.pickFiles(
         type: FileType.custom,
-        allowedExtensions: ['csv'],
+        allowedExtensions: ['csv', 'txt'],
         allowMultiple: false,
+        withData: true, // 確保載入檔案資料
       );
 
       if (result == null || result.files.isEmpty) {
@@ -23,13 +23,30 @@ class CsvImportService {
       }
 
       final file = result.files.first;
-      if (file.bytes == null) {
-        return CsvImportResult.error('無法讀取檔案內容');
+
+      // 嘗試多種方式獲取檔案內容
+      Uint8List? fileBytes;
+
+      if (file.bytes != null) {
+        fileBytes = file.bytes!;
+      } else if (file.path != null) {
+        // 如果bytes為null，嘗試從路徑讀取
+        try {
+          final fileContent = await File(file.path!).readAsBytes();
+          fileBytes = fileContent;
+        } catch (e) {
+          print('從路徑讀取檔案失敗: $e');
+        }
+      }
+
+      if (fileBytes == null) {
+        return CsvImportResult.error('無法讀取檔案內容，請確認檔案格式正確');
       }
 
       // 解析CSV
-      return await _parseAndImportCsv(file.bytes!, file.name);
+      return await _parseAndImportCsv(fileBytes, file.name);
     } catch (e) {
+      print('檔案選擇失敗: $e');
       return CsvImportResult.error('檔案選擇失敗: ${e.toString()}');
     }
   }
@@ -42,30 +59,64 @@ class CsvImportService {
     try {
       // 將bytes轉換為字串
       String csvString = utf8.decode(bytes);
-      
-      // 解析CSV
-      List<List<dynamic>> csvData = const CsvToListConverter().convert(csvString);
-      
+
+      // 檢測分隔符並解析CSV
+      String delimiter = ',';
+      // 檢查是否使用Tab分隔
+      if (csvString.contains('\t') && !csvString.split('\n')[0].contains(',')) {
+        delimiter = '\t';
+      }
+
+      List<List<dynamic>> csvData = CsvToListConverter(
+        fieldDelimiter: delimiter,
+      ).convert(csvString);
+
       if (csvData.isEmpty) {
         return CsvImportResult.error('CSV檔案是空的');
       }
 
       // 檢查標頭
-      List<String> headers = csvData[0].map((e) => e.toString().trim()).toList();
-      String actualHeader = headers.join(',');
-      
-      if (actualHeader != _expectedHeader) {
+      List<String> headers = csvData[0]
+          .map((e) => e.toString().trim().toLowerCase())
+          .toList();
+
+      List<String> expectedFields = [
+        'id',
+        'barcode',
+        'name',
+        'price',
+        'category',
+        'stock',
+      ];
+
+      print('期望欄位: $expectedFields');
+      print('實際欄位: $headers');
+      print('欄位數量 - 期望: ${expectedFields.length}, 實際: ${headers.length}');
+      print('使用的分隔符: ${delimiter == '\t' ? 'Tab' : '逗號'}');
+
+      if (headers.length != expectedFields.length) {
         return CsvImportResult.error(
-          'CSV格式錯誤\n'
-          '期望格式: $_expectedHeader\n'
-          '實際格式: $actualHeader'
+          'CSV欄位數量錯誤\n'
+          '期望 ${expectedFields.length} 個欄位: ${expectedFields.join(', ')}\n'
+          '實際 ${headers.length} 個欄位: ${headers.join(', ')}',
         );
+      }
+
+      // 檢查每個欄位是否匹配
+      for (int i = 0; i < expectedFields.length; i++) {
+        if (headers[i] != expectedFields[i]) {
+          return CsvImportResult.error(
+            'CSV欄位名稱錯誤\n'
+            '第 ${i + 1} 個欄位期望: ${expectedFields[i]}\n'
+            '第 ${i + 1} 個欄位實際: ${headers[i]}',
+          );
+        }
       }
 
       // 解析商品資料
       List<Product> products = [];
       List<String> errors = [];
-      
+
       for (int i = 1; i < csvData.length; i++) {
         try {
           List<dynamic> row = csvData[i];
@@ -101,15 +152,17 @@ class CsvImportService {
             continue;
           }
 
-          products.add(Product(
-            id: id, // 保持原始ID格式（包含前導0）
-            barcode: barcode,
-            name: name,
-            price: price,
-            category: category, // 允許為空字串
-            stock: stock,
-            isActive: true,
-          ));
+          products.add(
+            Product(
+              id: id, // 保持原始ID格式（包含前導0）
+              barcode: barcode,
+              name: name,
+              price: price,
+              category: category, // 允許為空字串
+              stock: stock,
+              isActive: true,
+            ),
+          );
         } catch (e) {
           errors.add('第${i + 1}行：解析錯誤 - ${e.toString()}');
         }
@@ -123,16 +176,16 @@ class CsvImportService {
       Set<String> ids = {};
       Set<String> barcodes = {};
       List<String> duplicateErrors = [];
-      
+
       for (int i = 0; i < products.length; i++) {
         Product product = products[i];
-        
+
         if (ids.contains(product.id)) {
           duplicateErrors.add('ID重複: ${product.id}');
         } else {
           ids.add(product.id);
         }
-        
+
         if (barcodes.contains(product.barcode)) {
           duplicateErrors.add('條碼重複: ${product.barcode}');
         } else {
@@ -168,7 +221,7 @@ class CsvImportService {
       ['004', '4567890123456', '巧克力', '45', '', '30'],
       ['0005', '5678901234567', '咖啡', '55', '飲料', '80'],
     ];
-    
+
     return const ListToCsvConverter().convert(csvData);
   }
 }
@@ -218,18 +271,15 @@ class CsvImportResult {
   }
 
   factory CsvImportResult.cancelled() {
-    return CsvImportResult._(
-      success: false,
-      cancelled: true,
-    );
+    return CsvImportResult._(success: false, cancelled: true);
   }
 
   bool get hasErrors => errors.isNotEmpty;
-  
+
   String get statusMessage {
     if (cancelled) return '匯入已取消';
     if (!success) return errorMessage ?? '匯入失敗';
-    
+
     String result = '成功匯入 $importedCount/$totalRows 筆商品';
     if (hasErrors) {
       result += '\n發現 ${errors.length} 個問題';

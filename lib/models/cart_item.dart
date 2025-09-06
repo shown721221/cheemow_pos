@@ -4,8 +4,10 @@ import 'product.dart';
 class CartItem {
   final Product product;
   int quantity;
+  final DateTime addedTime; // 加入購物車的時間
 
-  CartItem({required this.product, this.quantity = 1});
+  CartItem({required this.product, this.quantity = 1, DateTime? addedTime})
+    : addedTime = addedTime ?? DateTime.now();
 
   /// 單項小計（台幣整數元）
   int get subtotal => product.price * quantity;

@@ -2,15 +2,41 @@ import 'package:flutter/material.dart';
 import '../models/product.dart';
 import '../widgets/price_display.dart';
 
-class ProductListWidget extends StatelessWidget {
+class ProductListWidget extends StatefulWidget {
   final List<Product> products;
   final Function(Product) onProductTap;
+  final VoidCallback? onCheckoutCompleted; // 新增：結帳完成回調
 
   const ProductListWidget({
     Key? key,
     required this.products,
     required this.onProductTap,
+    this.onCheckoutCompleted,
   }) : super(key: key);
+
+  @override
+  _ProductListWidgetState createState() => _ProductListWidgetState();
+}
+
+class _ProductListWidgetState extends State<ProductListWidget> {
+  final ScrollController _scrollController = ScrollController();
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  // 滾動到頂部的方法
+  void scrollToTop() {
+    if (_scrollController.hasClients) {
+      _scrollController.animateTo(
+        0,
+        duration: Duration(milliseconds: 500),
+        curve: Curves.easeInOut,
+      );
+    }
+  }
 
   // 根據商品類型取得商品名稱的顏色
   Color _getProductNameColor(Product product) {
@@ -57,13 +83,44 @@ class ProductListWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // 對產品進行排序：特殊商品在最前面，然後按結帳時間排序
+    final sortedProducts = [...widget.products];
+    sortedProducts.sort((a, b) {
+      // 預約商品排第一
+      if (a.isPreOrderProduct && !b.isPreOrderProduct) return -1;
+      if (!a.isPreOrderProduct && b.isPreOrderProduct) return 1;
+
+      // 折扣商品排第二
+      if (a.isDiscountProduct && !b.isDiscountProduct) return -1;
+      if (!a.isDiscountProduct && b.isDiscountProduct) return 1;
+
+      // 兩個都是特殊商品時，預約商品優先
+      if (a.isSpecialProduct && b.isSpecialProduct) {
+        if (a.isPreOrderProduct && b.isDiscountProduct) return -1;
+        if (a.isDiscountProduct && b.isPreOrderProduct) return 1;
+        return 0;
+      }
+
+      // 兩個都是普通商品時，按最後結帳時間排序
+      if (a.lastCheckoutTime != null && b.lastCheckoutTime != null) {
+        return b.lastCheckoutTime!.compareTo(a.lastCheckoutTime!);
+      } else if (a.lastCheckoutTime != null) {
+        return -1; // 有結帳記錄的在前
+      } else if (b.lastCheckoutTime != null) {
+        return 1; // 有結帳記錄的在前
+      }
+
+      // 其他商品按名稱排序
+      return a.name.compareTo(b.name);
+    });
+
     return Container(
       padding: EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Expanded(
-            child: products.isEmpty
+            child: sortedProducts.isEmpty
                 ? Center(
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
@@ -80,9 +137,10 @@ class ProductListWidget extends StatelessWidget {
                     ),
                   )
                 : ListView.builder(
-                    itemCount: products.length,
+                    controller: _scrollController, // 添加滾動控制器
+                    itemCount: sortedProducts.length,
                     itemBuilder: (context, index) {
-                      final product = products[index];
+                      final product = sortedProducts[index];
                       return Card(
                         margin: EdgeInsets.only(bottom: 8),
                         shape: RoundedRectangleBorder(
@@ -139,7 +197,7 @@ class ProductListWidget extends StatelessWidget {
                             color: Colors.blue,
                             size: 24,
                           ),
-                          onTap: () => onProductTap(product),
+                          onTap: () => widget.onProductTap(product),
                         ),
                       );
                     },

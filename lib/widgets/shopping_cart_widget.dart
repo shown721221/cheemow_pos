@@ -57,17 +57,37 @@ class ShoppingCartWidget extends StatelessWidget {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
+                        // 大一點的購物車圖示，配合愛心主題
                         Icon(
-                          Icons.shopping_cart_outlined,
-                          size: 64,
-                          color: Colors.grey,
+                          Icons.shopping_bag_outlined,
+                          size: 80,
+                          color: Colors.grey[300],
                         ),
-                        SizedBox(height: 16),
-                        Text('購物車是空的', style: TextStyle(color: Colors.grey)),
-                        SizedBox(height: 8),
-                        Text(
-                          '點擊商品或掃描條碼新增',
-                          style: TextStyle(color: Colors.grey, fontSize: 12),
+                        SizedBox(height: 20),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.favorite,
+                              size: 28,
+                              color: Colors.red[400],
+                            ),
+                            SizedBox(width: 10),
+                            Text(
+                              '帶寶寶回家吧',
+                              style: TextStyle(
+                                color: Colors.grey[600],
+                                fontSize: 26,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            SizedBox(width: 10),
+                            Icon(
+                              Icons.favorite,
+                              size: 28,
+                              color: Colors.red[400],
+                            ),
+                          ],
                         ),
                       ],
                     ),
@@ -111,6 +131,11 @@ class ShoppingCartWidget extends StatelessWidget {
                                         style: TextStyle(
                                           fontSize: 15,
                                           fontWeight: FontWeight.w500,
+                                          color: item.product.isSpecialProduct
+                                              ? (item.product.isPreOrderProduct
+                                                    ? Colors.purple[700]
+                                                    : Colors.orange[700])
+                                              : null,
                                         ),
                                         overflow: TextOverflow.ellipsis,
                                       ),
@@ -125,6 +150,7 @@ class ShoppingCartWidget extends StatelessWidget {
                                 Container(
                                   width: 80,
                                   child: Column(
+                                    mainAxisSize: MainAxisSize.min,
                                     children: [
                                       Row(
                                         mainAxisAlignment:
@@ -173,18 +199,15 @@ class ShoppingCartWidget extends StatelessWidget {
                                         ],
                                       ),
                                       SizedBox(height: 4),
-                                      Row(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.center,
-                                        children: [
-                                          Text(
-                                            '小計: ',
-                                            style: TextStyle(fontSize: 11),
-                                          ),
-                                          SmallPriceDisplay(
-                                            amount: item.subtotal,
-                                          ),
-                                        ],
+                                      // 使用簡單的 Text 來避免溢出問題
+                                      Text(
+                                        '小計: ${item.subtotal}',
+                                        style: TextStyle(
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                        textAlign: TextAlign.center,
+                                        overflow: TextOverflow.ellipsis,
                                       ),
                                     ],
                                   ),

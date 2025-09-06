@@ -47,6 +47,47 @@ class LocalDatabaseService {
     await saveProducts(sampleProducts);
   }
 
+  /// 確保特殊商品存在
+  Future<void> ensureSpecialProducts() async {
+    final products = await getProducts();
+    final updatedProducts = List<Product>.from(products);
+    bool needsUpdate = false;
+
+    // 檢查預約商品是否存在
+    final hasPreOrder = products.any((p) => p.barcode == '19920203');
+    if (!hasPreOrder) {
+      final preOrderProduct = Product(
+        id: 'special_001',
+        barcode: '19920203',
+        name: '預約奇妙',
+        price: 0,
+        category: '特殊商品',
+        stock: 99,
+      );
+      updatedProducts.add(preOrderProduct);
+      needsUpdate = true;
+    }
+
+    // 檢查折扣商品是否存在
+    final hasDiscount = products.any((p) => p.barcode == '88888888');
+    if (!hasDiscount) {
+      final discountProduct = Product(
+        id: 'special_002',
+        barcode: '88888888',
+        name: '祝您有奇妙的一天',
+        price: 0,
+        category: '特殊商品',
+        stock: 99,
+      );
+      updatedProducts.add(discountProduct);
+      needsUpdate = true;
+    }
+
+    if (needsUpdate) {
+      await saveProducts(updatedProducts);
+    }
+  }
+
   /// 儲存商品清單
   Future<void> saveProducts(List<Product> products) async {
     if (_prefs == null) return;
@@ -59,17 +100,17 @@ class LocalDatabaseService {
   Future<void> mergeImportedProducts(List<Product> importedProducts) async {
     final existingProducts = await getProducts();
     final Map<String, Product> productMap = {};
-    
+
     // 將現有商品加入Map（以ID為key）
     for (final product in existingProducts) {
       productMap[product.id] = product;
     }
-    
+
     // 合併或新增匯入的商品
     for (final importedProduct in importedProducts) {
       productMap[importedProduct.id] = importedProduct; // 相同ID會覆蓋
     }
-    
+
     // 儲存合併後的商品列表
     final mergedProducts = productMap.values.toList();
     await saveProducts(mergedProducts);
