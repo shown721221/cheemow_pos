@@ -5,26 +5,26 @@
 // gestures. You can also use WidgetTester to find child widgets in the widget
 // tree, read text, and verify that the values of widget properties are correct.
 
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:cheemow_pos/main.dart';
 
 void main() {
-  testWidgets('Counter increments smoke test', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
+  testWidgets('POS App smoke test', (WidgetTester tester) async {
+    // Mock SharedPreferences for testing
+    SharedPreferences.setMockInitialValues({});
+    
+        // Build our app and trigger a frame.
     await tester.pumpWidget(MyApp());
+    
+    // Wait for the app to initialize
+    await tester.pumpAndSettle();
 
-    // Verify that our counter starts at 0.
-    expect(find.text('0'), findsOneWidget);
-    expect(find.text('1'), findsNothing);
-
-    // Tap the '+' icon and trigger a frame.
-    await tester.tap(find.byIcon(Icons.add));
-    await tester.pump();
-
-    // Verify that our counter has incremented.
-    expect(find.text('0'), findsNothing);
-    expect(find.text('1'), findsOneWidget);
+    // Verify that the app title is correct
+    expect(find.text('Cheemow POS'), findsOneWidget);
+    
+    // You can add more specific tests for your POS functionality here
+    // For example, testing if the product list loads correctly
   });
 }

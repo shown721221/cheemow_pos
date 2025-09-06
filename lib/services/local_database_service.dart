@@ -17,7 +17,7 @@ class LocalDatabaseService {
     _prefs = await SharedPreferences.getInstance();
 
     // 如果是第一次啟動，建立範例商品資料
-    if (!_prefs!.containsKey('products_initialized')) {
+    if (_prefs != null && !_prefs!.containsKey('products_initialized')) {
       await _createSampleProducts();
       await _prefs!.setBool('products_initialized', true);
     }
@@ -49,12 +49,14 @@ class LocalDatabaseService {
 
   /// 儲存商品清單
   Future<void> saveProducts(List<Product> products) async {
+    if (_prefs == null) return;
     final productsJson = products.map((p) => p.toJson()).toList();
     await _prefs!.setString('products', jsonEncode(productsJson));
   }
 
   /// 取得所有商品
   Future<List<Product>> getProducts() async {
+    if (_prefs == null) return [];
     final productsString = _prefs!.getString('products');
     if (productsString == null) return [];
 
