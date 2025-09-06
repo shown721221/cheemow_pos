@@ -17,7 +17,7 @@ class LocalDatabaseService {
     _prefs = await SharedPreferences.getInstance();
 
     // 如果是第一次啟動，建立範例商品資料
-    if (!_prefs!.containsKey('products_initialized')) {
+    if (_prefs != null && !_prefs!.containsKey('products_initialized')) {
       await _createSampleProducts();
       await _prefs!.setBool('products_initialized', true);
     }
@@ -28,27 +28,19 @@ class LocalDatabaseService {
     final sampleProducts = [
       Product(
         id: '1',
-        barcode: '1234567890123',
-        name: '可口可樂',
-        price: 25,
-        category: '飲料',
-        stock: 100,
+        barcode: '19920203',
+        name: '預約奇妙',
+        price: 0,
+        category: '特殊商品',
+        stock: 99,
       ),
       Product(
         id: '2',
-        barcode: '2345678901234',
-        name: '洋芋片',
-        price: 35,
-        category: '零食',
-        stock: 50,
-      ),
-      Product(
-        id: '3',
-        barcode: '3456789012345',
-        name: '礦泉水',
-        price: 15,
-        category: '飲料',
-        stock: 200,
+        barcode: '88888888',
+        name: '祝您有奇妙的一天',
+        price: 0,
+        category: '特殊商品',
+        stock: 99,
       ),
     ];
 
@@ -57,12 +49,14 @@ class LocalDatabaseService {
 
   /// 儲存商品清單
   Future<void> saveProducts(List<Product> products) async {
+    if (_prefs == null) return;
     final productsJson = products.map((p) => p.toJson()).toList();
     await _prefs!.setString('products', jsonEncode(productsJson));
   }
 
   /// 取得所有商品
   Future<List<Product>> getProducts() async {
+    if (_prefs == null) return [];
     final productsString = _prefs!.getString('products');
     if (productsString == null) return [];
 
