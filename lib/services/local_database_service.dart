@@ -28,27 +28,19 @@ class LocalDatabaseService {
     final sampleProducts = [
       Product(
         id: '1',
-        barcode: '1234567890123',
-        name: '可口可樂',
-        price: 25,
-        category: '飲料',
-        stock: 100,
+        barcode: '19920203',
+        name: '預約奇妙',
+        price: 0,
+        category: '特殊商品',
+        stock: 99,
       ),
       Product(
         id: '2',
-        barcode: '2345678901234',
-        name: '洋芋片',
-        price: 35,
-        category: '零食',
-        stock: 50,
-      ),
-      Product(
-        id: '3',
-        barcode: '3456789012345',
-        name: '礦泉水',
-        price: 15,
-        category: '飲料',
-        stock: 200,
+        barcode: '88888888',
+        name: '祝您有奇妙的一天',
+        price: 0,
+        category: '特殊商品',
+        stock: 99,
       ),
     ];
 

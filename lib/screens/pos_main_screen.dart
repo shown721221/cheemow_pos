@@ -38,6 +38,24 @@ class _PosMainScreenState extends State<PosMainScreen> {
 
   Future<void> _loadProducts() async {
     final loadedProducts = await LocalDatabaseService.instance.getProducts();
+    
+    // 對商品進行排序：特殊商品在最前面
+    loadedProducts.sort((a, b) {
+      // 如果 a 是特殊商品而 b 不是，a 排在前面
+      if (a.isSpecialProduct && !b.isSpecialProduct) return -1;
+      // 如果 b 是特殊商品而 a 不是，b 排在前面
+      if (b.isSpecialProduct && !a.isSpecialProduct) return 1;
+      
+      // 兩個都是特殊商品時，預約商品排在折扣商品前面
+      if (a.isSpecialProduct && b.isSpecialProduct) {
+        if (a.isPreOrderProduct && b.isDiscountProduct) return -1;
+        if (a.isDiscountProduct && b.isPreOrderProduct) return 1;
+      }
+      
+      // 其他情況按商品名稱排序
+      return a.name.compareTo(b.name);
+    });
+    
     setState(() {
       products = loadedProducts;
     });
@@ -63,16 +81,110 @@ class _PosMainScreenState extends State<PosMainScreen> {
     }
   }
 
-  void _addToCart(Product product) {
+  void _addToCart(Product product) async {
+    // 如果是特殊商品（價格為0），需要手動輸入價格
+    if (product.price == 0) {
+      await _showPriceInputDialog(product);
+    } else {
+      _addProductToCart(product, product.price);
+    }
+  }
+
+  Future<void> _showPriceInputDialog(Product product) async {
+    final TextEditingController priceController = TextEditingController();
+    
+    return showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('輸入價格'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('商品：${product.name}'),
+              SizedBox(height: 8),
+              if (product.isPreOrderProduct) 
+                Text(
+                  '這是預購商品，請輸入實際價格',
+                  style: TextStyle(color: Colors.purple[700], fontSize: 12),
+                )
+              else if (product.isDiscountProduct)
+                Text(
+                  '這是折扣商品，請輸入折扣金額（負數）',
+                  style: TextStyle(color: Colors.orange[700], fontSize: 12),
+                ),
+              SizedBox(height: 16),
+              TextField(
+                controller: priceController,
+                keyboardType: TextInputType.numberWithOptions(signed: true),
+                decoration: InputDecoration(
+                  labelText: product.isDiscountProduct ? '折扣金額' : '價格',
+                  prefixText: 'NT\$ ',
+                  border: OutlineInputBorder(),
+                ),
+                autofocus: true,
+              ),
+            ],
+          ),
+          actions: <Widget>[
+            TextButton(
+              child: Text('取消'),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+            ElevatedButton(
+              child: Text('確定'),
+              onPressed: () {
+                final priceText = priceController.text.trim();
+                if (priceText.isNotEmpty) {
+                  final price = int.tryParse(priceText);
+                  if (price != null) {
+                    Navigator.of(context).pop();
+                    _addProductToCart(product, price);
+                  } else {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('請輸入有效的數字')),
+                    );
+                  }
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('請輸入價格')),
+                  );
+                }
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _addProductToCart(Product product, int actualPrice) {
+    // 如果實際價格與商品原價不同，創建一個新的商品物件
+    final productToAdd = actualPrice != product.price 
+        ? Product(
+            id: product.id,
+            barcode: product.barcode,
+            name: product.name,
+            price: actualPrice,
+            category: product.category,
+            stock: product.stock,
+            isActive: product.isActive,
+          )
+        : product;
+
     final existingItemIndex = cartItems.indexWhere(
-      (item) => item.product.id == product.id,
+      (item) => item.product.id == productToAdd.id && item.product.price == actualPrice,
     );
 
     setState(() {
       if (existingItemIndex >= 0) {
         cartItems[existingItemIndex].increaseQuantity();
       } else {
-        cartItems.add(CartItem(product: product));
+        cartItems.add(CartItem(product: productToAdd));
       }
     });
   }

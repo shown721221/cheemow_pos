@@ -18,6 +18,15 @@ class Product {
     this.isActive = true,
   });
 
+  // 檢查是否為特殊商品（預約商品或折扣商品）
+  bool get isSpecialProduct => category == '特殊商品';
+  
+  // 檢查是否為預約商品
+  bool get isPreOrderProduct => barcode == '19920203';
+  
+  // 檢查是否為折扣商品
+  bool get isDiscountProduct => barcode == '88888888';
+
   // 格式化價格顯示（純文字版本，用於列印等場合）
   String get formattedPrice => 'NT\$ $price';
 
