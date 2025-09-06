@@ -17,6 +17,7 @@ class MyApp extends StatelessWidget {
       title: 'Cheemow POS',
       theme: ThemeData(primarySwatch: Colors.blue, useMaterial3: true),
       home: PosMainScreen(),
+      debugShowCheckedModeBanner: false,
     );
   }
 }

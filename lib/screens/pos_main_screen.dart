@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../widgets/price_display.dart';
+import '../widgets/product_list_widget.dart';
+import '../widgets/shopping_cart_widget.dart';
 import '../models/product.dart';
 import '../models/cart_item.dart';
 import '../services/local_database_service.dart';
@@ -113,27 +115,7 @@ class _PosMainScreenState extends State<PosMainScreen> {
     );
   }
 
-  // 根據庫存數量回傳對應的顏色
-  Color _getStockColor(int stock) {
-    if (stock > 0) {
-      return Colors.green[700]!; // 正數：綠色
-    } else if (stock == 0) {
-      return Colors.orange[700]!; // 零：橘色
-    } else {
-      return Colors.red[700]!; // 負數：紅色
-    }
-  }
 
-  // 根據庫存數量回傳顯示文字
-  String _getStockText(int stock) {
-    if (stock > 0) {
-      return '庫存: $stock';
-    } else if (stock == 0) {
-      return '庫存: $stock';
-    } else {
-      return '庫存: $stock'; // 負數也顯示實際數字
-    }
-  }
 
   int get totalAmount {
     return cartItems.fold(0, (total, item) => total + item.subtotal);
@@ -180,102 +162,9 @@ class _PosMainScreenState extends State<PosMainScreen> {
             // 左側：商品列表（60%）
             Expanded(
               flex: 6,
-              child: Container(
-                padding: EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          '商品列表',
-                          style: TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        Text(
-                          '共 ${products.length} 項商品',
-                          style: TextStyle(color: Colors.grey[600]),
-                        ),
-                      ],
-                    ),
-                    SizedBox(height: 16),
-                    Expanded(
-                      child: products.isEmpty
-                          ? Center(
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Icon(
-                                    Icons.inventory_2,
-                                    size: 64,
-                                    color: Colors.grey,
-                                  ),
-                                  SizedBox(height: 16),
-                                  Text(
-                                    '暫無商品資料',
-                                    style: TextStyle(color: Colors.grey),
-                                  ),
-                                  SizedBox(height: 8),
-                                  Text(
-                                    '請匯入CSV檔案',
-                                    style: TextStyle(
-                                      color: Colors.grey,
-                                      fontSize: 12,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            )
-                          : ListView.builder(
-                              itemCount: products.length,
-                              itemBuilder: (context, index) {
-                                final product = products[index];
-                                return Card(
-                                  margin: EdgeInsets.only(bottom: 8),
-                                  child: ListTile(
-                                    contentPadding: EdgeInsets.symmetric(
-                                      horizontal: 16,
-                                      vertical: 8,
-                                    ),
-                                    title: Text(
-                                      product.name,
-                                      style: TextStyle(
-                                        fontWeight: FontWeight.w500,
-                                      ),
-                                    ),
-                                    subtitle: Row(
-                                      children: [
-                                        Text(
-                                          _getStockText(product.stock),
-                                          style: TextStyle(
-                                            color: _getStockColor(
-                                              product.stock,
-                                            ),
-                                            fontWeight: FontWeight.w500,
-                                          ),
-                                        ),
-                                        SizedBox(width: 16),
-                                        SmallPriceDisplay(
-                                          amount: product.price,
-                                        ),
-                                      ],
-                                    ),
-                                    trailing: Icon(
-                                      Icons.add_shopping_cart,
-                                      color: Colors.blue,
-                                    ),
-                                    onTap: () =>
-                                        _addToCart(product), // 移除庫存限制，都可以點擊
-                                  ),
-                                );
-                              },
-                            ),
-                    ),
-                  ],
-                ),
+              child: ProductListWidget(
+                products: products,
+                onProductTap: _addToCart,
               ),
             ),
 
@@ -285,223 +174,17 @@ class _PosMainScreenState extends State<PosMainScreen> {
             // 右側：購物車（40%）
             Expanded(
               flex: 4,
-              child: Container(
-                padding: EdgeInsets.all(16),
-                color: Colors.grey[50],
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          '購物車',
-                          style: TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        if (cartItems.isNotEmpty)
-                          TextButton.icon(
-                            icon: Icon(Icons.clear_all, size: 16),
-                            label: Text('清空'),
-                            onPressed: () {
-                              setState(() {
-                                cartItems.clear();
-                              });
-                            },
-                          ),
-                      ],
-                    ),
-                    SizedBox(height: 16),
-
-                    // 購物車項目
-                    Expanded(
-                      child: cartItems.isEmpty
-                          ? Center(
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Icon(
-                                    Icons.shopping_cart_outlined,
-                                    size: 64,
-                                    color: Colors.grey,
-                                  ),
-                                  SizedBox(height: 16),
-                                  Text(
-                                    '購物車是空的',
-                                    style: TextStyle(color: Colors.grey),
-                                  ),
-                                  SizedBox(height: 8),
-                                  Text(
-                                    '點擊商品或掃描條碼新增',
-                                    style: TextStyle(
-                                      color: Colors.grey,
-                                      fontSize: 12,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            )
-                          : ListView.builder(
-                              itemCount: cartItems.length,
-                              itemBuilder: (context, index) {
-                                final item = cartItems[index];
-                                return Card(
-                                  margin: EdgeInsets.only(bottom: 8),
-                                  child: Dismissible(
-                                    key: Key('${item.product.id}_$index'),
-                                    direction: DismissDirection.endToStart,
-                                    background: Container(
-                                      alignment: Alignment.centerRight,
-                                      padding: EdgeInsets.only(right: 16),
-                                      color: Colors.red,
-                                      child: Icon(
-                                        Icons.delete,
-                                        color: Colors.white,
-                                      ),
-                                    ),
-                                    onDismissed: (direction) {
-                                      _removeFromCart(index);
-                                      ScaffoldMessenger.of(
-                                        context,
-                                      ).showSnackBar(
-                                        SnackBar(
-                                          content: Text(
-                                            '已移除 ${item.product.name}',
-                                          ),
-                                          duration: Duration(seconds: 2),
-                                        ),
-                                      );
-                                    },
-                                    child: ListTile(
-                                      contentPadding: EdgeInsets.symmetric(
-                                        horizontal: 12,
-                                        vertical: 4,
-                                      ),
-                                      title: Text(
-                                        item.product.name,
-                                        style: TextStyle(
-                                          fontSize: 14,
-                                          fontWeight: FontWeight.w500,
-                                        ),
-                                      ),
-                                      subtitle: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          SmallPriceDisplay(
-                                            amount: item.product.price,
-                                          ),
-                                          SizedBox(height: 4),
-                                          Row(
-                                            children: [
-                                              Text('小計: '),
-                                              SmallPriceDisplay(
-                                                amount: item.subtotal,
-                                              ),
-                                            ],
-                                          ),
-                                        ],
-                                      ),
-                                      trailing: Container(
-                                        width: 120,
-                                        child: Row(
-                                          mainAxisSize: MainAxisSize.min,
-                                          children: [
-                                            IconButton(
-                                              iconSize: 20,
-                                              onPressed: () =>
-                                                  _decreaseQuantity(index),
-                                              icon: Icon(
-                                                Icons.remove_circle_outline,
-                                              ),
-                                            ),
-                                            Container(
-                                              width: 30,
-                                              child: Text(
-                                                '${item.quantity}',
-                                                textAlign: TextAlign.center,
-                                                style: TextStyle(
-                                                  fontWeight: FontWeight.bold,
-                                                ),
-                                              ),
-                                            ),
-                                            IconButton(
-                                              iconSize: 20,
-                                              onPressed: () =>
-                                                  _increaseQuantity(index),
-                                              icon: Icon(
-                                                Icons.add_circle_outline,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                );
-                              },
-                            ),
-                    ),
-
-                    // 底部統計和結帳
-                    if (cartItems.isNotEmpty) ...[
-                      Divider(thickness: 2),
-                      Container(
-                        padding: EdgeInsets.symmetric(vertical: 16),
-                        child: Column(
-                          children: [
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Text('商品數量:', style: TextStyle(fontSize: 16)),
-                                Text(
-                                  '$totalQuantity 件',
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            SizedBox(height: 8),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Text(
-                                  '總金額:',
-                                  style: TextStyle(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                                LargePriceDisplay(amount: totalAmount),
-                              ],
-                            ),
-                            SizedBox(height: 16),
-                            SizedBox(
-                              width: double.infinity,
-                              height: 50,
-                              child: ElevatedButton.icon(
-                                onPressed: _checkout,
-                                icon: Icon(Icons.payment),
-                                label: Text(
-                                  '結帳',
-                                  style: TextStyle(fontSize: 18),
-                                ),
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: Colors.green,
-                                  foregroundColor: Colors.white,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
+              child: ShoppingCartWidget(
+                cartItems: cartItems,
+                onRemoveItem: _removeFromCart,
+                onIncreaseQuantity: _increaseQuantity,
+                onDecreaseQuantity: _decreaseQuantity,
+                onClearCart: () {
+                  setState(() {
+                    cartItems.clear();
+                  });
+                },
+                onCheckout: _checkout,
               ),
             ),
           ],

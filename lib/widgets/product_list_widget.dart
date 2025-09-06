@@ -1,0 +1,128 @@
+import 'package:flutter/material.dart';
+import '../models/product.dart';
+import '../widgets/price_display.dart';
+
+class ProductListWidget extends StatelessWidget {
+  final List<Product> products;
+  final Function(Product) onProductTap;
+
+  const ProductListWidget({
+    Key? key,
+    required this.products,
+    required this.onProductTap,
+  }) : super(key: key);
+
+  // 根據庫存數量回傳對應的顏色
+  Color _getStockColor(int stock) {
+    if (stock > 0) {
+      return Colors.green[700]!; // 正數：綠色
+    } else if (stock == 0) {
+      return Colors.orange[700]!; // 零：橘色
+    } else {
+      return Colors.red[700]!; // 負數：紅色
+    }
+  }
+
+  // 根據庫存數量回傳顯示文字
+  String _getStockText(int stock) {
+    if (stock > 0) {
+      return '庫存: $stock';
+    } else if (stock == 0) {
+      return '庫存: $stock';
+    } else {
+      return '庫存: $stock'; // 負數也顯示實際數字
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            child: products.isEmpty
+                ? Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.inventory_2,
+                          size: 64,
+                          color: Colors.grey,
+                        ),
+                        SizedBox(height: 16),
+                        Text(
+                          '暫無商品資料',
+                          style: TextStyle(color: Colors.grey),
+                        ),
+                        SizedBox(height: 8),
+                        Text(
+                          '請匯入CSV檔案',
+                          style: TextStyle(color: Colors.grey, fontSize: 12),
+                        ),
+                      ],
+                    ),
+                  )
+                : ListView.builder(
+                    itemCount: products.length,
+                    itemBuilder: (context, index) {
+                      final product = products[index];
+                      return Card(
+                        margin: EdgeInsets.only(bottom: 8),
+                        child: ListTile(
+                          contentPadding: EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 8,
+                          ),
+                          title: Row(
+                            children: [
+                              Expanded(
+                                child: Row(
+                                  children: [
+                                    Text(
+                                      product.name,
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.w600,
+                                        fontSize: 18,
+                                      ),
+                                    ),
+                                    SizedBox(width: 8),
+                                    Text(
+                                      _getStockText(product.stock),
+                                      style: TextStyle(
+                                        color: _getStockColor(product.stock),
+                                        fontWeight: FontWeight.w500,
+                                        fontSize: 12,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              SizedBox(width: 16),
+                              PriceDisplay(
+                                amount: product.price,
+                                iconSize: 20,
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.green[700],
+                              ),
+                            ],
+                          ),
+                          trailing: Icon(
+                            Icons.add_shopping_cart,
+                            color: Colors.blue,
+                            size: 24,
+                          ),
+                          onTap: () => onProductTap(product),
+                        ),
+                      );
+                    },
+                  ),
+          ),
+        ],
+      ),
+    );
+  }
+}
