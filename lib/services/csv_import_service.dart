@@ -81,7 +81,7 @@ class CsvImportService {
           String category = row[4].toString().trim();
           String stockStr = row[5].toString().trim();
 
-          // 驗證必填欄位
+          // 驗證必填欄位（ID保持原始格式，包含前導0）
           if (id.isEmpty || barcode.isEmpty || name.isEmpty) {
             errors.add('第${i + 1}行：ID、條碼或商品名稱不能為空');
             continue;
@@ -102,11 +102,11 @@ class CsvImportService {
           }
 
           products.add(Product(
-            id: id,
+            id: id, // 保持原始ID格式（包含前導0）
             barcode: barcode,
             name: name,
             price: price,
-            category: category.isEmpty ? '一般商品' : category,
+            category: category, // 允許為空字串
             stock: stock,
             isActive: true,
           ));
@@ -162,11 +162,11 @@ class CsvImportService {
   static String generateSampleCsv() {
     List<List<String>> csvData = [
       ['id', 'barcode', 'name', 'price', 'category', 'stock'],
-      ['1', '1234567890123', '可口可樂', '25', '飲料', '100'],
-      ['2', '2345678901234', '洋芋片', '35', '零食', '50'],
-      ['3', '3456789012345', '礦泉水', '15', '飲料', '200'],
-      ['4', '4567890123456', '巧克力', '45', '零食', '30'],
-      ['5', '5678901234567', '咖啡', '55', '飲料', '80'],
+      ['001', '1234567890123', '可口可樂', '25', '飲料', '100'],
+      ['002', '2345678901234', '洋芋片', '35', '零食', '50'],
+      ['003', '3456789012345', '礦泉水', '15', '飲料', '200'],
+      ['004', '4567890123456', '巧克力', '45', '', '30'],
+      ['0005', '5678901234567', '咖啡', '55', '飲料', '80'],
     ];
     
     return const ListToCsvConverter().convert(csvData);
