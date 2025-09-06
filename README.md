@@ -1,16 +1,182 @@
-# cheemow_pos
+# Cheemow POS 系統 🛍️💕
 
-A new Flutter project.
+## 專案概述
+Cheemow POS 是一個專為平板設計的橫向銷售點系統，具有溫馨可愛的界面設計。
 
-## Getting Started
+## 🎯 已完成功能
 
-This project is a starting point for a Flutter application.
+### 核心 POS 功能 ✅
+- **橫向鎖定界面** - 適合平板操作
+- **全畫面掃描器監聽** - 隨時可掃描條碼，使用系統級鍵盤事件避免焦點框問題
+- **商品列表展示** - 60% 左側區域，支援滾動和排序
+- **購物車管理** - 40% 右側區域，支援增減數量、移除商品
+- **結帳流程** - 完整的結帳確認和處理
 
-A few resources to get you started if this is your first Flutter project:
+### 商品管理 ✅
+- **CSV 商品資料匯入** - 支援批量匯入商品資料
+- **特殊商品處理** - 預購商品（紫色）和折扣商品（橘色）
+- **智能排序系統**：
+  1. 特殊商品（預約奇妙 → 祝您有奇妙的一天）
+  2. 已結帳商品（按結帳時間降序）
+  3. 其他商品（按名稱排序）
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+### 用戶體驗優化 ✅
+- **溫馨空購物車設計**：❤️ 帶寶寶回家吧 ❤️
+- **購物車排序**：最新加入的商品顯示在上方
+- **結帳後自動回頂**：商品列表自動滾動到最上方
+- **滑動刪除**：購物車商品支援左滑刪除
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+### 技術架構 ✅
+- **Flutter/Dart 框架**
+- **SharedPreferences 本地存儲**
+- **系統級鍵盤監聽** - 避免 Samsung 平板焦點框問題
+- **StatefulWidget 滾動控制**
+- **完整的商品時間追蹤系統**
+
+## 🔧 已知問題
+
+### Samsung Galaxy Tab A9+ 特有問題
+- **綠色焦點框** - Samsung One UI 系統特性，已嘗試多種解決方案但無法完全消除
+- **狀態**：已妥協接受，不影響功能使用
+
+## 📋 功能選單架構
+
+已建立完整的功能選單框架（右上角 ⋮ 圖標）：
+
+### 已實現 ✅
+- **匯入商品資料** - CSV 檔案匯入功能
+
+### 待開發 🚧
+- **匯出商品資料** - 匯出當前商品清單
+- **收據清單** - 查看歷史交易記錄
+- **營收總計** - 銷售統計和報表
+
+## 🚀 下一步開發計劃
+
+### 優先級 1 - 核心功能完善
+1. **匯出功能** - 實現商品資料匯出為 CSV
+2. **收據系統** - 儲存和查看交易記錄
+3. **營收統計** - 基本的銷售統計功能
+
+### 優先級 2 - 功能增強
+1. **商品搜尋** - 在商品列表中搜尋特定商品
+2. **庫存管理** - 庫存警示和管理
+3. **備份恢復** - 資料備份和恢復功能
+
+### 優先級 3 - 進階功能
+1. **多店鋪支援** - 支援多個分店
+2. **雲端同步** - 資料雲端備份
+3. **更多統計報表** - 詳細的銷售分析
+
+## 🏗️ 技術架構說明
+
+### 核心組件
+```
+lib/
+├── main.dart                 # 應用程式入口點
+├── config/
+│   └── app_config.dart       # 全域配置（橫向鎖定等）
+├── models/
+│   ├── product.dart          # 商品資料模型
+│   └── cart_item.dart        # 購物車項目模型
+├── screens/
+│   └── pos_main_screen.dart  # 主 POS 畫面
+├── widgets/
+│   ├── product_list_widget.dart    # 商品列表組件
+│   ├── shopping_cart_widget.dart   # 購物車組件
+│   └── price_display.dart          # 價格顯示組件
+└── services/
+    ├── local_database_service.dart    # 本地資料庫服務
+    ├── bluetooth_scanner_service.dart # 掃描器服務
+    └── csv_import_service.dart        # CSV 匯入服務
+```
+
+### 關鍵技術決策
+1. **系統級鍵盤監聽** - 使用 `ServicesBinding.instance.keyboard.addHandler()` 避免焦點問題
+2. **StatefulWidget 滾動控制** - ProductListWidget 改為 StatefulWidget 支援滾動控制
+3. **商品時間追蹤** - 使用 `lastCheckoutTime` 欄位實現智能排序
+
+## 🔄 Git 工作流程
+
+### 分支策略
+- `main` - 穩定版本
+- `develop` - 開發版本
+- `feature/*` - 功能分支
+
+### 提交規範
+```
+✨ feat: 新功能
+🐛 fix: 修復 bug
+📝 docs: 文件更新
+🎨 style: 樣式調整
+♻️ refactor: 重構
+🚀 perf: 性能優化
+```
+
+## 🖥️ 開發環境設置
+
+### Windows 環境（已完成）
+1. Flutter SDK
+2. VS Code + Flutter 插件
+3. Git
+
+### Mac 環境（待設置）
+```bash
+# 1. Clone 專案
+git clone https://github.com/shown721221/cheemow_pos.git
+cd cheemow_pos
+
+# 2. 安裝依賴
+flutter pub get
+
+# 3. 執行開發模式
+flutter run
+
+# 4. 建立 Release 版本
+flutter build apk --release
+```
+
+## 📱 測試裝置
+- **主要測試裝置**：Samsung Galaxy Tab A9+
+- **已知相容性**：Android 平板（橫向使用）
+
+## 💡 設計理念
+這個 POS 系統不只是功能性工具，更注重使用者體驗和情感連結：
+- 溫馨可愛的空購物車提示
+- 直觀的顏色編碼（特殊商品）
+- 流暢的操作體驗（掃描、結帳、排序）
+
+## 🤖 AI 協作紀錄
+
+### 最後開發狀態（2025年9月7日）
+- **完成項目**：核心 POS 功能、智能排序、溫馨UI設計、Git 版本控制
+- **當前問題**：Samsung Tab A9+ 綠色焦點框（已接受為系統特性）
+- **下一步計劃**：匯出功能、收據系統、營收統計
+- **開發環境**：準備從 Windows 轉移到 Mac 繼續開發
+
+### AI 助手續接指南
+如果需要 AI 助手繼續協助開發，請參考以下關鍵資訊：
+
+1. **專案特色**：
+   - 購物車排序：最新項目在上方（由下往上）
+   - 商品列表：智能排序（特殊商品 → 最近結帳 → 其他）
+   - 空購物車：❤️ 帶寶寶回家吧 ❤️
+   - 結帳後自動滾動到商品列表頂部
+
+2. **技術重點**：
+   - 使用系統級鍵盤事件處理條碼掃描
+   - ProductListWidget 是 StatefulWidget 支援滾動控制
+   - 商品有 lastCheckoutTime 欄位用於排序
+
+3. **待開發功能**：選單中的匯出、收據、營收功能
+
+---
+
+## 📞 聯絡資訊
+- **開發者**：shown721221
+- **GitHub**：https://github.com/shown721221/cheemow_pos
+- **最後更新**：2025年9月7日
+
+---
+
+*備註：這個 README 會隨著開發進度持續更新*
