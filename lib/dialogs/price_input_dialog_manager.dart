@@ -55,8 +55,16 @@ class PriceInputDialogManager {
                     
                     SizedBox(height: 16),
                     
-                    // 數字鍵盤
-                    _buildNumberKeypad(setState, currentPrice),
+                    // 數字鍵盤（透過回呼直接更新外層 currentPrice）
+                    _buildNumberKeypad(
+                      onAppend: (d) => setState(() => currentPrice += d),
+                      onClear: () => setState(() => currentPrice = ''),
+                      onDelete: () => setState(() {
+                        if (currentPrice.isNotEmpty) {
+                          currentPrice = currentPrice.substring(0, currentPrice.length - 1);
+                        }
+                      }),
+                    ),
                   ],
                 ),
               ),
@@ -114,22 +122,20 @@ class PriceInputDialogManager {
   }
 
   /// 構建數字鍵盤
-  static Widget _buildNumberKeypad(StateSetter setState, String currentPrice) {
-    void updatePrice(String Function(String) updater) {
-      setState(() {
-        currentPrice = updater(currentPrice);
-      });
-    }
-
+  static Widget _buildNumberKeypad({
+    required void Function(String digit) onAppend,
+    required VoidCallback onClear,
+    required VoidCallback onDelete,
+  }) {
     return Column(
       children: [
         // 第一排：1, 2, 3
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: [
-            _buildNumKey('1', () => updatePrice((p) => p + '1')),
-            _buildNumKey('2', () => updatePrice((p) => p + '2')),
-            _buildNumKey('3', () => updatePrice((p) => p + '3')),
+            _buildNumKey('1', () => onAppend('1')),
+            _buildNumKey('2', () => onAppend('2')),
+            _buildNumKey('3', () => onAppend('3')),
           ],
         ),
         SizedBox(height: 8),
@@ -137,9 +143,9 @@ class PriceInputDialogManager {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: [
-            _buildNumKey('4', () => updatePrice((p) => p + '4')),
-            _buildNumKey('5', () => updatePrice((p) => p + '5')),
-            _buildNumKey('6', () => updatePrice((p) => p + '6')),
+            _buildNumKey('4', () => onAppend('4')),
+            _buildNumKey('5', () => onAppend('5')),
+            _buildNumKey('6', () => onAppend('6')),
           ],
         ),
         SizedBox(height: 8),
@@ -147,9 +153,9 @@ class PriceInputDialogManager {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: [
-            _buildNumKey('7', () => updatePrice((p) => p + '7')),
-            _buildNumKey('8', () => updatePrice((p) => p + '8')),
-            _buildNumKey('9', () => updatePrice((p) => p + '9')),
+            _buildNumKey('7', () => onAppend('7')),
+            _buildNumKey('8', () => onAppend('8')),
+            _buildNumKey('9', () => onAppend('9')),
           ],
         ),
         SizedBox(height: 8),
@@ -157,11 +163,9 @@ class PriceInputDialogManager {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: [
-            _buildActionKey('清除', () => updatePrice((_) => '')),
-            _buildNumKey('0', () => updatePrice((p) => p + '0')),
-            _buildActionKey('刪除', () => updatePrice((p) => 
-              p.isNotEmpty ? p.substring(0, p.length - 1) : ''
-            )),
+            _buildActionKey('清除', onClear),
+            _buildNumKey('0', () => onAppend('0')),
+            _buildActionKey('刪除', onDelete),
           ],
         ),
       ],

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:flutter/foundation.dart';
 
 /// 藍芽條碼掃描器服務
 class BluetoothScannerService {
@@ -25,7 +26,7 @@ class BluetoothScannerService {
       _isConnected = true;
       return true;
     } catch (e) {
-      print('藍芽掃描器初始化失敗: $e');
+      debugPrint('藍芽掃描器初始化失敗: $e');
       return false;
     }
   }
@@ -37,7 +38,7 @@ class BluetoothScannerService {
       _isConnected = true;
       return true;
     } catch (e) {
-      print('連接藍芽掃描器失敗: $e');
+      debugPrint('連接藍芽掃描器失敗: $e');
       return false;
     }
   }
@@ -48,7 +49,7 @@ class BluetoothScannerService {
       // TODO: 實作斷開連接邏輯
       _isConnected = false;
     } catch (e) {
-      print('斷開藍芽掃描器失敗: $e');
+      debugPrint('斷開藍芽掃描器失敗: $e');
     }
   }
 

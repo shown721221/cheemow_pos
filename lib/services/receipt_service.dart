@@ -1,4 +1,5 @@
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter/foundation.dart';
 import 'dart:convert';
 import '../models/receipt.dart';
 
@@ -36,10 +37,10 @@ class ReceiptService {
       final receiptsJson = receipts.map((r) => r.toJson()).toList();
       await _prefs!.setString('receipts', jsonEncode(receiptsJson));
       
-      print('收據已儲存: ${receipt.id}, 時間: ${receipt.formattedDateTime}');
+  debugPrint('收據已儲存: ${receipt.id}, 時間: ${receipt.formattedDateTime}');
       return true;
     } catch (e) {
-      print('儲存收據失敗: $e');
+  debugPrint('儲存收據失敗: $e');
       return false;
     }
   }
@@ -55,7 +56,7 @@ class ReceiptService {
       final receiptsList = jsonDecode(receiptsString) as List;
       return receiptsList.map((json) => Receipt.fromJson(json)).toList();
     } catch (e) {
-      print('讀取收據失敗: $e');
+      debugPrint('讀取收據失敗: $e');
       return [];
     }
   }
@@ -136,10 +137,10 @@ class ReceiptService {
       final receiptsJson = receipts.map((r) => r.toJson()).toList();
       await _prefs!.setString('receipts', jsonEncode(receiptsJson));
       
-      print('收據已刪除: $receiptId');
+  debugPrint('收據已刪除: $receiptId');
       return true;
     } catch (e) {
-      print('刪除收據失敗: $e');
+  debugPrint('刪除收據失敗: $e');
       return false;
     }
   }
@@ -150,10 +151,10 @@ class ReceiptService {
       if (_prefs == null) return false;
       
       await _prefs!.remove('receipts');
-      print('所有收據已清空');
+  debugPrint('所有收據已清空');
       return true;
     } catch (e) {
-      print('清空收據失敗: $e');
+  debugPrint('清空收據失敗: $e');
       return false;
     }
   }
@@ -170,7 +171,7 @@ class ReceiptService {
       
       return jsonEncode(backupData);
     } catch (e) {
-      print('匯出收據失敗: $e');
+      debugPrint('匯出收據失敗: $e');
       return null;
     }
   }

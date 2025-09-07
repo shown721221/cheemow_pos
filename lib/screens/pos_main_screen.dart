@@ -678,7 +678,7 @@ class _PosMainScreenState extends State<PosMainScreen> {
         .map((item) => item.product.barcode)
         .toSet();
 
-    print('結帳商品條碼: $checkedOutBarcodes'); // 除錯訊息
+  debugPrint('結帳商品條碼: $checkedOutBarcodes');
 
     // 創建新的商品列表，更新結帳時間
     final updatedProducts = <Product>[];
@@ -690,16 +690,14 @@ class _PosMainScreenState extends State<PosMainScreen> {
         final updatedProduct = product.copyWithLastCheckoutTime(checkoutTime);
         updatedProducts.add(updatedProduct);
         updatedCount++;
-        print(
-          '更新商品: ${product.name} (${product.barcode}) -> 結帳時間: $checkoutTime',
-        ); // 除錯訊息
+  debugPrint('更新商品: ${product.name} (${product.barcode}) -> 結帳時間: $checkoutTime');
       } else {
         // 其他商品保持原狀
         updatedProducts.add(product);
       }
     }
 
-    print('實際更新了 $updatedCount 個商品'); // 除錯訊息
+  debugPrint('實際更新了 $updatedCount 個商品');
 
     // 重新排序商品
     updatedProducts.sort((a, b) {
@@ -743,10 +741,10 @@ class _PosMainScreenState extends State<PosMainScreen> {
       });
     });
 
-    // 保存更新後的商品資料到本地存儲
-    await _saveProductsToStorage();
+  // 保存更新後的商品資料到本地存儲
+  await _saveProductsToStorage();
 
-    print('結帳完成，商品列表已更新，實際更新: $updatedCount 個商品'); // 除錯訊息
+  debugPrint('結帳完成，商品列表已更新，實際更新: $updatedCount 個商品');
   }
 
   /// 建構搜尋頁面
@@ -1207,7 +1205,7 @@ class _PosMainScreenState extends State<PosMainScreen> {
     try {
       await LocalDatabaseService.instance.saveProducts(products);
     } catch (e) {
-      print('保存商品資料失敗: $e');
+  debugPrint('保存商品資料失敗: $e');
     }
   }
 }

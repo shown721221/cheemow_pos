@@ -160,8 +160,9 @@ class ProductStyleUtils {
 
   /// 建立庫存狀態 Chip（充足/偏低/缺貨/負庫存）
   static Widget buildStockChip(int stock) {
-    final baseColor = getStockColor(stock);
-    final bg = baseColor.withOpacity(0.12); // Material 推薦的提示底色透明度
+  final baseColor = getStockColor(stock);
+  // 避免 withOpacity 的棄用警告，改為 withValues 近似 12% 透明度
+  final bg = baseColor.withValues(alpha: 0.12);
     final icon = getStockStatusIcon(stock);
     final text = getStockStatusDescription(stock);
     return Chip(

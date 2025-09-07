@@ -3,6 +3,7 @@ import 'dart:io';
 import 'dart:typed_data';
 import 'package:csv/csv.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:flutter/foundation.dart';
 import '../models/product.dart';
 import 'local_database_service.dart';
 
@@ -35,7 +36,7 @@ class CsvImportService {
           final fileContent = await File(file.path!).readAsBytes();
           fileBytes = fileContent;
         } catch (e) {
-          print('從路徑讀取檔案失敗: $e');
+          debugPrint('從路徑讀取檔案失敗: $e');
         }
       }
 
@@ -46,7 +47,7 @@ class CsvImportService {
       // 解析CSV
       return await _parseAndImportCsv(fileBytes, file.name);
     } catch (e) {
-      print('檔案選擇失敗: $e');
+      debugPrint('檔案選擇失敗: $e');
       return CsvImportResult.error('檔案選擇失敗: ${e.toString()}');
     }
   }
@@ -89,10 +90,10 @@ class CsvImportService {
         'stock',
       ];
 
-      print('期望欄位: $expectedFields');
-      print('實際欄位: $headers');
-      print('欄位數量 - 期望: ${expectedFields.length}, 實際: ${headers.length}');
-      print('使用的分隔符: ${delimiter == '\t' ? 'Tab' : '逗號'}');
+  debugPrint('期望欄位: $expectedFields');
+  debugPrint('實際欄位: $headers');
+  debugPrint('欄位數量 - 期望: ${expectedFields.length}, 實際: ${headers.length}');
+  debugPrint('使用的分隔符: ${delimiter == '\t' ? 'Tab' : '逗號'}');
 
       if (headers.length != expectedFields.length) {
         return CsvImportResult.error(
