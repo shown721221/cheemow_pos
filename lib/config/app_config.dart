@@ -10,8 +10,8 @@ class AppConfig {
       DeviceOrientation.landscapeRight,
     ]);
 
-    // 初始化本地資料庫
-    await LocalDatabaseService.instance.initialize();
+  // 初始化本地資料庫
+  await LocalDatabaseService.instance.initialize();
 
     // 初始化藍芽掃描器服務
     await BluetoothScannerService.instance.initialize();

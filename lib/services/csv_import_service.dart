@@ -197,8 +197,8 @@ class CsvImportService {
         errors.addAll(duplicateErrors);
       }
 
-      // 儲存商品資料（使用智慧合併）
-      await LocalDatabaseService.instance.mergeImportedProducts(products);
+  // 儲存商品資料（取代模式）
+  await LocalDatabaseService.instance.replaceProducts(products);
 
       return CsvImportResult.success(
         importedCount: products.length,

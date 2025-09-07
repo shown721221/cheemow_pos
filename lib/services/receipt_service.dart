@@ -23,7 +23,7 @@ class ReceiptService {
       if (_prefs == null) return false;
 
       // 取得現有收據列表
-      final receipts = await getReceipts();
+  final receipts = await getReceipts();
       
       // 加入新收據到列表開頭（最新的在前面）
       receipts.insert(0, receipt);
@@ -35,7 +35,7 @@ class ReceiptService {
       
       // 儲存更新後的收據列表
       final receiptsJson = receipts.map((r) => r.toJson()).toList();
-      await _prefs!.setString('receipts', jsonEncode(receiptsJson));
+  await _prefs!.setString('receipts', jsonEncode(receiptsJson));
       
   debugPrint('收據已儲存: ${receipt.id}, 時間: ${receipt.formattedDateTime}');
       return true;
@@ -50,7 +50,7 @@ class ReceiptService {
     try {
       if (_prefs == null) return [];
 
-      final receiptsString = _prefs!.getString('receipts');
+  final receiptsString = _prefs!.getString('receipts');
       if (receiptsString == null) return [];
 
       final receiptsList = jsonDecode(receiptsString) as List;
@@ -150,7 +150,7 @@ class ReceiptService {
     try {
       if (_prefs == null) return false;
       
-      await _prefs!.remove('receipts');
+  await _prefs!.remove('receipts');
   debugPrint('所有收據已清空');
       return true;
     } catch (e) {

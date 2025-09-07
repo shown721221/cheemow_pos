@@ -194,6 +194,16 @@ class _PosMainScreenState extends State<PosMainScreen> {
 
   /// CSV匯入功能
   Future<void> _importCsvData() async {
+    // 匯入前的簡單數字密碼確認，預設 0000
+    final bool confirmed = await _confirmImportWithPin();
+    if (!confirmed) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('已取消匯入')),
+      );
+      return;
+    }
+
     // 顯示loading
     showDialog(
       context: context,
@@ -228,6 +238,162 @@ class _PosMainScreenState extends State<PosMainScreen> {
   Navigator.pop(context);
       _showErrorDialog('匯入失敗', e.toString());
     }
+  }
+
+  /// 匯入前 PIN 確認（四位數字，預設 0000）
+  Future<bool> _confirmImportWithPin() async {
+  const pin = '0203';
+    String input = '';
+    String? error;
+    bool ok = false;
+
+  await showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setS) {
+            Widget buildNumKey(String number) => SizedBox(
+                  width: 60,
+                  height: 48,
+                  child: ElevatedButton(
+                    onPressed: input.length < 4
+                        ? () => setS(() {
+                              input += number;
+                              error = null;
+                              if (input.length == 4) {
+                                if (input == pin) {
+                                  ok = true;
+                                  Navigator.pop(context);
+                                } else {
+                                  error = '密碼錯誤，請再試一次';
+                                }
+                              }
+                            })
+                        : null,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.blue[50],
+                      foregroundColor: Colors.blue[700],
+                    ),
+                    child: Text(
+                      number,
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                );
+
+            Widget buildActionKey(String label, VoidCallback onPressed) => SizedBox(
+                  width: 60,
+                  height: 48,
+                  child: ElevatedButton(
+                    onPressed: onPressed,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.orange[50],
+                      foregroundColor: Colors.orange[700],
+                    ),
+                    child: Text(label, style: const TextStyle(fontSize: 12)),
+                  ),
+                );
+
+            String masked = '••••'.substring(0, input.length).padRight(4, '—');
+
+      return AlertDialog(
+              content: SizedBox(
+                width: 320,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+        const Text('此動作會取代目前的商品資料。'),
+        const SizedBox(height: 8),
+        const Text('請輸入 4 位數字密碼以繼續：'),
+                    const SizedBox(height: 12),
+                    Container(
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      decoration: BoxDecoration(
+                        border: Border.all(color: Colors.grey[300]!),
+                        borderRadius: BorderRadius.circular(8),
+                        color: Colors.grey[50],
+                      ),
+                      child: Text(
+                        masked,
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          fontSize: 24,
+                          letterSpacing: 4,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                    if (error != null) ...[
+                      const SizedBox(height: 8),
+                      Text(
+                        error!,
+                        style: TextStyle(color: Colors.red[700], fontSize: 12),
+                      ),
+                    ],
+                    const SizedBox(height: 12),
+                    // 數字鍵盤
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        buildNumKey('1'),
+                        buildNumKey('2'),
+                        buildNumKey('3'),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        buildNumKey('4'),
+                        buildNumKey('5'),
+                        buildNumKey('6'),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        buildNumKey('7'),
+                        buildNumKey('8'),
+                        buildNumKey('9'),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        buildActionKey('清除', () => setS(() {
+                              input = '';
+                              error = null;
+                            })),
+                        buildNumKey('0'),
+                        buildActionKey('刪除', () => setS(() {
+                              if (input.isNotEmpty) input = input.substring(0, input.length - 1);
+                              error = null;
+                            })),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('取消'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+
+  return ok;
   }
 
   /// 顯示匯入結果對話框
@@ -754,6 +920,16 @@ class _PosMainScreenState extends State<PosMainScreen> {
       cartItems.clear();
       // 更新產品列表（這會觸發重新排序和回到頂部）
       products = updatedProducts;
+
+      // 若目前左側使用的是搜尋/篩選結果，將其以條碼對映為最新的商品資料，以避免顯示舊庫存
+      if (_searchResults.isNotEmpty) {
+        final Map<String, Product> latestByBarcode = {
+          for (final p in updatedProducts) p.barcode: p,
+        };
+        _searchResults = _searchResults
+            .map((old) => latestByBarcode[old.barcode] ?? old)
+            .toList();
+      }
       // 設置滾動到頂部標記
       _shouldScrollToTop = true;
     });
@@ -1257,4 +1433,6 @@ class _PosMainScreenState extends State<PosMainScreen> {
   debugPrint('保存商品資料失敗: $e');
     }
   }
+
+  //（已移除）場次功能不使用
 }

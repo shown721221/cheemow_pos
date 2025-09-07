@@ -17,7 +17,7 @@ class LocalDatabaseService {
     _prefs = await SharedPreferences.getInstance();
 
     // 如果是第一次啟動，建立範例商品資料
-    if (_prefs != null && !_prefs!.containsKey('products_initialized')) {
+  if (_prefs != null && !_prefs!.containsKey('products_initialized')) {
       await _createSampleProducts();
       await _prefs!.setBool('products_initialized', true);
     }
@@ -44,7 +44,7 @@ class LocalDatabaseService {
       ),
     ];
 
-    await saveProducts(sampleProducts);
+  await saveProducts(sampleProducts);
   }
 
   /// 確保特殊商品存在
@@ -138,9 +138,9 @@ class LocalDatabaseService {
 
   /// 儲存商品清單
   Future<void> saveProducts(List<Product> products) async {
-    if (_prefs == null) return;
-    final productsJson = products.map((p) => p.toJson()).toList();
-    await _prefs!.setString('products', jsonEncode(productsJson));
+  if (_prefs == null) return;
+  final productsJson = products.map((p) => p.toJson()).toList();
+  await _prefs!.setString('products', jsonEncode(productsJson));
   }
 
   /// 合併匯入的商品（用於CSV匯入）
@@ -164,10 +164,19 @@ class LocalDatabaseService {
     await saveProducts(mergedProducts);
   }
 
+  /// 取代現有所有商品（用於CSV匯入 - 取代模式）
+  /// 注意：會覆蓋既有資料，之後會自動確保特殊商品存在與名稱一致
+  Future<void> replaceProducts(List<Product> newProducts) async {
+    // 直接覆蓋目前的商品清單
+    await saveProducts(newProducts);
+    // 確保兩個特殊商品存在，並同步名稱圖示
+    await ensureSpecialProducts();
+  }
+
   /// 取得所有商品
   Future<List<Product>> getProducts() async {
-    if (_prefs == null) return [];
-    final productsString = _prefs!.getString('products');
+  if (_prefs == null) return [];
+  final productsString = _prefs!.getString('products');
     if (productsString == null) return [];
 
     final productsList = jsonDecode(productsString) as List;
@@ -176,7 +185,7 @@ class LocalDatabaseService {
 
   /// 依條碼查詢商品
   Future<Product?> getProductByBarcode(String barcode) async {
-    final products = await getProducts();
+  final products = await getProducts();
     try {
       return products.firstWhere((product) => product.barcode == barcode);
     } catch (e) {
@@ -186,7 +195,7 @@ class LocalDatabaseService {
 
   /// 更新商品庫存
   Future<void> updateProductStock(String productId, int newStock) async {
-    final products = await getProducts();
+  final products = await getProducts();
     final productIndex = products.indexWhere((p) => p.id == productId);
 
     if (productIndex != -1) {
@@ -202,7 +211,7 @@ class LocalDatabaseService {
       );
 
       products[productIndex] = updatedProduct;
-      await saveProducts(products);
+  await saveProducts(products);
     }
   }
 }
