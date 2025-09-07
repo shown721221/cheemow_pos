@@ -678,24 +678,40 @@ class _PosMainScreenState extends State<PosMainScreen> {
   Future<void> _processCheckout() async {
     final checkoutTime = DateTime.now();
 
-    // 記錄結帳的商品條碼，用於更新商品排序（使用條碼更準確）
-    final checkedOutBarcodes = cartItems
-        .map((item) => item.product.barcode)
-        .toSet();
+    // 記錄結帳品項數量（以條碼統計）
+    final Map<String, int> quantityByBarcode = {};
+    for (final item in cartItems) {
+      quantityByBarcode.update(
+        item.product.barcode,
+        (prev) => prev + item.quantity,
+        ifAbsent: () => item.quantity,
+      );
+    }
 
-  debugPrint('結帳商品條碼: $checkedOutBarcodes');
+    debugPrint('結帳數量統計: $quantityByBarcode');
 
     // 創建新的商品列表，更新結帳時間
     final updatedProducts = <Product>[];
     int updatedCount = 0;
 
     for (final product in products) {
-      if (checkedOutBarcodes.contains(product.barcode)) {
-        // 結帳過的商品，更新結帳時間
-        final updatedProduct = product.copyWithLastCheckoutTime(checkoutTime);
+      final qty = quantityByBarcode[product.barcode] ?? 0;
+      if (qty > 0) {
+        // 結帳過的商品：更新結帳時間與庫存（特殊商品不扣庫存）
+        final newStock = product.isSpecialProduct ? product.stock : (product.stock - qty);
+        final updatedProduct = Product(
+          id: product.id,
+          barcode: product.barcode,
+          name: product.name,
+          price: product.price,
+          category: product.category,
+          stock: newStock,
+          isActive: product.isActive,
+          lastCheckoutTime: checkoutTime,
+        );
         updatedProducts.add(updatedProduct);
         updatedCount++;
-  debugPrint('更新商品: ${product.name} (${product.barcode}) -> 結帳時間: $checkoutTime');
+        debugPrint('更新商品: ${product.name} (${product.barcode}) -> 結帳時間: $checkoutTime, 庫存: ${product.stock} -> $newStock (扣 $qty)');
       } else {
         // 其他商品保持原狀
         updatedProducts.add(product);
@@ -729,6 +745,9 @@ class _PosMainScreenState extends State<PosMainScreen> {
       // 兩個都沒有結帳記錄，按商品名稱排序
       return a.name.compareTo(b.name);
     });
+
+    // 儲存更新後商品
+    await LocalDatabaseService.instance.saveProducts(updatedProducts);
 
     setState(() {
       // 清空購物車
