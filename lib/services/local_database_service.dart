@@ -29,7 +29,7 @@ class LocalDatabaseService {
       Product(
         id: '1',
         barcode: '19920203',
-        name: '預約奇妙',
+        name: '🎁 預約奇妙',
         price: 0,
         category: '特殊商品',
         stock: 99,
@@ -37,7 +37,7 @@ class LocalDatabaseService {
       Product(
         id: '2',
         barcode: '88888888',
-        name: '祝您有奇妙的一天',
+        name: '💸 祝您有奇妙的一天',
         price: 0,
         category: '特殊商品',
         stock: 99,
@@ -59,7 +59,7 @@ class LocalDatabaseService {
       final preOrderProduct = Product(
         id: 'special_001',
         barcode: '19920203',
-        name: '預約奇妙',
+        name: '🎁 預約奇妙',
         price: 0,
         category: '特殊商品',
         stock: 99,
@@ -74,13 +74,61 @@ class LocalDatabaseService {
       final discountProduct = Product(
         id: 'special_002',
         barcode: '88888888',
-        name: '祝您有奇妙的一天',
+        name: '💸 祝您有奇妙的一天',
         price: 0,
         category: '特殊商品',
         stock: 99,
       );
       updatedProducts.add(discountProduct);
       needsUpdate = true;
+    }
+
+    if (needsUpdate) {
+      await saveProducts(updatedProducts);
+    }
+
+    // 更新現有特殊商品的名稱（添加圖示）
+    await _updateSpecialProductNames();
+  }
+
+  /// 更新特殊商品名稱，添加圖示
+  Future<void> _updateSpecialProductNames() async {
+    final products = await getProducts();
+    final updatedProducts = List<Product>.from(products);
+    bool needsUpdate = false;
+
+    for (int i = 0; i < updatedProducts.length; i++) {
+      final product = updatedProducts[i];
+
+      // 更新預約商品名稱
+      if (product.barcode == '19920203' && !product.name.startsWith('🎁')) {
+        updatedProducts[i] = Product(
+          id: product.id,
+          barcode: product.barcode,
+          name: '🎁 預約奇妙',
+          price: product.price,
+          category: product.category,
+          stock: product.stock,
+          isActive: product.isActive,
+          lastCheckoutTime: product.lastCheckoutTime,
+        );
+        needsUpdate = true;
+      }
+
+      // 更新折扣商品名稱
+      if (product.barcode == '88888888' && !product.name.startsWith('💸')) {
+        updatedProducts[i] = Product(
+          id: product.id,
+          barcode: product.barcode,
+          name: '💸 祝您有奇妙的一天',
+          price: product.price,
+          category: product.category,
+          stock: product.stock,
+          isActive: product.isActive,
+          lastCheckoutTime: product.lastCheckoutTime,
+        );
+        needsUpdate = true;
+      }
     }
 
     if (needsUpdate) {

@@ -140,7 +140,7 @@ class _PosMainScreenState extends State<PosMainScreen> {
   void _addToCart(Product product) async {
     // 如果是特殊商品（價格為0），需要手動輸入價格
     if (product.price == 0) {
-      await _showPriceInputDialog(product);
+      await _showCustomNumberInputDialog(product);
     } else {
       _addProductToCart(product, product.price);
     }
@@ -219,6 +219,235 @@ class _PosMainScreenState extends State<PosMainScreen> {
           ],
         );
       },
+    );
+  }
+
+  /// 顯示自定義數字鍵盤輸入對話框
+  Future<void> _showCustomNumberInputDialog(Product product) async {
+    String currentPrice = '';
+
+    return showDialog<void>(
+      context: context,
+      barrierDismissible: true,
+      builder: (BuildContext context) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+              content: SizedBox(
+                width: 300,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // 商品名稱（不含標籤）
+                    Text(
+                      '${product.name}',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.grey[800],
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    SizedBox(height: 8),
+                    if (product.isPreOrderProduct)
+                      Text(
+                        '這是預購商品，請輸入實際價格',
+                        style: TextStyle(
+                          color: Colors.purple[700],
+                          fontSize: 12,
+                        ),
+                      )
+                    else if (product.isDiscountProduct)
+                      Text(
+                        '這是折扣商品，輸入金額會自動轉為負數',
+                        style: TextStyle(
+                          color: Colors.orange[700],
+                          fontSize: 12,
+                        ),
+                      ),
+                    SizedBox(height: 16),
+
+                    // 價格顯示
+                    Container(
+                      width: double.infinity,
+                      padding: EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        border: Border.all(color: Colors.grey[400]!),
+                        borderRadius: BorderRadius.circular(8),
+                        color: Colors.grey[50],
+                      ),
+                      child: Text(
+                        'NT\$ ${currentPrice.isEmpty ? "0" : currentPrice}',
+                        style: TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                          color: product.isDiscountProduct
+                              ? Colors.orange[700]
+                              : Colors.black,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+
+                    SizedBox(height: 16),
+
+                    // 數字鍵盤
+                    Column(
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                          children: [
+                            _buildNumKey(
+                              '1',
+                              () => setState(() => currentPrice += '1'),
+                            ),
+                            _buildNumKey(
+                              '2',
+                              () => setState(() => currentPrice += '2'),
+                            ),
+                            _buildNumKey(
+                              '3',
+                              () => setState(() => currentPrice += '3'),
+                            ),
+                          ],
+                        ),
+                        SizedBox(height: 8),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                          children: [
+                            _buildNumKey(
+                              '4',
+                              () => setState(() => currentPrice += '4'),
+                            ),
+                            _buildNumKey(
+                              '5',
+                              () => setState(() => currentPrice += '5'),
+                            ),
+                            _buildNumKey(
+                              '6',
+                              () => setState(() => currentPrice += '6'),
+                            ),
+                          ],
+                        ),
+                        SizedBox(height: 8),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                          children: [
+                            _buildNumKey(
+                              '7',
+                              () => setState(() => currentPrice += '7'),
+                            ),
+                            _buildNumKey(
+                              '8',
+                              () => setState(() => currentPrice += '8'),
+                            ),
+                            _buildNumKey(
+                              '9',
+                              () => setState(() => currentPrice += '9'),
+                            ),
+                          ],
+                        ),
+                        SizedBox(height: 8),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                          children: [
+                            _buildActionKey(
+                              '清除',
+                              () => setState(() => currentPrice = ''),
+                            ),
+                            _buildNumKey(
+                              '0',
+                              () => setState(() => currentPrice += '0'),
+                            ),
+                            _buildActionKey(
+                              '刪除',
+                              () => setState(() {
+                                if (currentPrice.isNotEmpty) {
+                                  currentPrice = currentPrice.substring(
+                                    0,
+                                    currentPrice.length - 1,
+                                  );
+                                }
+                              }),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              actions: <Widget>[
+                TextButton(
+                  child: Text('取消'),
+                  onPressed: () => Navigator.of(context).pop(),
+                ),
+                ElevatedButton(
+                  child: Text('確定'),
+                  onPressed: currentPrice.isEmpty
+                      ? null
+                      : () {
+                          var price = int.tryParse(currentPrice);
+                          if (price != null && price > 0) {
+                            // 如果是折扣商品，檢查折扣金額不能大於目前購物車總金額
+                            if (product.isDiscountProduct) {
+                              final currentTotal = totalAmount;
+                              if (price > currentTotal) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(
+                                      '折扣金額 ($price 元) 不能大於目前購物車總金額 ($currentTotal 元)',
+                                    ),
+                                    backgroundColor: Colors.orange[600],
+                                  ),
+                                );
+                                return;
+                              }
+                              price = -price;
+                            }
+                            Navigator.of(context).pop();
+                            _addProductToCart(product, price);
+                          }
+                        },
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildNumKey(String number, VoidCallback onPressed) {
+    return SizedBox(
+      width: 60,
+      height: 50,
+      child: ElevatedButton(
+        onPressed: onPressed,
+        child: Text(
+          number,
+          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+        ),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Colors.blue[50],
+          foregroundColor: Colors.blue[700],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildActionKey(String label, VoidCallback onPressed) {
+    return SizedBox(
+      width: 60,
+      height: 50,
+      child: ElevatedButton(
+        onPressed: onPressed,
+        child: Text(label, style: TextStyle(fontSize: 12)),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Colors.orange[50],
+          foregroundColor: Colors.orange[700],
+        ),
+      ),
     );
   }
 
