@@ -9,13 +9,13 @@ class PriceDisplay extends StatelessWidget {
   final FontWeight? fontWeight;
 
   const PriceDisplay({
-    Key? key,
+    super.key,
     required this.amount,
     this.iconSize = 20.0,
     this.fontSize = 16.0,
     this.color,
     this.fontWeight,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -48,7 +48,7 @@ class PriceDisplay extends StatelessWidget {
 class LargePriceDisplay extends StatelessWidget {
   final int amount;
 
-  const LargePriceDisplay({Key? key, required this.amount}) : super(key: key);
+  const LargePriceDisplay({super.key, required this.amount});
 
   @override
   Widget build(BuildContext context) {
@@ -66,7 +66,7 @@ class LargePriceDisplay extends StatelessWidget {
 class SmallPriceDisplay extends StatelessWidget {
   final int amount;
 
-  const SmallPriceDisplay({Key? key, required this.amount}) : super(key: key);
+  const SmallPriceDisplay({super.key, required this.amount});
 
   @override
   Widget build(BuildContext context) {

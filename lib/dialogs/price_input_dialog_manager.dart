@@ -179,13 +179,13 @@ class PriceInputDialogManager {
       height: 50,
       child: ElevatedButton(
         onPressed: onPressed,
-        child: Text(
-          number, 
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)
-        ),
         style: ElevatedButton.styleFrom(
           backgroundColor: Colors.blue[50],
           foregroundColor: Colors.blue[700],
+        ),
+        child: Text(
+          number,
+          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
         ),
       ),
     );
@@ -198,11 +198,11 @@ class PriceInputDialogManager {
       height: 50,
       child: ElevatedButton(
         onPressed: onPressed,
-        child: Text(label, style: TextStyle(fontSize: 12)),
         style: ElevatedButton.styleFrom(
           backgroundColor: Colors.orange[50],
           foregroundColor: Colors.orange[700],
         ),
+        child: Text(label, style: TextStyle(fontSize: 12)),
       ),
     );
   }

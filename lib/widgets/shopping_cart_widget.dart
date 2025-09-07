@@ -11,14 +11,14 @@ class ShoppingCartWidget extends StatelessWidget {
   final Function() onCheckout;
 
   const ShoppingCartWidget({
-    Key? key,
+    super.key,
     required this.cartItems,
     required this.onIncreaseQuantity,
     required this.onDecreaseQuantity,
     required this.onRemoveItem,
     required this.onClearCart,
     required this.onCheckout,
-  }) : super(key: key);
+  });
 
   int get totalAmount {
     return cartItems.fold(0, (total, item) => total + item.subtotal);

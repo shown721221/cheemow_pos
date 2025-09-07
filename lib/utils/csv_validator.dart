@@ -23,24 +23,24 @@ class CsvValidator {
 
       // 驗證必填欄位
       if (product.id.isEmpty) {
-        errors.add('第${rowNum}行: 商品ID不能為空');
+  errors.add('第$rowNum行: 商品ID不能為空');
       }
 
       if (product.barcode.isEmpty) {
-        errors.add('第${rowNum}行: 商品條碼不能為空');
+  errors.add('第$rowNum行: 商品條碼不能為空');
       }
 
       if (product.name.isEmpty) {
-        errors.add('第${rowNum}行: 商品名稱不能為空');
+  errors.add('第$rowNum行: 商品名稱不能為空');
       }
 
       // 驗證數值範圍
       if (product.price < 0) {
-        errors.add('第${rowNum}行: 價格不能為負數');
+  errors.add('第$rowNum行: 價格不能為負數');
       }
 
       if (product.stock < 0) {
-        warnings.add('第${rowNum}行: 庫存為負數 (${product.stock})');
+  warnings.add('第$rowNum行: 庫存為負數 (${product.stock})');
       }
 
       // 檢查重複的ID
@@ -63,22 +63,22 @@ class CsvValidator {
 
       // 驗證ID格式（只能包含字母、數字、底線、連字號）
       if (product.id.isNotEmpty && !_isValidId(product.id)) {
-        errors.add('第${rowNum}行: 商品ID格式無效 (${product.id})');
+  errors.add('第$rowNum行: 商品ID格式無效 (${product.id})');
       }
 
       // 驗證條碼格式（只能包含數字）
       if (product.barcode.isNotEmpty && !_isValidBarcode(product.barcode)) {
-        warnings.add('第${rowNum}行: 條碼格式建議只包含數字 (${product.barcode})');
+  warnings.add('第$rowNum行: 條碼格式建議只包含數字 (${product.barcode})');
       }
 
       // 檢查價格是否合理
       if (product.price > 1000000) {
-        warnings.add('第${rowNum}行: 價格似乎過高 (${product.price})');
+  warnings.add('第$rowNum行: 價格似乎過高 (${product.price})');
       }
 
       // 檢查庫存是否合理
       if (product.stock > 10000) {
-        warnings.add('第${rowNum}行: 庫存數量似乎過高 (${product.stock})');
+  warnings.add('第$rowNum行: 庫存數量似乎過高 (${product.stock})');
       }
     }
 

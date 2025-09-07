@@ -14,8 +14,10 @@ import '../dialogs/price_input_dialog_manager.dart';
 import '../utils/product_sort_utils.dart';
 
 class PosMainScreen extends StatefulWidget {
+  const PosMainScreen({super.key});
+
   @override
-  _PosMainScreenState createState() => _PosMainScreenState();
+  State<PosMainScreen> createState() => _PosMainScreenState();
 }
 
 class _PosMainScreenState extends State<PosMainScreen> {
@@ -200,10 +202,11 @@ class _PosMainScreenState extends State<PosMainScreen> {
     );
 
     try {
-      final result = await CsvImportService.importFromFile();
-
-      // 關閉loading
-      Navigator.pop(context);
+  final result = await CsvImportService.importFromFile();
+      
+  // 關閉loading
+  if (!mounted) return;
+  Navigator.pop(context);
 
       if (result.cancelled) {
         return; // 使用者取消，不顯示任何訊息
@@ -220,8 +223,9 @@ class _PosMainScreenState extends State<PosMainScreen> {
         _showErrorDialog('匯入失敗', result.errorMessage ?? '未知錯誤');
       }
     } catch (e) {
-      // 關閉loading
-      Navigator.pop(context);
+  // 關閉loading
+  if (!mounted) return;
+  Navigator.pop(context);
       _showErrorDialog('匯入失敗', e.toString());
     }
   }

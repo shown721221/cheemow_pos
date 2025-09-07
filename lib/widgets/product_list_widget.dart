@@ -9,12 +9,12 @@ class ProductListWidget extends StatefulWidget {
   final bool shouldScrollToTop; // 新增：是否需要滾動到頂部
 
   const ProductListWidget({
-    Key? key,
+    super.key,
     required this.products,
     required this.onProductTap,
     this.onCheckoutCompleted,
     this.shouldScrollToTop = false,
-  }) : super(key: key);
+  });
 
   @override
   _ProductListWidgetState createState() => _ProductListWidgetState();
