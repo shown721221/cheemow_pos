@@ -5,6 +5,6 @@ export 'search_filter_manager.dart';
 export '../dialogs/price_input_dialog_manager.dart';
 export 'keyboard_scanner_manager.dart';
 export 'pos_state_manager.dart';
-export 'product_manager_new.dart';
+export 'product_manager.dart';
 export '../dialogs/dialog_manager.dart';
 export 'cart_manager.dart';
