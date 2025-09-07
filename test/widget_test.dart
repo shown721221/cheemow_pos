@@ -13,7 +13,7 @@ import 'package:cheemow_pos/main.dart';
 void main() {
   testWidgets('POS App smoke test', (WidgetTester tester) async {
     // Mock SharedPreferences for testing
-    SharedPreferences.setMockInitialValues({});
+    SharedPreferences.setMockInitialValues(<String, Object>{});
     
         // Build our app and trigger a frame.
     await tester.pumpWidget(MyApp());

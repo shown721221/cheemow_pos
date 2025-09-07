@@ -21,6 +21,11 @@ class _PosMainScreenState extends State<PosMainScreen> {
   String lastScannedBarcode = '';
   String _scanBuffer = '';
   Timer? _scanTimer;
+  bool _shouldScrollToTop = false;
+  int _currentPageIndex = 0; // 0: 銷售頁面, 1: 搜尋頁面
+  String _searchQuery = '';
+  List<Product> _searchResults = [];
+  List<String> _selectedFilters = []; // 選中的篩選條件
 
   @override
   void initState() {
@@ -559,12 +564,108 @@ class _PosMainScreenState extends State<PosMainScreen> {
         color: Colors.white,
         child: Row(
           children: [
-            // 左側：商品列表（60%）
+            // 左側：商品列表和搜尋頁面（60%）
             Expanded(
               flex: 6,
-              child: ProductListWidget(
-                products: products,
-                onProductTap: _addToCart,
+              child: Column(
+                children: [
+                  // 分頁標籤
+                  Container(
+                    height: 50,
+                    decoration: BoxDecoration(
+                      color: Colors.grey[100],
+                      border: Border(bottom: BorderSide(color: Colors.grey[300]!)),
+                    ),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: GestureDetector(
+                            onTap: () => setState(() => _currentPageIndex = 0),
+                            child: Container(
+                              decoration: BoxDecoration(
+                                color: _currentPageIndex == 0 ? Colors.blue[50] : Colors.transparent,
+                                border: Border(
+                                  bottom: BorderSide(
+                                    color: _currentPageIndex == 0 ? Colors.blue : Colors.transparent,
+                                    width: 3,
+                                  ),
+                                ),
+                              ),
+                              child: Center(
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(
+                                      Icons.shopping_cart,
+                                      size: 18,
+                                      color: _currentPageIndex == 0 ? Colors.blue : Colors.black54,
+                                    ),
+                                    SizedBox(width: 4),
+                                    Text(
+                                      '銷售',
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: _currentPageIndex == 0 ? FontWeight.bold : FontWeight.normal,
+                                        color: _currentPageIndex == 0 ? Colors.blue : Colors.black54,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                        Expanded(
+                          child: GestureDetector(
+                            onTap: () => setState(() => _currentPageIndex = 1),
+                            child: Container(
+                              decoration: BoxDecoration(
+                                color: _currentPageIndex == 1 ? Colors.blue[50] : Colors.transparent,
+                                border: Border(
+                                  bottom: BorderSide(
+                                    color: _currentPageIndex == 1 ? Colors.blue : Colors.transparent,
+                                    width: 3,
+                                  ),
+                                ),
+                              ),
+                              child: Center(
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(
+                                      Icons.search,
+                                      size: 18,
+                                      color: _currentPageIndex == 1 ? Colors.blue : Colors.black54,
+                                    ),
+                                    SizedBox(width: 4),
+                                    Text(
+                                      '搜尋',
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: _currentPageIndex == 1 ? FontWeight.bold : FontWeight.normal,
+                                        color: _currentPageIndex == 1 ? Colors.blue : Colors.black54,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  // 頁面內容
+                  Expanded(
+                    child: _currentPageIndex == 0 
+                        ? ProductListWidget(
+                            products: products,
+                            onProductTap: _addToCart,
+                            shouldScrollToTop: _shouldScrollToTop,
+                          )
+                        : _buildSearchPage(),
+                  ),
+                ],
               ),
             ),
 
@@ -721,12 +822,411 @@ class _PosMainScreenState extends State<PosMainScreen> {
       cartItems.clear();
       // 更新產品列表（這會觸發重新排序和回到頂部）
       products = updatedProducts;
+      // 設置滾動到頂部標記
+      _shouldScrollToTop = true;
+    });
+
+    // 立即重置滾動標記
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      setState(() {
+        _shouldScrollToTop = false;
+      });
     });
 
     // 保存更新後的商品資料到本地存儲
     await _saveProductsToStorage();
 
     print('結帳完成，商品列表已更新，實際更新: $updatedCount 個商品'); // 除錯訊息
+  }
+
+  /// 建構搜尋頁面
+  Widget _buildSearchPage() {
+    return Column(
+      children: [
+        // 搜尋輸入框
+        Container(
+          padding: EdgeInsets.all(16),
+          child: TextField(
+            decoration: InputDecoration(
+              hintText: '搜尋奇妙寶貝',
+              prefixIcon: Icon(Icons.search),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+              filled: true,
+              fillColor: Colors.grey[50],
+            ),
+            onChanged: _performSearch,
+          ),
+        ),
+        // 快速篩選按鈕區域
+        Expanded(
+          child: Container(
+            padding: EdgeInsets.symmetric(horizontal: 12),
+            child: Column(
+              children: [
+                Padding(
+                  padding: EdgeInsets.only(top: 8, bottom: 8),
+                  child: Text(
+                    '快速篩選',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.grey[700],
+                    ),
+                  ),
+                ),
+                // 使用 Expanded 讓按鈕區域充分利用可用空間
+                Expanded(
+                  child: Column(
+                    children: [
+                      // 第一排：地區
+                      Expanded(
+                        child: Row(
+                          children: [
+                            Expanded(child: _buildFilterButton('東京')),
+                            SizedBox(width: 8),
+                            Expanded(child: _buildFilterButton('上海')),
+                            SizedBox(width: 8),
+                            Expanded(child: _buildFilterButton('香港')),
+                          ],
+                        ),
+                      ),
+                      SizedBox(height: 8),
+                      // 第二排：角色1
+                      Expanded(
+                        child: Row(
+                          children: [
+                            Expanded(child: _buildFilterButton('Duffy')),
+                            SizedBox(width: 8),
+                            Expanded(child: _buildFilterButton('Gelatoni')),
+                            SizedBox(width: 8),
+                            Expanded(child: _buildFilterButton('OluMel')),
+                          ],
+                        ),
+                      ),
+                      SizedBox(height: 8),
+                      // 第三排：角色2
+                      Expanded(
+                        child: Row(
+                          children: [
+                            Expanded(child: _buildFilterButton('ShellieMay')),
+                            SizedBox(width: 8),
+                            Expanded(child: _buildFilterButton('StellaLou')),
+                            SizedBox(width: 8),
+                            Expanded(child: _buildFilterButton('CookieAnn')),
+                          ],
+                        ),
+                      ),
+                      SizedBox(height: 8),
+                      // 第四排：角色3與類型
+                      Expanded(
+                        child: Row(
+                          children: [
+                            Expanded(child: _buildFilterButton('LinaBell')),
+                            SizedBox(width: 8),
+                            Expanded(child: _buildFilterButton('其他角色')),
+                            SizedBox(width: 8),
+                            Expanded(child: _buildFilterButton('娃娃')),
+                          ],
+                        ),
+                      ),
+                      SizedBox(height: 8),
+                      // 第五排：姿勢
+                      Expanded(
+                        child: Row(
+                          children: [
+                            Expanded(child: _buildFilterButton('站姿')),
+                            SizedBox(width: 8),
+                            Expanded(child: _buildFilterButton('坐姿')),
+                            SizedBox(width: 8),
+                            Expanded(child: _buildFilterButton('其他吊飾')),
+                          ],
+                        ),
+                      ),
+                      SizedBox(height: 8),
+                      // 第六排：特殊功能
+                      Expanded(
+                        child: Row(
+                          children: [
+                            Expanded(child: _buildFilterButton('有庫存')),
+                            SizedBox(width: 8),
+                            Expanded(child: _buildFilterButton('重選', isSpecial: true)),
+                            SizedBox(width: 8),
+                            Expanded(child: _buildFilterButton('確認', isSpecial: true)),
+                          ],
+                        ),
+                      ),
+                      SizedBox(height: 8),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        // 搜尋結果
+        Expanded(
+          child: _searchQuery.isEmpty
+              ? Container() // 移除放大鏡圖示，留空白
+              : _searchResults.isEmpty
+                  ? Center(
+                      child: Text(
+                        '找不到相關商品: "$_searchQuery"',
+                        style: TextStyle(
+                          fontSize: 16,
+                          color: Colors.grey[600],
+                        ),
+                      ),
+                    )
+                  : ProductListWidget(
+                      products: _searchResults,
+                      onProductTap: _addToCart,
+                    ),
+        ),
+      ],
+    );
+  }
+
+  /// 執行搜尋
+  void _performSearch(String query) {
+    setState(() {
+      _searchQuery = query.trim();
+      if (_searchQuery.isEmpty) {
+        _searchResults = [];
+        return;
+      }
+      
+      // 搜尋商品名稱或條碼
+      _searchResults = products.where((product) {
+        final name = product.name.toLowerCase();
+        final barcode = product.barcode.toLowerCase();
+        final searchLower = _searchQuery.toLowerCase();
+        
+        return name.contains(searchLower) || barcode.contains(searchLower);
+      }).toList();
+      
+      // 搜尋結果排序：特殊商品優先，然後按相關性
+      _searchResults.sort((a, b) {
+        // 特殊商品始終在最前面
+        if (a.isSpecialProduct && !b.isSpecialProduct) return -1;
+        if (b.isSpecialProduct && !a.isSpecialProduct) return 1;
+        
+        // 兩個都是特殊商品時，預約商品排在折扣商品前面
+        if (a.isSpecialProduct && b.isSpecialProduct) {
+          if (a.isPreOrderProduct && b.isDiscountProduct) return -1;
+          if (a.isDiscountProduct && b.isPreOrderProduct) return 1;
+          return 0;
+        }
+        
+        // 普通商品按名稱排序
+        return a.name.compareTo(b.name);
+      });
+    });
+  }
+
+  /// 建構篩選按鈕
+  Widget _buildFilterButton(String label, {bool isSpecial = false}) {
+    final isSelected = _selectedFilters.contains(label);
+    
+    // 檢查是否為地區按鈕，並且是否被其他地區按鈕阻擋
+    final isLocationButton = ['東京', '上海', '香港'].contains(label);
+    final isDisabled = isLocationButton && _isLocationButtonDisabled(label);
+    
+    Color backgroundColor;
+    Color textColor;
+    
+    if (isDisabled) {
+      // 被禁用的地區按鈕
+      backgroundColor = Colors.grey[200]!;
+      textColor = Colors.grey[400]!;
+    } else if (isSpecial) {
+      // 特殊按鈕（重選、確認）
+      if (label == '重選') {
+        backgroundColor = Colors.orange[100]!;
+        textColor = Colors.orange[700]!;
+      } else { // 確認
+        backgroundColor = Colors.green[100]!;
+        textColor = Colors.green[700]!;
+      }
+    } else {
+      // 普通篩選按鈕
+      backgroundColor = isSelected ? Colors.blue[100]! : Colors.grey[100]!;
+      textColor = isSelected ? Colors.blue[700]! : Colors.grey[700]!;
+    }
+    
+    return GestureDetector(
+      onTap: isDisabled ? null : () => _onFilterButtonTap(label),
+      child: Container(
+        decoration: BoxDecoration(
+          color: backgroundColor,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+            color: isDisabled 
+                ? Colors.grey[300]! 
+                : (isSelected ? Colors.blue[300]! : Colors.grey[300]!),
+            width: 1,
+          ),
+        ),
+        child: Center(
+          child: Text(
+            label,
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+              color: textColor,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// 檢查地區按鈕是否應該被禁用
+  bool _isLocationButtonDisabled(String locationLabel) {
+    final selectedLocations = _selectedFilters.where((filter) => 
+        ['東京', '上海', '香港'].contains(filter)).toList();
+    
+    // 如果沒有選中任何地區，或者選中的就是當前地區，則不禁用
+    if (selectedLocations.isEmpty || selectedLocations.contains(locationLabel)) {
+      return false;
+    }
+    
+    // 如果選中了其他地區，則禁用當前地區
+    return true;
+  }
+
+  /// 處理篩選按鈕點擊
+  void _onFilterButtonTap(String label) {
+    setState(() {
+      if (label == '重選') {
+        // 清除所有篩選條件
+        _selectedFilters.clear();
+        _searchQuery = '';
+        _searchResults = [];
+      } else if (label == '確認') {
+        // 執行篩選
+        _applyFilters();
+      } else {
+        // 地區按鈕的互斥邏輯
+        if (['東京', '上海', '香港'].contains(label)) {
+          // 移除其他地區選項
+          _selectedFilters.removeWhere((filter) => 
+              ['東京', '上海', '香港'].contains(filter) && filter != label);
+          
+          // 切換當前地區選項
+          if (_selectedFilters.contains(label)) {
+            _selectedFilters.remove(label);
+          } else {
+            _selectedFilters.add(label);
+          }
+        } else {
+          // 其他按鈕的正常切換邏輯
+          if (_selectedFilters.contains(label)) {
+            _selectedFilters.remove(label);
+          } else {
+            _selectedFilters.add(label);
+          }
+        }
+      }
+    });
+  }
+
+  /// 應用篩選條件
+  void _applyFilters() {
+    if (_selectedFilters.isEmpty) {
+      setState(() {
+        _searchQuery = '';
+        _searchResults = [];
+      });
+      return;
+    }
+    
+    List<Product> filteredProducts = products.where((product) {
+      final name = product.name.toLowerCase();
+      
+      for (String filter in _selectedFilters) {
+        switch (filter) {
+          case '東京':
+            if (!name.contains('東京disney限定') && !name.contains('東京迪士尼限定')) return false;
+            break;
+          case '上海':
+            if (!name.contains('上海disney限定') && !name.contains('上海迪士尼限定')) return false;
+            break;
+          case '香港':
+            if (!name.contains('香港disney限定') && !name.contains('香港迪士尼限定')) return false;
+            break;
+          case 'Duffy':
+            if (!name.contains('duffy')) return false;
+            break;
+          case 'Gelatoni':
+            if (!name.contains('gelatoni')) return false;
+            break;
+          case 'OluMel':
+            if (!name.contains('olumel')) return false;
+            break;
+          case 'ShellieMay':
+            if (!name.contains('shelliemay')) return false;
+            break;
+          case 'StellaLou':
+            if (!name.contains('stellalou')) return false;
+            break;
+          case 'CookieAnn':
+            if (!name.contains('cookieann')) return false;
+            break;
+          case 'LinaBell':
+            if (!name.contains('linabell')) return false;
+            break;
+          case '其他角色':
+            // 如果包含任何已知角色名稱，則不是其他角色
+            if (name.contains('duffy') || name.contains('gelatoni') || 
+                name.contains('olumel') || name.contains('shelliemay') ||
+                name.contains('stellalou') || name.contains('cookieann') ||
+                name.contains('linabell')) return false;
+            break;
+          case '娃娃':
+            if (!name.contains('娃娃')) return false;
+            break;
+          case '站姿':
+            if (!name.contains('站姿')) return false;
+            break;
+          case '坐姿':
+            if (!name.contains('坐姿')) return false;
+            break;
+          case '其他吊飾':
+            if (!name.contains('吊飾') || name.contains('站姿') || name.contains('坐姿')) return false;
+            break;
+          case '有庫存':
+            if (product.stock <= 0) return false;
+            break;
+        }
+      }
+      return true;
+    }).toList();
+    
+    // 排序篩選結果
+    filteredProducts.sort((a, b) {
+      // 特殊商品始終在最前面
+      if (a.isSpecialProduct && !b.isSpecialProduct) return -1;
+      if (b.isSpecialProduct && !a.isSpecialProduct) return 1;
+      
+      // 兩個都是特殊商品時，預約商品排在折扣商品前面
+      if (a.isSpecialProduct && b.isSpecialProduct) {
+        if (a.isPreOrderProduct && b.isDiscountProduct) return -1;
+        if (a.isDiscountProduct && b.isPreOrderProduct) return 1;
+        return 0;
+      }
+      
+      // 普通商品按名稱排序
+      return a.name.compareTo(b.name);
+    });
+    
+    setState(() {
+      _searchResults = filteredProducts;
+      _searchQuery = '篩選結果 (${_selectedFilters.join(', ')})';
+    });
   }
 
   /// 顯示敬請期待對話框

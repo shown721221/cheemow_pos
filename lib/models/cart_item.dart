@@ -27,4 +27,22 @@ class CartItem {
       quantity--;
     }
   }
+
+  /// 從 JSON 建立 CartItem
+  factory CartItem.fromJson(Map<String, dynamic> json) {
+    return CartItem(
+      product: Product.fromJson(json['product']),
+      quantity: json['quantity'],
+      addedTime: DateTime.parse(json['addedTime']),
+    );
+  }
+
+  /// 轉換為 JSON
+  Map<String, dynamic> toJson() {
+    return {
+      'product': product.toJson(),
+      'quantity': quantity,
+      'addedTime': addedTime.toIso8601String(),
+    };
+  }
 }

@@ -6,12 +6,14 @@ class ProductListWidget extends StatefulWidget {
   final List<Product> products;
   final Function(Product) onProductTap;
   final VoidCallback? onCheckoutCompleted; // 新增：結帳完成回調
+  final bool shouldScrollToTop; // 新增：是否需要滾動到頂部
 
   const ProductListWidget({
     Key? key,
     required this.products,
     required this.onProductTap,
     this.onCheckoutCompleted,
+    this.shouldScrollToTop = false,
   }) : super(key: key);
 
   @override
@@ -30,11 +32,19 @@ class _ProductListWidgetState extends State<ProductListWidget> {
   // 滾動到頂部的方法
   void scrollToTop() {
     if (_scrollController.hasClients) {
-      _scrollController.animateTo(
-        0,
-        duration: Duration(milliseconds: 500),
-        curve: Curves.easeInOut,
-      );
+      _scrollController.jumpTo(0);
+    }
+  }
+
+  @override
+  void didUpdateWidget(ProductListWidget oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    
+    // 如果標記為需要滾動到頂部，直接執行
+    if (widget.shouldScrollToTop && !oldWidget.shouldScrollToTop) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        scrollToTop();
+      });
     }
   }
 
