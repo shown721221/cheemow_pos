@@ -23,7 +23,7 @@ class SearchFilterManager {
     '其他角色': ['其他', 'other'],
   };
 
-  List<String> _selectedFilters = [];
+  final List<String> _selectedFilters = [];
   String _currentSearchQuery = '';
 
   // Getters

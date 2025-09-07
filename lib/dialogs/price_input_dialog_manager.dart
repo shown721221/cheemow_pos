@@ -70,11 +70,10 @@ class PriceInputDialogManager {
               ),
               actions: [
                 TextButton(
-                  child: Text('取消'),
                   onPressed: () => Navigator.of(context).pop(null),
+                  child: Text('取消'),
                 ),
                 ElevatedButton(
-                  child: Text('確定'),
                   onPressed: currentPrice.isEmpty ? null : () {
                     final price = int.tryParse(currentPrice);
                     if (price != null && price > 0) {
@@ -90,6 +89,7 @@ class PriceInputDialogManager {
                       }
                     }
                   },
+                  child: Text('確定'),
                 ),
               ],
             );

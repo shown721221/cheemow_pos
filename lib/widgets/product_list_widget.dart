@@ -17,7 +17,7 @@ class ProductListWidget extends StatefulWidget {
   });
 
   @override
-  _ProductListWidgetState createState() => _ProductListWidgetState();
+  State<ProductListWidget> createState() => _ProductListWidgetState();
 }
 
 class _ProductListWidgetState extends State<ProductListWidget> {

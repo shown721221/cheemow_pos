@@ -29,7 +29,7 @@ class _PosMainScreenState extends State<PosMainScreen> {
   int _currentPageIndex = 0; // 0: 銷售頁面, 1: 搜尋頁面
   String _searchQuery = '';
   List<Product> _searchResults = [];
-  List<String> _selectedFilters = []; // 選中的篩選條件
+  final List<String> _selectedFilters = []; // 選中的篩選條件
 
   @override
   void initState() {
@@ -657,6 +657,7 @@ class _PosMainScreenState extends State<PosMainScreen> {
               // 在處理結帳前記錄購物車商品數量
               final checkedOutCount = cartItems.length;
               await _processCheckout();
+              if (!context.mounted) return;
               Navigator.pop(context);
 
               // 顯示結帳完成的訊息，包含更新的商品數量
@@ -1053,16 +1054,18 @@ class _PosMainScreenState extends State<PosMainScreen> {
                 !name.contains('東京迪士尼限定') &&
                 !name.contains('東京disney') &&
                 !name.contains('東京迪士尼') &&
-                !name.contains('tokyo'))
+                !name.contains('tokyo')) {
               return false;
+            }
             break;
           case '上海':
             if (!name.contains('上海disney限定') &&
                 !name.contains('上海迪士尼限定') &&
                 !name.contains('上海disney') &&
                 !name.contains('上海迪士尼') &&
-                !name.contains('shanghai'))
+                !name.contains('shanghai')) {
               return false;
+            }
             break;
           case '香港':
             bool matchesHongKong =
@@ -1077,36 +1080,45 @@ class _PosMainScreenState extends State<PosMainScreen> {
             }
             break;
           case 'Duffy':
-            if (!name.contains('duffy') && !name.contains('達菲')) return false;
+            if (!name.contains('duffy') && !name.contains('達菲')) {
+              return false;
+            }
             break;
           case 'Gelatoni':
-            if (!name.contains('gelatoni') && !name.contains('傑拉托尼'))
+            if (!name.contains('gelatoni') && !name.contains('傑拉托尼')) {
               return false;
+            }
             break;
           case 'OluMel':
-            if (!name.contains('olumel') && !name.contains('歐嚕')) return false;
+            if (!name.contains('olumel') && !name.contains('歐嚕')) {
+              return false;
+            }
             break;
           case 'ShellieMay':
-            if (!name.contains('shelliemay') && !name.contains('雪莉玫'))
+            if (!name.contains('shelliemay') && !name.contains('雪莉玫')) {
               return false;
+            }
             break;
           case 'StellaLou':
             if (!name.contains('stellalou') &&
                 !name.contains('星黛露') &&
-                !name.contains('史黛拉露'))
+                !name.contains('史黛拉露')) {
               return false;
+            }
             break;
           case 'CookieAnn':
             if (!name.contains('cookieann') &&
                 !name.contains('可琦安') &&
-                !name.contains('cookie'))
+                !name.contains('cookie')) {
               return false;
+            }
             break;
           case 'LinaBell':
             if (!name.contains('linabell') &&
                 !name.contains('玲娜貝兒') &&
-                !name.contains('貝兒'))
+                !name.contains('貝兒')) {
               return false;
+            }
             break;
           case '其他角色':
             // 如果包含任何已知角色名稱，則不是其他角色
@@ -1126,25 +1138,38 @@ class _PosMainScreenState extends State<PosMainScreen> {
                 name.contains('cookie') ||
                 name.contains('linabell') ||
                 name.contains('玲娜貝兒') ||
-                name.contains('貝兒'))
+                name.contains('貝兒')) {
               return false;
+            }
             break;
           case '娃娃':
-            if (!name.contains('娃娃')) return false;
+            if (!name.contains('娃娃')) {
+              return false;
+            }
             break;
           case '站姿':
-            if (!name.contains('站姿')) return false;
+            if (!name.contains('站姿')) {
+              return false;
+            }
             break;
           case '坐姿':
-            if (!name.contains('坐姿')) return false;
+            if (!name.contains('坐姿')) {
+              return false;
+            }
             break;
           case '其他吊飾':
             // 必須包含"吊飾"關鍵字，但不能包含"站姿"、"坐姿"
-            if (!name.contains('吊飾')) return false;
-            if (name.contains('站姿') || name.contains('坐姿')) return false;
+            if (!name.contains('吊飾')) {
+              return false;
+            }
+            if (name.contains('站姿') || name.contains('坐姿')) {
+              return false;
+            }
             break;
           case '有庫存':
-            if (product.stock <= 0) return false;
+            if (product.stock <= 0) {
+              return false;
+            }
             break;
         }
       }
@@ -1173,8 +1198,9 @@ class _PosMainScreenState extends State<PosMainScreen> {
       _searchQuery = '篩選結果 (${_selectedFilters.join(', ')})';
     });
 
-    // 顯示搜尋結果通知
-    ScaffoldMessenger.of(context).showSnackBar(
+  // 顯示搜尋結果通知
+  if (!context.mounted) return;
+  ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text('找到 ${filteredProducts.length} 項商品'),
         duration: Duration(seconds: 2),
