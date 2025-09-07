@@ -9,6 +9,9 @@ import '../models/cart_item.dart';
 import '../services/local_database_service.dart';
 import '../services/bluetooth_scanner_service.dart';
 import '../services/csv_import_service.dart';
+import '../managers/keyboard_scanner_manager.dart';
+import '../dialogs/price_input_dialog_manager.dart';
+import '../utils/product_sort_utils.dart';
 
 class PosMainScreen extends StatefulWidget {
   @override
@@ -19,8 +22,7 @@ class _PosMainScreenState extends State<PosMainScreen> {
   List<Product> products = [];
   List<CartItem> cartItems = [];
   String lastScannedBarcode = '';
-  String _scanBuffer = '';
-  Timer? _scanTimer;
+  KeyboardScannerManager? _kbScanner;
   bool _shouldScrollToTop = false;
   int _currentPageIndex = 0; // 0: 銷售頁面, 1: 搜尋頁面
   String _searchQuery = '';
@@ -32,46 +34,19 @@ class _PosMainScreenState extends State<PosMainScreen> {
     super.initState();
     _loadProducts();
     _listenToBarcodeScanner();
-
-    // 使用系統級鍵盤監聽，避免焦點問題
-    ServicesBinding.instance.keyboard.addHandler(_handleKeyEvent);
+  // 使用鍵盤掃描管理器，集中處理條碼鍵盤事件
+  _kbScanner = KeyboardScannerManager(onBarcodeScanned: _onBarcodeScanned);
+  ServicesBinding.instance.keyboard.addHandler(_kbScanner!.handleKeyEvent);
   }
 
   @override
   void dispose() {
-    // 移除系統級鍵盤監聽器
-    ServicesBinding.instance.keyboard.removeHandler(_handleKeyEvent);
-    _scanTimer?.cancel();
-    super.dispose();
-  }
-
-  /// 系統級鍵盤事件處理器
-  bool _handleKeyEvent(KeyEvent event) {
-    if (event is KeyDownEvent) {
-      if (event.logicalKey == LogicalKeyboardKey.enter) {
-        // Enter鍵：處理完整的條碼
-        if (_scanBuffer.isNotEmpty) {
-          _onBarcodeScanned(_scanBuffer.trim());
-          _scanBuffer = '';
-          _scanTimer?.cancel();
-        }
-        return true;
-      } else {
-        // 其他按鍵：累積到緩衝區，但限制只處理可見字符
-        final char = event.character;
-        if (char != null && char.isNotEmpty && char.codeUnitAt(0) >= 32) {
-          _scanBuffer += char;
-
-          // 重置計時器：1秒內沒有新輸入就清空緩衝區
-          _scanTimer?.cancel();
-          _scanTimer = Timer(Duration(seconds: 1), () {
-            _scanBuffer = '';
-          });
-        }
-        return true;
-      }
+    // 移除鍵盤掃描管理器監聽
+    if (_kbScanner != null) {
+      ServicesBinding.instance.keyboard.removeHandler(_kbScanner!.handleKeyEvent);
+      _kbScanner!.dispose();
     }
-    return false;
+    super.dispose();
   }
 
   Future<void> _loadProducts() async {
@@ -80,40 +55,10 @@ class _PosMainScreenState extends State<PosMainScreen> {
 
     final loadedProducts = await LocalDatabaseService.instance.getProducts();
 
-    // 對商品進行排序：
-    // 1. 特殊商品在最前面（預約商品 > 折扣商品）
-    // 2. 其他商品按最後結帳時間排序（最近結帳的在前）
-    loadedProducts.sort((a, b) {
-      // 如果 a 是特殊商品而 b 不是，a 排在前面
-      if (a.isSpecialProduct && !b.isSpecialProduct) return -1;
-      // 如果 b 是特殊商品而 a 不是，b 排在前面
-      if (b.isSpecialProduct && !a.isSpecialProduct) return 1;
-
-      // 兩個都是特殊商品時，預約商品排在折扣商品前面
-      if (a.isSpecialProduct && b.isSpecialProduct) {
-        if (a.isPreOrderProduct && b.isDiscountProduct) return -1;
-        if (a.isDiscountProduct && b.isPreOrderProduct) return 1;
-        return 0; // 兩個特殊商品相同類型時順序不變
-      }
-
-      // 兩個都是普通商品時，按最後結帳時間排序
-      if (a.lastCheckoutTime != null && b.lastCheckoutTime != null) {
-        // 最近結帳的在前面（降序）
-        return b.lastCheckoutTime!.compareTo(a.lastCheckoutTime!);
-      } else if (a.lastCheckoutTime != null) {
-        // a 有結帳記錄，b 沒有，a 排在前面
-        return -1;
-      } else if (b.lastCheckoutTime != null) {
-        // b 有結帳記錄，a 沒有，b 排在前面
-        return 1;
-      }
-
-      // 兩個都沒有結帳記錄，按商品名稱排序
-      return a.name.compareTo(b.name);
-    });
+    final sorted = ProductSortUtils.sortProducts(loadedProducts);
 
     setState(() {
-      products = loadedProducts;
+      products = sorted;
     });
   }
 
@@ -140,316 +85,27 @@ class _PosMainScreenState extends State<PosMainScreen> {
   void _addToCart(Product product) async {
     // 如果是特殊商品（價格為0），需要手動輸入價格
     if (product.price == 0) {
-      await _showCustomNumberInputDialog(product);
+      final inputPrice = await PriceInputDialogManager.showCustomNumberInput(
+        context,
+        product,
+        totalAmount,
+      );
+      if (inputPrice != null) {
+        _addProductToCart(product, inputPrice);
+      }
     } else {
       _addProductToCart(product, product.price);
     }
   }
 
-  Future<void> _showPriceInputDialog(Product product) async {
-    final TextEditingController priceController = TextEditingController();
-
-    return showDialog<void>(
-      context: context,
-      barrierDismissible: false,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text('輸入價格'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('商品：${product.name}'),
-              SizedBox(height: 8),
-              if (product.isPreOrderProduct)
-                Text(
-                  '這是預購商品，請輸入實際價格',
-                  style: TextStyle(color: Colors.purple[700], fontSize: 12),
-                )
-              else if (product.isDiscountProduct)
-                Text(
-                  '這是折扣商品，輸入金額會自動轉為負數',
-                  style: TextStyle(color: Colors.orange[700], fontSize: 12),
-                ),
-              SizedBox(height: 16),
-              TextField(
-                controller: priceController,
-                keyboardType: TextInputType.numberWithOptions(signed: true),
-                decoration: InputDecoration(
-                  labelText: product.isDiscountProduct ? '折扣金額' : '價格',
-                  prefixText: 'NT\$ ',
-                  border: OutlineInputBorder(),
-                ),
-                autofocus: true,
-              ),
-            ],
-          ),
-          actions: <Widget>[
-            TextButton(
-              child: Text('取消'),
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-            ),
-            ElevatedButton(
-              child: Text('確定'),
-              onPressed: () {
-                final priceText = priceController.text.trim();
-                if (priceText.isNotEmpty) {
-                  var price = int.tryParse(priceText);
-                  if (price != null) {
-                    // 如果是折扣商品（祝您有奇妙的一天），自動轉為負數
-                    if (product.isDiscountProduct && price > 0) {
-                      price = -price;
-                    }
-                    Navigator.of(context).pop();
-                    _addProductToCart(product, price);
-                  } else {
-                    ScaffoldMessenger.of(
-                      context,
-                    ).showSnackBar(SnackBar(content: Text('請輸入有效的數字')));
-                  }
-                } else {
-                  ScaffoldMessenger.of(
-                    context,
-                  ).showSnackBar(SnackBar(content: Text('請輸入價格')));
-                }
-              },
-            ),
-          ],
-        );
-      },
-    );
-  }
+  // 已移除：以 PriceInputDialogManager 取代
 
   /// 顯示自定義數字鍵盤輸入對話框
-  Future<void> _showCustomNumberInputDialog(Product product) async {
-    String currentPrice = '';
+  // 已移除：以 PriceInputDialogManager 取代
 
-    return showDialog<void>(
-      context: context,
-      barrierDismissible: true,
-      builder: (BuildContext context) {
-        return StatefulBuilder(
-          builder: (context, setState) {
-            return AlertDialog(
-              content: SizedBox(
-                width: 300,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    // 商品名稱（不含標籤）
-                    Text(
-                      '${product.name}',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.grey[800],
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                    SizedBox(height: 8),
-                    if (product.isPreOrderProduct)
-                      Text(
-                        '這是預購商品，請輸入實際價格',
-                        style: TextStyle(
-                          color: Colors.purple[700],
-                          fontSize: 12,
-                        ),
-                      )
-                    else if (product.isDiscountProduct)
-                      Text(
-                        '這是折扣商品，輸入金額會自動轉為負數',
-                        style: TextStyle(
-                          color: Colors.orange[700],
-                          fontSize: 12,
-                        ),
-                      ),
-                    SizedBox(height: 16),
+  // 已移除：以 PriceInputDialogManager 取代
 
-                    // 價格顯示
-                    Container(
-                      width: double.infinity,
-                      padding: EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        border: Border.all(color: Colors.grey[400]!),
-                        borderRadius: BorderRadius.circular(8),
-                        color: Colors.grey[50],
-                      ),
-                      child: Text(
-                        'NT\$ ${currentPrice.isEmpty ? "0" : currentPrice}',
-                        style: TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                          color: product.isDiscountProduct
-                              ? Colors.orange[700]
-                              : Colors.black,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                    ),
-
-                    SizedBox(height: 16),
-
-                    // 數字鍵盤
-                    Column(
-                      children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                          children: [
-                            _buildNumKey(
-                              '1',
-                              () => setState(() => currentPrice += '1'),
-                            ),
-                            _buildNumKey(
-                              '2',
-                              () => setState(() => currentPrice += '2'),
-                            ),
-                            _buildNumKey(
-                              '3',
-                              () => setState(() => currentPrice += '3'),
-                            ),
-                          ],
-                        ),
-                        SizedBox(height: 8),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                          children: [
-                            _buildNumKey(
-                              '4',
-                              () => setState(() => currentPrice += '4'),
-                            ),
-                            _buildNumKey(
-                              '5',
-                              () => setState(() => currentPrice += '5'),
-                            ),
-                            _buildNumKey(
-                              '6',
-                              () => setState(() => currentPrice += '6'),
-                            ),
-                          ],
-                        ),
-                        SizedBox(height: 8),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                          children: [
-                            _buildNumKey(
-                              '7',
-                              () => setState(() => currentPrice += '7'),
-                            ),
-                            _buildNumKey(
-                              '8',
-                              () => setState(() => currentPrice += '8'),
-                            ),
-                            _buildNumKey(
-                              '9',
-                              () => setState(() => currentPrice += '9'),
-                            ),
-                          ],
-                        ),
-                        SizedBox(height: 8),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                          children: [
-                            _buildActionKey(
-                              '清除',
-                              () => setState(() => currentPrice = ''),
-                            ),
-                            _buildNumKey(
-                              '0',
-                              () => setState(() => currentPrice += '0'),
-                            ),
-                            _buildActionKey(
-                              '刪除',
-                              () => setState(() {
-                                if (currentPrice.isNotEmpty) {
-                                  currentPrice = currentPrice.substring(
-                                    0,
-                                    currentPrice.length - 1,
-                                  );
-                                }
-                              }),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-              actions: <Widget>[
-                TextButton(
-                  child: Text('取消'),
-                  onPressed: () => Navigator.of(context).pop(),
-                ),
-                ElevatedButton(
-                  child: Text('確定'),
-                  onPressed: currentPrice.isEmpty
-                      ? null
-                      : () {
-                          var price = int.tryParse(currentPrice);
-                          if (price != null && price > 0) {
-                            // 如果是折扣商品，檢查折扣金額不能大於目前購物車總金額
-                            if (product.isDiscountProduct) {
-                              final currentTotal = totalAmount;
-                              if (price > currentTotal) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text(
-                                      '折扣金額 ($price 元) 不能大於目前購物車總金額 ($currentTotal 元)',
-                                    ),
-                                    backgroundColor: Colors.orange[600],
-                                  ),
-                                );
-                                return;
-                              }
-                              price = -price;
-                            }
-                            Navigator.of(context).pop();
-                            _addProductToCart(product, price);
-                          }
-                        },
-                ),
-              ],
-            );
-          },
-        );
-      },
-    );
-  }
-
-  Widget _buildNumKey(String number, VoidCallback onPressed) {
-    return SizedBox(
-      width: 60,
-      height: 50,
-      child: ElevatedButton(
-        onPressed: onPressed,
-        child: Text(
-          number,
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-        ),
-        style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.blue[50],
-          foregroundColor: Colors.blue[700],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildActionKey(String label, VoidCallback onPressed) {
-    return SizedBox(
-      width: 60,
-      height: 50,
-      child: ElevatedButton(
-        onPressed: onPressed,
-        child: Text(label, style: TextStyle(fontSize: 12)),
-        style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.orange[50],
-          foregroundColor: Colors.orange[700],
-        ),
-      ),
-    );
-  }
+  // 已移除：以 PriceInputDialogManager 取代
 
   void _addProductToCart(Product product, int actualPrice) {
     // 如果實際價格與商品原價不同，創建一個新的商品物件

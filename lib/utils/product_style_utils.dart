@@ -3,6 +3,8 @@ import '../models/product.dart';
 
 /// 商品顯示樣式工具
 class ProductStyleUtils {
+  // 閾值設定（可集中管理與後續調整）
+  static const int stockLowThreshold = 10;
   
   /// 根據商品類型取得商品名稱的顏色
   static Color getProductNameColor(Product product) {
@@ -72,7 +74,7 @@ class ProductStyleUtils {
 
   /// 取得庫存狀態描述
   static String getStockStatusDescription(int stock) {
-    if (stock > 10) {
+  if (stock > stockLowThreshold) {
       return '充足';
     } else if (stock > 0) {
       return '偏低';
@@ -85,7 +87,7 @@ class ProductStyleUtils {
 
   /// 取得庫存狀態圖標
   static IconData getStockStatusIcon(int stock) {
-    if (stock > 10) {
+    if (stock > stockLowThreshold) {
       return Icons.check_circle;
     } else if (stock > 0) {
       return Icons.warning;
@@ -94,5 +96,81 @@ class ProductStyleUtils {
     } else {
       return Icons.dangerous;
     }
+  }
+
+  /// 商品名稱的統一樣式（依商品型態給色，字重適中）
+  static TextStyle productNameTextStyle(Product product) {
+    return TextStyle(
+      color: getProductNameColor(product),
+      fontWeight: FontWeight.w600,
+    );
+  }
+
+  /// 卡片外觀統一（含邊框與圓角），方便各商品卡片共用
+  static BoxDecoration buildCardDecoration(Product product) {
+    final borderColor = getCardBorderColor(product);
+    return BoxDecoration(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(12),
+      border: borderColor != null ? Border.all(color: borderColor, width: 2) : null,
+      boxShadow: const [
+        BoxShadow(
+          color: Color(0x14000000), // 適度陰影（8% 不透明度）
+          blurRadius: 6,
+          offset: Offset(0, 2),
+        ),
+      ],
+    );
+  }
+
+  /// 回傳商品型態徽章顏色（預購/折扣）
+  static Color? getTypeBadgeColor(Product product) {
+    if (product.isPreOrderProduct) return Colors.purple[200];
+    if (product.isDiscountProduct) return Colors.orange[200];
+    return null;
+  }
+
+  /// 回傳商品型態徽章標籤
+  static String? getTypeBadgeLabel(Product product) {
+    if (product.isPreOrderProduct) return '預購';
+    if (product.isDiscountProduct) return '折扣';
+    return null;
+  }
+
+  /// 建立商品型態 Chip（預設不顯示一般商品）
+  static Widget buildTypeChip(Product product, {bool showNormal = false}) {
+    final label = getTypeBadgeLabel(product) ?? (showNormal ? '一般' : null);
+    if (label == null) return const SizedBox.shrink();
+
+    final color = getTypeBadgeColor(product) ?? Colors.grey[200]!;
+    final textColor = product.isPreOrderProduct
+        ? Colors.purple[800]
+        : product.isDiscountProduct
+            ? Colors.orange[800]
+            : Colors.grey[800];
+
+    return Chip(
+      label: Text(label, style: TextStyle(color: textColor, fontWeight: FontWeight.w600)),
+      backgroundColor: color,
+      visualDensity: VisualDensity.compact,
+      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+      padding: const EdgeInsets.symmetric(horizontal: 8),
+    );
+  }
+
+  /// 建立庫存狀態 Chip（充足/偏低/缺貨/負庫存）
+  static Widget buildStockChip(int stock) {
+    final baseColor = getStockColor(stock);
+    final bg = baseColor.withOpacity(0.12); // Material 推薦的提示底色透明度
+    final icon = getStockStatusIcon(stock);
+    final text = getStockStatusDescription(stock);
+    return Chip(
+      avatar: Icon(icon, size: 16, color: baseColor),
+      label: Text(text, style: TextStyle(color: baseColor, fontWeight: FontWeight.w600)),
+      backgroundColor: bg,
+      visualDensity: VisualDensity.compact,
+      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+      padding: const EdgeInsets.symmetric(horizontal: 8),
+    );
   }
 }

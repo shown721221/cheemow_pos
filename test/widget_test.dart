@@ -16,7 +16,7 @@ void main() {
     SharedPreferences.setMockInitialValues(<String, Object>{});
     
         // Build our app and trigger a frame.
-    await tester.pumpWidget(MyApp());
+  await tester.pumpWidget(const MyApp());
     
     // Wait for the app to initialize
     await tester.pumpAndSettle();
