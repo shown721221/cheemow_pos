@@ -147,7 +147,7 @@ class ShoppingCartWidget extends StatelessWidget {
                                   ),
                                 ),
                                 // 數量控制區域 - 固定寬度
-                                Container(
+                                SizedBox(
                                   width: 80,
                                   child: Column(
                                     mainAxisSize: MainAxisSize.min,
