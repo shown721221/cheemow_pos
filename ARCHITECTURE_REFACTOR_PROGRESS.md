@@ -6,6 +6,16 @@
 - **最新提交**: 1864fdf - 架構重構：創建模組化管理器系統
 - **優化日期**: 2025年9月7日
 
+## 🆕 2025-09-09 進度摘要
+- 匯出位置統一（Android 公用 Downloads/cheemow_pos 根目錄）：
+	- 收據 CSV 匯出改用 MediaStore 寫入公用 Downloads/cheemow_pos（不建日期子資料夾）。
+	- 與「匯出今日營收（圖檔）」相同路徑策略；移除 App 內部備份檔。
+	- 桌面（Windows/macOS/Linux）維持寫入系統 Downloads；iOS 寫入 App 文件夾。
+- CSV 規則維持：主檔排除預購/折扣與已退貨品項；另存「特殊明細」CSV；加入 BOM；以 ="..." 保留前導 0。
+- 營收圖預覽：預設以符號遮蔽金額，點擊可顯示；實際匯出內容不遮蔽；移除雙影像閃動。
+- Android 權限與寫入：加入 MediaStore 相容權限，使用 media_store_plus 寫入 Downloads 並解析實體路徑顯示。
+
+
 ## 📊 重構成果摘要
 
 ### 原始狀況

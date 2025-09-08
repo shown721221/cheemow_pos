@@ -68,9 +68,12 @@ class ReceiptService {
   ) async {
     final allReceipts = await getReceipts();
     
+    // 區間為 [startDate, endDate)（含起不含迄）
     return allReceipts.where((receipt) {
-      return receipt.timestamp.isAfter(startDate.subtract(Duration(days: 1))) &&
-             receipt.timestamp.isBefore(endDate.add(Duration(days: 1)));
+      final t = receipt.timestamp;
+      final afterOrEqualStart = !t.isBefore(startDate);
+      final beforeEnd = t.isBefore(endDate);
+      return afterOrEqualStart && beforeEnd;
     }).toList();
   }
 
@@ -167,6 +170,26 @@ class ReceiptService {
       return true;
     } catch (e) {
   debugPrint('刪除收據失敗: $e');
+      return false;
+    }
+  }
+
+  /// 更新既有收據（依 ID 取代）
+  Future<bool> updateReceipt(Receipt updated) async {
+    try {
+      if (_prefs == null) return false;
+
+      final receipts = await getReceipts();
+      final idx = receipts.indexWhere((r) => r.id == updated.id);
+      if (idx < 0) return false;
+
+      receipts[idx] = updated;
+      final receiptsJson = receipts.map((r) => r.toJson()).toList();
+      await _prefs!.setString('receipts', jsonEncode(receiptsJson));
+      debugPrint('收據已更新: ${updated.id}');
+      return true;
+    } catch (e) {
+      debugPrint('更新收據失敗: $e');
       return false;
     }
   }

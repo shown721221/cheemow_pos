@@ -38,11 +38,20 @@ dependencies:
   # 本地資料儲存
   shared_preferences: ^2.2.2
   
+  # 取得裝置可寫入路徑（匯出檔案用）
+  path_provider: ^2.1.4
+  
   # CSV檔案處理
   csv: ^6.0.0
   
   # 檔案選擇器
   file_picker: ^8.0.0+1
+  
+  # 檔案儲存
+  file_saver: ^0.2.12
+  
+  # Android MediaStore（公用 Downloads 等共享媒體資料夾存取）
+  media_store_plus: ^0.1.3
   
   # 藍芽功能（未來可能需要）
   # flutter_bluetooth_serial: ^0.4.0

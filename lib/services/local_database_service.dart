@@ -223,14 +223,16 @@ class LocalDatabaseService {
 
     if (productIndex != -1) {
       // 建立新的商品物件（因為 Product 是 immutable）
+      final p = products[productIndex];
       final updatedProduct = Product(
-        id: products[productIndex].id,
-        barcode: products[productIndex].barcode,
-        name: products[productIndex].name,
-        price: products[productIndex].price,
-        category: products[productIndex].category,
+        id: p.id,
+        barcode: p.barcode,
+        name: p.name,
+        price: p.price,
+        category: p.category,
         stock: newStock,
-        isActive: products[productIndex].isActive,
+        isActive: p.isActive,
+        lastCheckoutTime: p.lastCheckoutTime,
       );
 
       products[productIndex] = updatedProduct;

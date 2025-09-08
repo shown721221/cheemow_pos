@@ -8,6 +8,8 @@ class Receipt {
   final int totalAmount;
   final int totalQuantity;
   final String paymentMethod;
+  // 已退貨的品項（以 product.id 標記）。此清單中的品項僅保留於明細顯示，不計入合計與件數。
+  final List<String> refundedProductIds;
 
   Receipt({
     required this.id,
@@ -16,10 +18,17 @@ class Receipt {
     required this.totalAmount,
     required this.totalQuantity,
     this.paymentMethod = '現金',
-  });
+    List<String>? refundedProductIds,
+  }) : refundedProductIds = refundedProductIds ?? const [];
+  
 
   /// 從 JSON 建立 Receipt 物件
   factory Receipt.fromJson(Map<String, dynamic> json) {
+    final rawRefunded = json['refundedProductIds'];
+    final refundedIds = rawRefunded is List
+        ? rawRefunded.map((e) => e.toString()).toList()
+        : <String>[];
+
     return Receipt(
       id: json['id'],
       timestamp: DateTime.parse(json['timestamp']),
@@ -29,6 +38,7 @@ class Receipt {
       totalAmount: json['totalAmount'],
       totalQuantity: json['totalQuantity'],
       paymentMethod: json['paymentMethod'] ?? '現金',
+      refundedProductIds: refundedIds,
     );
   }
 
@@ -41,6 +51,7 @@ class Receipt {
       'totalAmount': totalAmount,
       'totalQuantity': totalQuantity,
       'paymentMethod': paymentMethod,
+  'refundedProductIds': refundedProductIds,
     };
   }
 
@@ -77,6 +88,7 @@ class Receipt {
       totalAmount: totalAmount,
       totalQuantity: totalQuantity,
       paymentMethod: '現金',
+  refundedProductIds: const [],
     );
   }
 
@@ -88,6 +100,7 @@ class Receipt {
     int? totalAmount,
     int? totalQuantity,
     String? paymentMethod,
+    List<String>? refundedProductIds,
   }) {
     return Receipt(
       id: id ?? this.id,
@@ -96,6 +109,7 @@ class Receipt {
       totalAmount: totalAmount ?? this.totalAmount,
       totalQuantity: totalQuantity ?? this.totalQuantity,
       paymentMethod: paymentMethod ?? this.paymentMethod,
+      refundedProductIds: refundedProductIds ?? this.refundedProductIds,
     );
   }
 }

@@ -1,6 +1,11 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
+import 'dart:io';
+import 'dart:ui' as ui;
+import 'package:path_provider/path_provider.dart';
 import 'package:flutter/services.dart';
+import 'package:media_store_plus/media_store_plus.dart';
 import '../widgets/product_list_widget.dart';
 import '../widgets/shopping_cart_widget.dart';
 import '../dialogs/payment_dialog.dart';
@@ -44,6 +49,10 @@ class _PosMainScreenState extends State<PosMainScreen> {
     // 使用鍵盤掃描管理器，集中處理條碼鍵盤事件
     _kbScanner = KeyboardScannerManager(onBarcodeScanned: _onBarcodeScanned);
     ServicesBinding.instance.keyboard.addHandler(_kbScanner!.handleKeyEvent);
+
+  // 開發用途：可用 dart-define 控制啟動時自動匯出今日營收圖片
+  // 例如：flutter run -d <device> --dart-define=EXPORT_REVENUE_ON_START=true
+  WidgetsBinding.instance.addPostFrameCallback((_) => _maybeAutoExportRevenueOnStart());
   }
 
   @override
@@ -56,6 +65,19 @@ class _PosMainScreenState extends State<PosMainScreen> {
       _kbScanner!.dispose();
     }
     super.dispose();
+  }
+
+  void _maybeAutoExportRevenueOnStart() {
+    const auto = bool.fromEnvironment('EXPORT_REVENUE_ON_START');
+    if (!auto) return;
+    if (!mounted) return;
+    () async {
+      final ok = await _exportTodayRevenueImage();
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(ok ? '啟動自動匯出營收完成' : '啟動自動匯出營收失敗')),
+      );
+    }();
   }
 
   Future<void> _loadProducts() async {
@@ -111,7 +133,22 @@ class _PosMainScreenState extends State<PosMainScreen> {
 
   // 插入商品到購物車（頂部），若同品且同價已存在則數量+1並移至頂部
   void _addProductToCart(Product product, int actualPrice) {
-    // 若實際售價不同，需要建立臨時商品副本
+    // 1) 判斷購物車內是否已存在相同商品且相同價格的項目
+    final existingIndex = cartItems.indexWhere(
+      (item) => item.product.id == product.id && item.product.price == actualPrice,
+    );
+
+    // 2) 若存在：數量 +1 並移至頂部
+    if (existingIndex >= 0) {
+      setState(() {
+        cartItems[existingIndex].increaseQuantity();
+        final item = cartItems.removeAt(existingIndex);
+        cartItems.insert(0, item);
+      });
+      return;
+    }
+
+    // 3) 若不存在：建立商品（若價格不同，建立臨時副本），插入頂部
     final productToAdd = actualPrice != product.price
         ? Product(
             id: product.id,
@@ -125,28 +162,8 @@ class _PosMainScreenState extends State<PosMainScreen> {
           )
         : product;
 
-    final existingIndex = cartItems.indexWhere(
-      (item) =>
-          item.product.id == productToAdd.id &&
-          item.product.price == actualPrice,
-    );
-
     setState(() {
-      if (existingIndex >= 0) {
-        final existing = cartItems.removeAt(existingIndex);
-        existing.increaseQuantity();
-        cartItems.insert(0, existing);
-      } else {
-        cartItems.insert(0, CartItem(product: productToAdd));
-      }
-    });
-  }
-
-  void _removeFromCart(int index) {
-    setState(() {
-      if (index >= 0 && index < cartItems.length) {
-        cartItems.removeAt(index);
-      }
+      cartItems.insert(0, CartItem(product: productToAdd, quantity: 1));
     });
   }
 
@@ -162,6 +179,15 @@ class _PosMainScreenState extends State<PosMainScreen> {
     return cartItems.fold(0, (total, item) => total + item.quantity);
   }
 
+  // 移除購物車指定索引的項目
+  void _removeFromCart(int index) {
+    setState(() {
+      if (index >= 0 && index < cartItems.length) {
+        cartItems.removeAt(index);
+      }
+    });
+  }
+
   /// CSV匯入功能
   Future<void> _importCsvData() async {
     // 匯入前的簡單數字密碼確認，預設 0000
@@ -171,7 +197,6 @@ class _PosMainScreenState extends State<PosMainScreen> {
     // 顯示 loading
     if (!mounted) return;
     DialogManager.showLoading(context, message: '匯入中...');
-
     try {
       final result = await CsvImportService.importFromFile();
 
@@ -387,7 +412,7 @@ class _PosMainScreenState extends State<PosMainScreen> {
           PopupMenuButton<String>(
             icon: Icon(Icons.more_vert),
             tooltip: '功能選單',
-            onSelected: (String value) {
+    onSelected: (String value) async {
               switch (value) {
                 case 'import':
                   _importCsvData();
@@ -401,10 +426,13 @@ class _PosMainScreenState extends State<PosMainScreen> {
                     MaterialPageRoute(
                       builder: (_) => const ReceiptListScreen(),
                     ),
-                  );
+                  ).then((_) {
+                    // 從收據頁返回後重新載入商品，以反映退貨後的庫存變化
+                    _loadProducts();
+                  });
                   break;
                 case 'revenue':
-                  DialogManager.showComingSoon(context, '營收總計');
+      await _exportTodayRevenueImage();
                   break;
               }
             },
@@ -441,12 +469,12 @@ class _PosMainScreenState extends State<PosMainScreen> {
                 ),
               ),
               PopupMenuItem<String>(
-                value: 'revenue',
+        value: 'revenue',
                 child: Row(
                   children: [
                     Icon(Icons.analytics, size: 20),
                     SizedBox(width: 8),
-                    Text('營收總計'),
+          Text('匯出今日營收（圖檔）'),
                   ],
                 ),
               ),
@@ -612,6 +640,337 @@ class _PosMainScreenState extends State<PosMainScreen> {
         ),
       ),
     );
+  }
+
+  // 匯出今日營收圖（含：總營收、預購小計、折扣小計、三種付款方式小計）
+  Future<bool> _exportTodayRevenueImage() async {
+    try {
+      final receipts = await ReceiptService.instance.getTodayReceipts();
+      // 彙總金額
+      int total = 0;
+      int preorder = 0;
+      int discount = 0;
+      int cash = 0;
+      int transfer = 0;
+      int linepay = 0;
+
+      for (final r in receipts) {
+        total += r.totalAmount; // 已排除退貨
+        switch (r.paymentMethod) {
+          case '現金':
+            cash += r.totalAmount;
+            break;
+          case '轉帳':
+            transfer += r.totalAmount;
+            break;
+          case 'LinePay':
+            linepay += r.totalAmount;
+            break;
+        }
+        final refunded = r.refundedProductIds.toSet();
+        for (final it in r.items) {
+          if (refunded.contains(it.product.id)) continue;
+          if (it.product.isPreOrderProduct) {
+            preorder += it.subtotal;
+          } else if (it.product.isDiscountProduct) {
+            discount += it.subtotal;
+          }
+        }
+      }
+
+      // 建立可愛繽紛的圖像 Widget
+      final now = DateTime.now();
+      final y = now.year.toString().padLeft(4, '0');
+      final m = now.month.toString().padLeft(2, '0');
+      final d = now.day.toString().padLeft(2, '0');
+      final dateStr = '$y-$m-$d';
+
+  // captureKey 用於不可見的「未遮蔽」版本擷取；預覽不使用 key
+  final captureKey = GlobalKey();
+
+      Widget metricCard({required String icon, required String title, required String value, required Color bg, Color? valueColor}) {
+        return Container(
+          padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
+          decoration: BoxDecoration(
+            color: bg,
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(icon, style: const TextStyle(fontSize: 22)),
+              const SizedBox(height: 6),
+              Text(title, style: const TextStyle(fontSize: 14, color: Colors.black54)),
+              const SizedBox(height: 2),
+              Text(
+                value,
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: valueColor ?? Colors.black87),
+              ),
+            ],
+          ),
+        );
+      }
+
+      Widget revenueWidget({required bool showNumbers, Key? key}) {
+        String money(int v) {
+          final s = v.toString();
+          final reg = RegExp(r'\B(?=(\d{3})+(?!\d))');
+          final withComma = s.replaceAllMapped(reg, (m) => ',');
+          return withComma; // 去除 NT$ 前綴
+        }
+
+        Color bg1 = const Color(0xFFFFF0F6); // 粉
+        Color bg2 = const Color(0xFFE8F5FF); // 淡藍
+        Color bg3 = const Color(0xFFEFFFF2); // 淡綠
+        Color bg4 = const Color(0xFFFFF9E6); // 淡黃
+
+        String mask(int v) => showNumbers ? money(v) : '💰';
+
+        return RepaintBoundary(
+          key: key,
+          child: Container(
+            width: 800,
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [Color(0xFFFFF0F6), Color(0xFFE8F5FF)],
+              ),
+              borderRadius: BorderRadius.circular(24),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Row(
+                  children: [
+                    const Text('🌈 今日營收', style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900)),
+                    const Spacer(),
+                    Text(dateStr, style: const TextStyle(fontSize: 18, color: Colors.black54)),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Container(
+                  padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [BoxShadow(color: Colors.black26, blurRadius: 10, offset: Offset(0, 2))],
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.star_rounded, color: Colors.amber, size: 32),
+                      const SizedBox(width: 12),
+                      const Text('總營收', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700)),
+                      const Spacer(),
+                      Text(mask(total), style: const TextStyle(fontSize: 28, fontWeight: FontWeight.w900, color: Colors.teal)),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    Expanded(
+                      child: metricCard(icon: '💵', title: '現金', value: mask(cash), bg: bg3),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: metricCard(icon: '🔁', title: '轉帳', value: mask(transfer), bg: bg4),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: metricCard(icon: '📲', title: 'LinePay', value: mask(linepay), bg: bg2),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    Expanded(
+                      child: metricCard(icon: '🧸', title: '預購小計', value: mask(preorder), bg: bg1),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: metricCard(icon: '✨', title: '折扣小計', value: mask(discount), bg: const Color(0xFFFFEEF0), valueColor: Colors.pink),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                const Align(
+                  alignment: Alignment.centerRight,
+                  child: Text('cheemow POS', style: TextStyle(fontSize: 12, color: Colors.black45)),
+                ),
+              ],
+            ),
+          ),
+        );
+      }
+
+      // 顯示唯一一個預覽視窗（預設隱藏數字；點擊可切換顯示）
+      if (mounted) {
+        bool previewShowNumbers = false; // 放在外層，避免 StatefulBuilder 重建時被重設
+        // ignore: unawaited_futures
+        showDialog(
+          context: context,
+          barrierDismissible: true,
+          builder: (ctx) => StatefulBuilder(
+            builder: (ctx, setLocal) {
+              return Dialog(
+                backgroundColor: Colors.transparent,
+                insetPadding: const EdgeInsets.all(16),
+                child: LayoutBuilder(
+                  builder: (ctx, cons) => ClipRRect(
+                    borderRadius: BorderRadius.circular(20),
+                    child: ConstrainedBox(
+                      constraints: BoxConstraints(
+                        maxWidth: 720,
+                        maxHeight: MediaQuery.of(ctx).size.height * 0.85,
+                      ),
+                      child: GestureDetector(
+                        onTap: () { previewShowNumbers = !previewShowNumbers; setLocal((){}); },
+                        child: revenueWidget(showNumbers: previewShowNumbers),
+                      ),
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+        );
+      }
+
+      // 插入透明 Overlay，渲染「未遮蔽」版本做擷取，不影響使用者看到的預覽
+      OverlayEntry? captureEntry;
+      if (!mounted) return false;
+      final overlayState = Overlay.of(context, rootOverlay: true);
+      captureEntry = OverlayEntry(
+        builder: (ctx) => IgnorePointer(
+          child: Center(
+            child: Opacity(
+              opacity: 0.01,
+              child: Material(
+                color: Colors.transparent,
+                child: revenueWidget(showNumbers: true, key: captureKey),
+              ),
+            ),
+          ),
+        ),
+      );
+      overlayState.insert(captureEntry);
+
+      // 等待 1~2 個 frame 確保完成繪製
+      await Future.delayed(const Duration(milliseconds: 16));
+      await WidgetsBinding.instance.endOfFrame;
+      await Future.delayed(const Duration(milliseconds: 16));
+
+      // 擷取圖片
+      late final Uint8List bytes;
+      try {
+        final renderObj = captureKey.currentContext?.findRenderObject();
+        if (renderObj is! RenderRepaintBoundary) {
+          await Future.delayed(const Duration(milliseconds: 32));
+          final ro2 = captureKey.currentContext?.findRenderObject();
+          if (ro2 is! RenderRepaintBoundary) {
+            throw Exception('尚未完成渲染，請重試');
+          }
+          final img2 = await ro2.toImage(pixelRatio: 3.0);
+          final bd2 = await img2.toByteData(format: ui.ImageByteFormat.png);
+          bytes = bd2!.buffer.asUint8List();
+        } else {
+          final image = await renderObj.toImage(pixelRatio: 3.0);
+          final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
+          bytes = byteData!.buffer.asUint8List();
+        }
+      } finally {
+        try { captureEntry.remove(); } catch (_) {}
+      }
+
+      // 準備檔名
+      final yy = (now.year % 100).toString().padLeft(2, '0');
+      final fileName = '營收_$yy$m$d.png';
+      // Android 的 MediaStore 需要一個暫存檔供複製
+      File? tempPngFile;
+      if (Platform.isAndroid) {
+        final tmp = await getTemporaryDirectory();
+        tempPngFile = File('${tmp.path}/$fileName');
+        try { await tempPngFile.writeAsBytes(bytes, flush: true); } catch (_) {}
+      }
+
+      // 下載（Android 使用 MediaStore 存到公用 Downloads；桌面用系統 Downloads）
+      File? easyFile;
+      String? savedPublicPath;
+  if (Platform.isAndroid) {
+        try {
+            await MediaStore.ensureInitialized();
+            final mediaStore = MediaStore();
+          // 設定應用在公用 Downloads 的根資料夾名稱
+          MediaStore.appFolder = 'cheemow_pos';
+            // 將備份檔複製到公用 Downloads/cheemow_pos/yyyy-mm-dd
+            final saveInfo = await mediaStore.saveFile(
+      tempFilePath: tempPngFile!.path,
+            dirType: DirType.download,
+            dirName: DirName.download,
+              // 直接存到 Downloads/cheemow_pos 根目錄（檔名已含日期，不會撞名）
+              relativePath: FilePath.root,
+            );
+            savedPublicPath = saveInfo?.uri.toString();
+            // 嘗試解析實體路徑，方便在「檔案」App 中查看
+            if (savedPublicPath != null) {
+              final p = await mediaStore.getFilePathFromUri(uriString: savedPublicPath);
+              if (p != null) {
+                savedPublicPath = p;
+              }
+            }
+          // ignore: avoid_print
+          print('[RevenueExport] downloads(MediaStore): $savedPublicPath');
+        } catch (e) {
+          // ignore: avoid_print
+          print('[RevenueExport] save to public Downloads failed: $e');
+        }
+    // 移除暫存檔
+    try { await tempPngFile?.delete(); } catch (_) {}
+      } else {
+        String? downloadsPath;
+        try {
+          final downloads = await getDownloadsDirectory();
+          downloadsPath = downloads?.path;
+        } catch (_) {
+          downloadsPath = null;
+        }
+        if (downloadsPath != null) {
+          final targetDir = Directory(downloadsPath);
+          easyFile = File('${targetDir.path}/$fileName');
+          try {
+            await easyFile.writeAsBytes(bytes, flush: true);
+            // ignore: avoid_print
+            print('[RevenueExport] downloads: ${easyFile.path}');
+          } catch (e) {
+            // ignore: avoid_print
+            print('[RevenueExport] write downloads failed: $e');
+            easyFile = null;
+          }
+        }
+      }
+
+  // 預覽已顯示於對話框（只有一個畫面，不會先出現一張又跳到另一張）
+
+      if (!mounted) return true;
+      final paths = [
+        if (Platform.isAndroid && savedPublicPath != null) '下載: $savedPublicPath' else if (easyFile != null) '下載: ${easyFile.path}',
+      ].join('\\n');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('已匯出今日營收圖\n$paths')),
+      );
+      return true;
+    } catch (e) {
+      try { if (Navigator.canPop(context)) Navigator.pop(context); } catch (_) {}
+      if (!mounted) return false;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('匯出營收圖失敗: $e')),
+      );
+      return false;
+    }
   }
 
   void _checkout() async {
