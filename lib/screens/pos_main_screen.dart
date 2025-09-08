@@ -149,24 +149,7 @@ class _PosMainScreenState extends State<PosMainScreen> {
     });
   }
 
-  void _increaseQuantity(int index) {
-    setState(() {
-      // 移除該項目，增加數量後插入到頂部
-      final item = cartItems.removeAt(index);
-      item.increaseQuantity();
-      cartItems.insert(0, item);
-    });
-  }
-
-  void _decreaseQuantity(int index) {
-    setState(() {
-      if (cartItems[index].quantity > 1) {
-        cartItems[index].decreaseQuantity();
-      } else {
-        cartItems.removeAt(index);
-      }
-    });
-  }
+  //（已移除）手動加減數量功能
 
   // 本地未使用：找不到商品改由 DialogManager 管理
 
@@ -227,13 +210,13 @@ class _PosMainScreenState extends State<PosMainScreen> {
 
     await showDialog(
       context: context,
-      barrierDismissible: false,
+      barrierDismissible: true, // 點擊外部即取消
       builder: (context) {
         return StatefulBuilder(
           builder: (context, setS) {
             Widget buildNumKey(String number) => SizedBox(
-              width: 60,
-              height: 48,
+              width: 72,
+              height: 60,
               child: ElevatedButton(
                 onPressed: input.length < 4
                     ? () => setS(() {
@@ -256,7 +239,7 @@ class _PosMainScreenState extends State<PosMainScreen> {
                 child: Text(
                   number,
                   style: const TextStyle(
-                    fontSize: 18,
+                    fontSize: 22,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -265,15 +248,15 @@ class _PosMainScreenState extends State<PosMainScreen> {
 
             Widget buildActionKey(String label, VoidCallback onPressed) =>
                 SizedBox(
-                  width: 60,
-                  height: 48,
+                  width: 72,
+                  height: 60,
                   child: ElevatedButton(
                     onPressed: onPressed,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.orange[50],
                       foregroundColor: Colors.orange[700],
                     ),
-                    child: Text(label, style: const TextStyle(fontSize: 12)),
+                    child: Text(label, style: const TextStyle(fontSize: 18)),
                   ),
                 );
 
@@ -284,11 +267,20 @@ class _PosMainScreenState extends State<PosMainScreen> {
                 width: 320,
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    const Text('此動作會取代目前的商品資料。'),
-                    const SizedBox(height: 8),
-                    const Text('請輸入 4 位數字密碼以繼續：'),
+                    // 保留說明：覆蓋警告與輸入提示（移除標題文字）
+                    Text(
+                      '⚠️ 這會覆蓋所有商品資料',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: Colors.orange[700],
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    const Text('✨ 請輸入奇妙數字 ✨', textAlign: TextAlign.center),
                     const SizedBox(height: 12),
                     Container(
                       padding: const EdgeInsets.symmetric(vertical: 12),
@@ -347,7 +339,7 @@ class _PosMainScreenState extends State<PosMainScreen> {
                       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                       children: [
                         buildActionKey(
-                          '清除',
+                          '🧹',
                           () => setS(() {
                             input = '';
                             error = null;
@@ -355,10 +347,11 @@ class _PosMainScreenState extends State<PosMainScreen> {
                         ),
                         buildNumKey('0'),
                         buildActionKey(
-                          '刪除',
+                          '⌫',
                           () => setS(() {
-                            if (input.isNotEmpty)
+                            if (input.isNotEmpty) {
                               input = input.substring(0, input.length - 1);
+                            }
                             error = null;
                           }),
                         ),
@@ -367,12 +360,6 @@ class _PosMainScreenState extends State<PosMainScreen> {
                   ],
                 ),
               ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: const Text('取消'),
-                ),
-              ],
             );
           },
         );
@@ -420,9 +407,9 @@ class _PosMainScreenState extends State<PosMainScreen> {
                 value: 'import',
                 child: Row(
                   children: [
-                    Icon(Icons.file_upload, size: 20),
+                    Text('🧸', style: TextStyle(fontSize: 18)),
                     SizedBox(width: 8),
-                    Text('匯入商品資料'),
+                    Text('上架寶貝們'),
                   ],
                 ),
               ),
@@ -607,8 +594,6 @@ class _PosMainScreenState extends State<PosMainScreen> {
               child: ShoppingCartWidget(
                 cartItems: cartItems,
                 onRemoveItem: _removeFromCart,
-                onIncreaseQuantity: _increaseQuantity,
-                onDecreaseQuantity: _decreaseQuantity,
                 onClearCart: () {
                   setState(() {
                     cartItems.clear();

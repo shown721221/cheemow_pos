@@ -4,8 +4,6 @@ import '../widgets/price_display.dart';
 
 class ShoppingCartWidget extends StatelessWidget {
   final List<CartItem> cartItems;
-  final Function(int) onIncreaseQuantity;
-  final Function(int) onDecreaseQuantity;
   final Function(int) onRemoveItem;
   final Function() onClearCart;
   final Function() onCheckout;
@@ -13,8 +11,6 @@ class ShoppingCartWidget extends StatelessWidget {
   const ShoppingCartWidget({
     super.key,
     required this.cartItems,
-    required this.onIncreaseQuantity,
-    required this.onDecreaseQuantity,
     required this.onRemoveItem,
     required this.onClearCart,
     required this.onCheckout,
@@ -25,7 +21,10 @@ class ShoppingCartWidget extends StatelessWidget {
   }
 
   int get totalQuantity {
-    return cartItems.fold(0, (total, item) => total + item.quantity);
+    // 結帳頁商品數量「不含特殊商品」（預約/折扣）
+    return cartItems
+        .where((item) => !item.product.isSpecialProduct)
+        .fold(0, (total, item) => total + item.quantity);
   }
 
   @override
@@ -41,7 +40,10 @@ class ShoppingCartWidget extends StatelessWidget {
             children: [
               if (cartItems.isNotEmpty)
                 IconButton(
-                  icon: Text('🗑️', style: TextStyle(fontSize: 22, color: Colors.grey[600])),
+                  icon: Text(
+                    '🗑️',
+                    style: TextStyle(fontSize: 22, color: Colors.grey[600]),
+                  ),
                   onPressed: onClearCart,
                   tooltip: '清空購物車',
                   color: Colors.grey[600],
@@ -58,7 +60,13 @@ class ShoppingCartWidget extends StatelessWidget {
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         // 大一點的購物車圖示，配合愛心主題
-                        Text('🛍️', style: TextStyle(fontSize: 72, color: Colors.grey[300])),
+                        Text(
+                          '🛍️',
+                          style: TextStyle(
+                            fontSize: 72,
+                            color: Colors.grey[300],
+                          ),
+                        ),
                         SizedBox(height: 20),
                         Row(
                           mainAxisAlignment: MainAxisAlignment.center,
@@ -101,7 +109,13 @@ class ShoppingCartWidget extends StatelessWidget {
                             alignment: Alignment.centerRight,
                             padding: EdgeInsets.only(right: 16),
                             color: Colors.red,
-                            child: Text('🗑️', style: TextStyle(fontSize: 22, color: Colors.white)),
+                            child: Text(
+                              '🗑️',
+                              style: TextStyle(
+                                fontSize: 22,
+                                color: Colors.white,
+                              ),
+                            ),
                           ),
                           onDismissed: (direction) {
                             onRemoveItem(index);
@@ -148,51 +162,20 @@ class ShoppingCartWidget extends StatelessWidget {
                                   child: Column(
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
-                                      Row(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.spaceEvenly,
-                                        children: [
-                                          InkWell(
-                                            onTap: () =>
-                                                onDecreaseQuantity(index),
-                                            child: Container(
-                                              width: 24,
-                                              height: 24,
-                                              decoration: BoxDecoration(
-                                                shape: BoxShape.circle,
-                                                border: Border.all(
-                                                  color: Colors.grey,
-                                                ),
-                                              ),
-                                              child: Icon(
-                                                Icons.remove,
-                                                size: 16,
-                                              ),
-                                            ),
-                                          ),
-                                          Text(
-                                            '${item.quantity}',
-                                            style: TextStyle(
-                                              fontWeight: FontWeight.bold,
-                                              fontSize: 16,
-                                            ),
-                                          ),
-                                          InkWell(
-                                            onTap: () =>
-                                                onIncreaseQuantity(index),
-                                            child: Container(
-                                              width: 24,
-                                              height: 24,
-                                              decoration: BoxDecoration(
-                                                shape: BoxShape.circle,
-                                                border: Border.all(
-                                                  color: Colors.grey,
-                                                ),
-                                              ),
-                                              child: Icon(Icons.add, size: 16),
-                                            ),
-                                          ),
-                                        ],
+                                      Text(
+                                        '數量',
+                                        style: TextStyle(
+                                          fontSize: 10,
+                                          color: Colors.grey[600],
+                                        ),
+                                      ),
+                                      SizedBox(height: 2),
+                                      Text(
+                                        '${item.quantity}',
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 16,
+                                        ),
                                       ),
                                       SizedBox(height: 4),
                                       // 使用簡單的 Text 來避免溢出問題
@@ -255,10 +238,10 @@ class ShoppingCartWidget extends StatelessWidget {
                   SizedBox(
                     width: double.infinity,
                     height: 50,
-                      child: ElevatedButton.icon(
-                        onPressed: onCheckout,
-                        icon: Icon(Icons.shopping_bag_outlined, size: 22),
-                        label: Text('結帳', style: TextStyle(fontSize: 18)),
+                    child: ElevatedButton.icon(
+                      onPressed: onCheckout,
+                      icon: Icon(Icons.shopping_bag_outlined, size: 22),
+                      label: Text('結帳', style: TextStyle(fontSize: 18)),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.green,
                         foregroundColor: Colors.white,

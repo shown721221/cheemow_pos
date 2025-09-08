@@ -55,125 +55,138 @@ class PaymentDialog {
                   return ConstrainedBox(
                     constraints: const BoxConstraints(maxWidth: 640),
                     child: Padding(
-                      padding: EdgeInsets.only(bottom: bottomInset > 0 ? 12 : 0),
-                      child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // 顯示應收金額（僅數字）
-                    Align(
-                      alignment: Alignment.centerRight,
-                      child: LargePriceDisplay(amount: totalAmount),
-                    ),
-                    const SizedBox(height: 12),
-                    // 單行付款方式按鈕
-                    Row(
-                      children: [
-                        Expanded(
-                          child: _PayOptionButton(
-                            label: '💵 現金',
-                            selected: method == '現金',
-                            onTap: () => setState(() => method = '現金'),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: _PayOptionButton(
-                            label: '🔁 轉帳',
-                            selected: method == '轉帳',
-                            onTap: () => setState(() => method = '轉帳'),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: _PayOptionButton(
-                            label: '📲 LinePay',
-                            selected: method == 'LinePay',
-                            onTap: () => setState(() => method = 'LinePay'),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    if (method == '現金') ...[
-                      TextField(
-                        controller: cashController,
-                        keyboardType: TextInputType.number,
-                        readOnly: true, // 避免平板 IME 失效問題，改用自訂小鍵盤
-                        decoration: const InputDecoration(
-                          hintText: '輸入實收金額',
-                          border: OutlineInputBorder(),
-                        ),
-                        onTap: () {/* 僅顯示游標，由下方自訂鍵盤輸入 */},
+                      padding: EdgeInsets.only(
+                        bottom: bottomInset > 0 ? 12 : 0,
                       ),
-                      const SizedBox(height: 8),
-                      // 動態快速金額（台幣面額 50/100/500/1000 的「後面三種」）
-                      Builder(
-                        builder: (context) {
-                          final suggestions = _suggestCashOptions(totalAmount);
-                          if (suggestions.isEmpty) return const SizedBox.shrink();
-                          return Row(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // 顯示應收金額（僅數字）
+                          Align(
+                            alignment: Alignment.centerRight,
+                            child: LargePriceDisplay(amount: totalAmount),
+                          ),
+                          const SizedBox(height: 12),
+                          // 單行付款方式按鈕
+                          Row(
                             children: [
-                              for (int i = 0; i < suggestions.length; i++) ...[
-                                Expanded(
-                                  child: _QuickAmountButton(
-                                    label: suggestions[i].toString(),
-                                    onTap: () {
-                                      cashController.text = suggestions[i].toString();
-                                      setState(() {});
-                                    },
+                              Expanded(
+                                child: _PayOptionButton(
+                                  label: '💵 現金',
+                                  selected: method == '現金',
+                                  onTap: () => setState(() => method = '現金'),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: _PayOptionButton(
+                                  label: '🔁 轉帳',
+                                  selected: method == '轉帳',
+                                  onTap: () => setState(() => method = '轉帳'),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: _PayOptionButton(
+                                  label: '📲 LinePay',
+                                  selected: method == 'LinePay',
+                                  onTap: () =>
+                                      setState(() => method = 'LinePay'),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 12),
+                          if (method == '現金') ...[
+                            TextField(
+                              controller: cashController,
+                              keyboardType: TextInputType.number,
+                              readOnly: true, // 避免平板 IME 失效問題，改用自訂小鍵盤
+                              decoration: const InputDecoration(
+                                hintText: '輸入實收金額',
+                                border: OutlineInputBorder(),
+                              ),
+                              onTap: () {
+                                /* 僅顯示游標，由下方自訂鍵盤輸入 */
+                              },
+                            ),
+                            const SizedBox(height: 8),
+                            // 動態快速金額（台幣面額 50/100/500/1000 的「後面三種」）
+                            Builder(
+                              builder: (context) {
+                                final suggestions = _suggestCashOptions(
+                                  totalAmount,
+                                );
+                                if (suggestions.isEmpty)
+                                  return const SizedBox.shrink();
+                                return Row(
+                                  children: [
+                                    for (
+                                      int i = 0;
+                                      i < suggestions.length;
+                                      i++
+                                    ) ...[
+                                      Expanded(
+                                        child: _QuickAmountButton(
+                                          label: suggestions[i].toString(),
+                                          onTap: () {
+                                            cashController.text = suggestions[i]
+                                                .toString();
+                                            setState(() {});
+                                          },
+                                        ),
+                                      ),
+                                      if (i != suggestions.length - 1)
+                                        const SizedBox(width: 8),
+                                    ],
+                                  ],
+                                );
+                              },
+                            ),
+                            const SizedBox(height: 8),
+                            _NumericKeypad(
+                              onKey: (key) {
+                                String t = cashController.text;
+                                if (key == '⌫') {
+                                  if (t.isNotEmpty)
+                                    t = t.substring(0, t.length - 1);
+                                } else {
+                                  t = t + key;
+                                }
+                                cashController.text = t;
+                                setState(() {});
+                              },
+                            ),
+                            const SizedBox(height: 8),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.end,
+                              children: [
+                                const Text(
+                                  '找零',
+                                  style: TextStyle(color: Colors.black54),
+                                ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  change >= 0
+                                      ? '💲 $change'
+                                      : '不足 💲 ${-change}',
+                                  style: TextStyle(
+                                    color: change < 0
+                                        ? Colors.red
+                                        : Colors.green[700],
+                                    fontWeight: FontWeight.bold,
                                   ),
                                 ),
-                                if (i != suggestions.length - 1)
-                                  const SizedBox(width: 8),
                               ],
-                            ],
-                          );
-                        },
-                      ),
-                      const SizedBox(height: 8),
-                      _NumericKeypad(
-                        onKey: (key) {
-                          String t = cashController.text;
-                          if (key == '⌫') {
-                            if (t.isNotEmpty) t = t.substring(0, t.length - 1);
-                          } else {
-                            t = t + key;
-                          }
-                          cashController.text = t;
-                          setState(() {});
-                        },
-                      ),
-                      const SizedBox(height: 8),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.end,
-                        children: [
-                          const Text('找零', style: TextStyle(color: Colors.black54)),
-                          const SizedBox(width: 8),
-                          Text(
-                            change >= 0
-                                ? '💲 $change'
-                                : '不足 💲 ${-change}',
-                            style: TextStyle(
-                              color: change < 0 ? Colors.red : Colors.green[700],
-                              fontWeight: FontWeight.bold,
                             ),
-                          ),
+                          ] else if (method == '轉帳') ...[
+                            _PaymentPlaceholder(label: '預留：轉帳帳號圖片/資訊'),
+                          ] else if (method == 'LinePay') ...[
+                            _PaymentPlaceholder(label: '預留：LinePay QR Code 圖片'),
+                          ],
                         ],
                       ),
-                    ]
-                    else if (method == '轉帳') ...[
-                      _PaymentPlaceholder(
-                        label: '預留：轉帳帳號圖片/資訊',
-                      ),
-                    ]
-                    else if (method == 'LinePay') ...[
-                      _PaymentPlaceholder(
-                        label: '預留：LinePay QR Code 圖片',
-                      ),
-                    ],
-                  ],
-                ),
                     ),
                   );
                 },
@@ -224,16 +237,14 @@ class PaymentDialog {
     // 蒐集候選值（可能會有與 total 相等的值，代表剛好）
     final candidates = <int>{s50, s100, s500, s1000, total};
     // 移除小於 total 的（保險起見）
-    final filtered = candidates.where((v) => v >= total).toList()
-      ..sort();
+    final filtered = candidates.where((v) => v >= total).toList()..sort();
 
     // 去除剛好，取唯一並排序
-    final uniqueAsc = filtered.where((v) => v > total).toSet().toList()
-      ..sort();
+    final uniqueAsc = filtered.where((v) => v > total).toSet().toList()..sort();
 
-  if (uniqueAsc.length <= 3) return uniqueAsc;
-  // 一律取「最後三個」（最大三個）
-  return uniqueAsc.sublist(uniqueAsc.length - 3);
+    if (uniqueAsc.length <= 3) return uniqueAsc;
+    // 一律取「最後三個」（最大三個）
+    return uniqueAsc.sublist(uniqueAsc.length - 3);
   }
 }
 
@@ -258,18 +269,23 @@ class _PayOptionButton extends StatelessWidget {
       minimumSize: const Size.fromHeight(44),
     );
     return selected
-        ? FilledButton(onPressed: onTap, style: selectedStyle, child: Text(label))
-        : OutlinedButton(onPressed: onTap, style: unselectedStyle, child: Text(label));
+        ? FilledButton(
+            onPressed: onTap,
+            style: selectedStyle,
+            child: Text(label),
+          )
+        : OutlinedButton(
+            onPressed: onTap,
+            style: unselectedStyle,
+            child: Text(label),
+          );
   }
 }
 
 class _QuickAmountButton extends StatelessWidget {
   final String label;
   final VoidCallback onTap;
-  const _QuickAmountButton({
-    required this.label,
-    required this.onTap,
-  });
+  const _QuickAmountButton({required this.label, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -286,9 +302,7 @@ class _QuickAmountButton extends StatelessWidget {
 
 class _PaymentPlaceholder extends StatelessWidget {
   final String label;
-  const _PaymentPlaceholder({
-    required this.label,
-  });
+  const _PaymentPlaceholder({required this.label});
 
   @override
   Widget build(BuildContext context) {
@@ -301,10 +315,7 @@ class _PaymentPlaceholder extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
         color: Colors.grey.shade50,
       ),
-      child: Text(
-        label,
-        style: const TextStyle(color: Colors.black54),
-      ),
+      child: Text(label, style: const TextStyle(color: Colors.black54)),
     );
   }
 }
@@ -331,10 +342,16 @@ class _NumericKeypad extends StatelessWidget {
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 4),
                   child: SizedBox(
-                    height: 44,
+                    height: 60,
                     child: OutlinedButton(
                       onPressed: () => onKey(k),
-                      child: Text(k, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+                      child: Text(
+                        k,
+                        style: const TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
                     ),
                   ),
                 ),

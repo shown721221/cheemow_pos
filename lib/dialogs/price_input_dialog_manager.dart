@@ -4,7 +4,6 @@ import '../models/product.dart';
 /// 價格輸入對話框管理器
 /// 負責處理特殊商品的價格輸入界面
 class PriceInputDialogManager {
-  
   /// 顯示自定義數字鍵盤輸入對話框
   static Future<int?> showCustomNumberInput(
     BuildContext context,
@@ -36,62 +35,59 @@ class PriceInputDialogManager {
                       textAlign: TextAlign.center,
                     ),
                     SizedBox(height: 8),
-                    
+
                     // 商品類型說明
                     if (product.isPreOrderProduct)
                       Text(
                         '這是預購商品，請輸入實際價格',
-                        style: TextStyle(color: Colors.purple[700], fontSize: 12),
+                        style: TextStyle(
+                          color: Colors.purple[700],
+                          fontSize: 12,
+                        ),
                       )
                     else if (product.isDiscountProduct)
                       Text(
                         '這是折扣商品，輸入金額會自動轉為負數',
-                        style: TextStyle(color: Colors.orange[700], fontSize: 12),
+                        style: TextStyle(
+                          color: Colors.orange[700],
+                          fontSize: 12,
+                        ),
                       ),
                     SizedBox(height: 16),
-                    
+
                     // 價格顯示區域
                     _buildPriceDisplay(currentPrice, product.isDiscountProduct),
-                    
+
                     SizedBox(height: 16),
-                    
+
                     // 數字鍵盤（透過回呼直接更新外層 currentPrice）
                     _buildNumberKeypad(
                       onAppend: (d) => setState(() => currentPrice += d),
                       onClear: () => setState(() => currentPrice = ''),
-                      onDelete: () => setState(() {
-                        if (currentPrice.isNotEmpty) {
-                          currentPrice = currentPrice.substring(0, currentPrice.length - 1);
+                      onConfirm: () {
+                        if (currentPrice.isEmpty) return;
+                        final price = int.tryParse(currentPrice);
+                        if (price == null || price <= 0) return;
+                        // 折扣驗證
+                        if (product.isDiscountProduct) {
+                          if (price > currentCartTotal) {
+                            _showDiscountError(
+                              context,
+                              price,
+                              currentCartTotal,
+                            );
+                            return;
+                          }
+                          Navigator.of(context).pop(-price);
+                        } else {
+                          Navigator.of(context).pop(price);
                         }
-                      }),
+                      },
                     ),
                   ],
                 ),
               ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.of(context).pop(null),
-                  child: Text('取消'),
-                ),
-                ElevatedButton(
-                  onPressed: currentPrice.isEmpty ? null : () {
-                    final price = int.tryParse(currentPrice);
-                    if (price != null && price > 0) {
-                      // 驗證折扣商品
-                      if (product.isDiscountProduct) {
-                        if (price > currentCartTotal) {
-                          _showDiscountError(context, price, currentCartTotal);
-                          return;
-                        }
-                        Navigator.of(context).pop(-price);
-                      } else {
-                        Navigator.of(context).pop(price);
-                      }
-                    }
-                  },
-                  child: Text('確定'),
-                ),
-              ],
+              // 移除底部 actions，改由鍵盤上的確認鍵處理
             );
           },
         );
@@ -125,7 +121,7 @@ class PriceInputDialogManager {
   static Widget _buildNumberKeypad({
     required void Function(String digit) onAppend,
     required VoidCallback onClear,
-    required VoidCallback onDelete,
+    required VoidCallback onConfirm,
   }) {
     return Column(
       children: [
@@ -159,13 +155,13 @@ class PriceInputDialogManager {
           ],
         ),
         SizedBox(height: 8),
-        // 第四排：清除, 0, 刪除
+        // 第四排：清除, 0, 確認
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: [
-            _buildActionKey('清除', onClear),
+            _buildActionKey('🧹', onClear),
             _buildNumKey('0', () => onAppend('0')),
-            _buildActionKey('刪除', onDelete),
+            _buildActionKey('✅', onConfirm),
           ],
         ),
       ],
@@ -175,8 +171,8 @@ class PriceInputDialogManager {
   /// 構建數字按鈕
   static Widget _buildNumKey(String number, VoidCallback onPressed) {
     return SizedBox(
-      width: 60,
-      height: 50,
+      width: 72,
+      height: 60,
       child: ElevatedButton(
         onPressed: onPressed,
         style: ElevatedButton.styleFrom(
@@ -185,7 +181,7 @@ class PriceInputDialogManager {
         ),
         child: Text(
           number,
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
         ),
       ),
     );
@@ -194,29 +190,29 @@ class PriceInputDialogManager {
   /// 構建功能按鈕
   static Widget _buildActionKey(String label, VoidCallback onPressed) {
     return SizedBox(
-      width: 60,
-      height: 50,
+      width: 72,
+      height: 60,
       child: ElevatedButton(
         onPressed: onPressed,
         style: ElevatedButton.styleFrom(
           backgroundColor: Colors.orange[50],
           foregroundColor: Colors.orange[700],
         ),
-        child: Text(label, style: TextStyle(fontSize: 12)),
+        child: Text(label, style: TextStyle(fontSize: 18)),
       ),
     );
   }
 
   /// 顯示折扣錯誤訊息
   static void _showDiscountError(
-    BuildContext context, 
-    int discountAmount, 
-    int currentTotal
+    BuildContext context,
+    int discountAmount,
+    int currentTotal,
   ) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
-          '折扣金額 ($discountAmount 元) 不能大於目前購物車總金額 ($currentTotal 元)'
+          '折扣金額 ($discountAmount 元) 不能大於目前購物車總金額 ($currentTotal 元)',
         ),
         backgroundColor: Colors.orange[600],
       ),

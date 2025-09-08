@@ -4,7 +4,6 @@ import '../services/csv_import_service.dart';
 /// 統一的對話框管理器
 /// 負責管理所有對話框的顯示邏輯
 class DialogManager {
-  
   /// 顯示商品未找到對話框
   static void showProductNotFound(BuildContext context, String barcode) {
     showDialog(
@@ -53,8 +52,7 @@ class DialogManager {
               Text('匯入已取消'),
             ] else if (result.success) ...[
               Text('成功匯入 ${result.importedCount} / ${result.totalRows} 個商品'),
-              if (result.hasErrors)
-                Text('${result.errors.length} 個商品匯入時發生問題'),
+              if (result.hasErrors) Text('${result.errors.length} 個商品匯入時發生問題'),
             ] else ...[
               Text(result.errorMessage ?? '未知錯誤'),
             ],
@@ -109,10 +107,31 @@ class DialogManager {
                   'id,name,barcode,price,category,stock\n'
                   '1,達菲娃娃,1234567890,800,娃娃,10\n'
                   '2,雪莉梅站姿,0987654321,1200,站姿,5',
-                  style: TextStyle(
-                    fontFamily: 'monospace',
-                    fontSize: 12,
-                  ),
+                  style: TextStyle(fontFamily: 'monospace', fontSize: 12),
+                ),
+              ),
+              SizedBox(height: 16),
+              Container(
+                padding: EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: Colors.pink[50],
+                  borderRadius: BorderRadius.circular(6),
+                  border: Border.all(color: Colors.pink[100]!),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '🧸 特殊商品免匯入',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: Colors.pink,
+                      ),
+                    ),
+                    SizedBox(height: 6),
+                    Text('系統內建「預購」與「折扣」兩個特殊商品，會自動存在且不受匯入檔影響。'),
+                    Text('請不要把它們放進 CSV；匯入時也不會覆蓋這兩個項目。'),
+                  ],
                 ),
               ),
               SizedBox(height: 16),

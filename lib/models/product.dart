@@ -21,7 +21,9 @@ class Product {
   });
 
   // 檢查是否為特殊商品（預約商品或折扣商品）
-  bool get isSpecialProduct => category == '特殊商品';
+  // 為了容忍僅持久化最小欄位（未保存 category），這裡同時以條碼判斷
+  bool get isSpecialProduct =>
+      isPreOrderProduct || isDiscountProduct || category == '特殊商品';
 
   // 檢查是否為預約商品
   bool get isPreOrderProduct => barcode == '19920203';
