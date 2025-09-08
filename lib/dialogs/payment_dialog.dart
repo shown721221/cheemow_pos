@@ -118,8 +118,9 @@ class PaymentDialog {
                                 final suggestions = _suggestCashOptions(
                                   totalAmount,
                                 );
-                                if (suggestions.isEmpty)
+                                if (suggestions.isEmpty) {
                                   return const SizedBox.shrink();
+                                }
                                 return Row(
                                   children: [
                                     for (
@@ -149,8 +150,9 @@ class PaymentDialog {
                               onKey: (key) {
                                 String t = cashController.text;
                                 if (key == '⌫') {
-                                  if (t.isNotEmpty)
+                                  if (t.isNotEmpty) {
                                     t = t.substring(0, t.length - 1);
+                                  }
                                 } else {
                                   t = t + key;
                                 }

@@ -110,6 +110,32 @@ class ReceiptService {
     return monthReceipts.fold<int>(0, (sum, receipt) => sum + receipt.totalAmount);
   }
 
+  /// 產生收據編號：methodCode-NNN（每日從 001 起，跨付款方式共用序號）
+  Future<String> generateReceiptId(String paymentMethod, {DateTime? now}) async {
+    final DateTime t = now ?? DateTime.now();
+    final DateTime dayStart = DateTime(t.year, t.month, t.day);
+    final DateTime dayEnd = dayStart.add(const Duration(days: 1));
+
+    final todays = await getReceiptsByDateRange(dayStart, dayEnd);
+    final nextSeq = todays.length + 1; // 當日整體序號（跨付款方式）
+    final seqStr = nextSeq.toString().padLeft(3, '0');
+    final methodCode = _methodCode(paymentMethod);
+    return '$methodCode-$seqStr';
+  }
+
+  String _methodCode(String method) {
+    switch (method) {
+      case '現金':
+        return '1';
+      case '轉帳':
+        return '2';
+      case 'LinePay':
+        return '3';
+      default:
+        return '9';
+    }
+  }
+
   /// 取得收據統計資訊
   Future<Map<String, dynamic>> getReceiptStatistics() async {
     final allReceipts = await getReceipts();

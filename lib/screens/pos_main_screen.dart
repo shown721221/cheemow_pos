@@ -16,6 +16,7 @@ import '../dialogs/price_input_dialog_manager.dart';
 import '../utils/product_sort_utils.dart';
 import '../dialogs/dialog_manager.dart';
 import '../config/app_config.dart';
+import 'receipt_list_screen.dart';
 
 class PosMainScreen extends StatefulWidget {
   const PosMainScreen({super.key});
@@ -395,7 +396,12 @@ class _PosMainScreenState extends State<PosMainScreen> {
                   DialogManager.showComingSoon(context, '匯出功能');
                   break;
                 case 'receipts':
-                  DialogManager.showComingSoon(context, '收據清單');
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const ReceiptListScreen(),
+                    ),
+                  );
                   break;
                 case 'revenue':
                   DialogManager.showComingSoon(context, '營收總計');
@@ -652,10 +658,18 @@ class _PosMainScreenState extends State<PosMainScreen> {
     await _processCheckout();
     if (!mounted) return;
 
-    // 建立並儲存收據
+    // 建立並儲存收據：自訂編號（每日序號），時間精度到分鐘
+    final now = DateTime.now();
+    final id = await ReceiptService.instance
+        .generateReceiptId(payment.method, now: now);
+    final tsMinute = DateTime(now.year, now.month, now.day, now.hour, now.minute);
     final receipt = Receipt.fromCart(
       itemsSnapshot,
-    ).copyWith(paymentMethod: payment.method);
+    ).copyWith(
+      id: id,
+      timestamp: tsMinute,
+      paymentMethod: payment.method,
+    );
     await ReceiptService.instance.saveReceipt(receipt);
     if (!mounted) return;
 
