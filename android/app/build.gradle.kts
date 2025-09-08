@@ -30,11 +30,39 @@ android {
         versionName = flutter.versionName
     }
 
+    // Optional: use a shared debug keystore checked into the repo to keep the
+    // same signature across machines (mac/win). Place the file at
+    // android/keystore/debug.keystore with default android debug creds.
+    val sharedDebugKeystore = file("keystore/debug.keystore")
+
+    signingConfigs {
+        if (sharedDebugKeystore.exists()) {
+            create("sharedDebug") {
+                storeFile = sharedDebugKeystore
+                storePassword = "android"
+                keyAlias = "AndroidDebugKey"
+                keyPassword = "android"
+            }
+        }
+    }
+
     buildTypes {
+        debug {
+            // Prefer shared debug keystore if present; fallback to default debug
+            if (sharedDebugKeystore.exists()) {
+                signingConfig = signingConfigs.getByName("sharedDebug")
+            } else {
+                signingConfig = signingConfigs.getByName("debug")
+            }
+        }
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig = signingConfigs.getByName("debug")
+            // For CI/local quick runs we sign release with debug config unless
+            // a proper release signing is configured via key.properties.
+            if (sharedDebugKeystore.exists()) {
+                signingConfig = signingConfigs.getByName("sharedDebug")
+            } else {
+                signingConfig = signingConfigs.getByName("debug")
+            }
         }
     }
 }

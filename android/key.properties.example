@@ -1,0 +1,7 @@
+storePassword=android
+keyPassword=android
+keyAlias=AndroidDebugKey
+storeFile=keystore/debug.keystore
+
+# Copy this file to android/key.properties (do not commit real secrets)
+# and ensure keystore/debug.keystore exists to share the same signature across machines.
