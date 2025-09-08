@@ -35,11 +35,8 @@ class ProductCard extends StatelessWidget {
         ),
         title: Row(
           children: [
-            Icon(
-              ProductStyleUtils.getProductIcon(product),
-              size: 20,
-              color: ProductStyleUtils.getProductIconColor(product),
-            ),
+      Text(ProductStyleUtils.getProductEmoji(product),
+        style: const TextStyle(fontSize: 18)),
             const SizedBox(width: 8),
             Expanded(
               child: Row(
@@ -110,17 +107,11 @@ class ProductGridCard extends StatelessWidget {
             children: [
               Row(
                 children: [
-                  Icon(
-                    ProductStyleUtils.getProductIcon(product),
-                    size: 20,
-                    color: ProductStyleUtils.getProductIconColor(product),
-                  ),
+          Text(ProductStyleUtils.getProductEmoji(product),
+            style: const TextStyle(fontSize: 18)),
                   const Spacer(),
-                  Icon(
-                    ProductStyleUtils.getStockStatusIcon(product.stock),
-                    size: 16,
-                    color: ProductStyleUtils.getStockColor(product.stock),
-                  ),
+          Text(ProductStyleUtils.getStockStatusEmoji(product.stock),
+            style: const TextStyle(fontSize: 14)),
                 ],
               ),
               const SizedBox(height: 8),

@@ -1,11 +1,13 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import '../widgets/price_display.dart';
 import '../widgets/product_list_widget.dart';
 import '../widgets/shopping_cart_widget.dart';
+import '../dialogs/payment_dialog.dart';
+import '../services/receipt_service.dart';
 import '../models/product.dart';
 import '../models/cart_item.dart';
+import '../models/receipt.dart';
 import '../services/local_database_service.dart';
 import '../services/bluetooth_scanner_service.dart';
 import '../services/csv_import_service.dart';
@@ -657,12 +659,14 @@ class _PosMainScreenState extends State<PosMainScreen> {
                                 child: Row(
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
-                                    Icon(
-                                      Icons.shopping_cart,
-                                      size: 18,
-                                      color: _currentPageIndex == 0
-                                          ? Colors.blue
-                                          : Colors.black54,
+                                    Text(
+                                      '🛒',
+                                      style: TextStyle(
+                                        fontSize: 18,
+                                        color: _currentPageIndex == 0
+                                            ? Colors.blue
+                                            : Colors.black54,
+                                      ),
                                     ),
                                     SizedBox(width: 4),
                                     Text(
@@ -704,12 +708,14 @@ class _PosMainScreenState extends State<PosMainScreen> {
                                 child: Row(
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
-                                    Icon(
-                                      Icons.search,
-                                      size: 18,
-                                      color: _currentPageIndex == 1
-                                          ? Colors.blue
-                                          : Colors.black54,
+                                    Text(
+                                      '🔎',
+                                      style: TextStyle(
+                                        fontSize: 18,
+                                        color: _currentPageIndex == 1
+                                            ? Colors.blue
+                                            : Colors.black54,
+                                      ),
                                     ),
                                     SizedBox(width: 4),
                                     Text(
@@ -774,69 +780,62 @@ class _PosMainScreenState extends State<PosMainScreen> {
     );
   }
 
-  void _checkout() {
-    // 簡單的結帳流程
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text('結帳確認'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('商品清單:', style: TextStyle(fontWeight: FontWeight.bold)),
-            SizedBox(height: 8),
-            ...cartItems.map(
-              (item) => Padding(
-                padding: EdgeInsets.only(bottom: 4),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Expanded(
-                      child: Text('${item.product.name} x${item.quantity}'),
-                    ),
-                    SmallPriceDisplay(amount: item.subtotal),
-                  ],
-                ),
-              ),
-            ),
-            Divider(),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  '總計:',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                ),
-                LargePriceDisplay(amount: totalAmount),
-              ],
+  void _checkout() async {
+    // 直接進入付款方式（極簡流程）
+    // 結帳前最終把關：折扣不可大於非折扣商品總額
+    final int nonDiscountTotal = cartItems
+        .where((item) => !item.product.isDiscountProduct)
+        .fold<int>(0, (sum, item) => sum + item.subtotal);
+    final int discountAbsTotal = cartItems
+        .where((item) => item.product.isDiscountProduct)
+        .fold<int>(0, (sum, item) => sum + (item.subtotal < 0 ? -item.subtotal : item.subtotal));
+
+    if (discountAbsTotal > nonDiscountTotal) {
+      await showDialog(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text('折扣超過上限'),
+          content: Text(
+            '折扣金額 ($discountAbsTotal 元) 不能大於目前購物車商品總金額 ($nonDiscountTotal 元)。\n請調整折扣或商品數量後再試。',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('確定'),
             ),
           ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text('取消'),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              // 在處理結帳前記錄購物車商品數量
-              final checkedOutCount = cartItems.length;
-              await _processCheckout();
-              if (!context.mounted) return;
-              Navigator.pop(context);
+      );
+      return; // 阻止結帳
+    }
 
-              // 顯示結帳完成的訊息，包含更新的商品數量
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('結帳完成！已更新 $checkedOutCount 個商品的排序'),
-                  duration: Duration(seconds: 3),
-                ),
-              );
-            },
-            child: Text('確認結帳'),
-          ),
-        ],
+    final payment = await PaymentDialog.show(
+      context,
+      totalAmount: totalAmount,
+    );
+    if (payment == null) return; // 取消付款
+
+  // 在清空購物車前拍下快照，用於建立收據
+  final itemsSnapshot = List<CartItem>.from(cartItems);
+  // 記錄購物車商品數量
+  final checkedOutCount = itemsSnapshot.length;
+    await _processCheckout();
+    if (!context.mounted) return;
+
+    // 建立並儲存收據
+  final receipt = Receipt.fromCart(itemsSnapshot)
+        .copyWith(paymentMethod: payment.method);
+    await ReceiptService.instance.saveReceipt(receipt);
+
+    // 顯示結帳完成
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          payment.method == '現金'
+              ? '結帳完成（${payment.method}）。找零 NT\$${payment.change}，已更新 $checkedOutCount 個商品排序'
+              : '結帳完成（${payment.method}），已更新 $checkedOutCount 個商品排序',
+        ),
+        duration: Duration(seconds: 3),
       ),
     );
   }

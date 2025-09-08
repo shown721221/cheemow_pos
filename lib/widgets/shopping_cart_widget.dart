@@ -41,7 +41,7 @@ class ShoppingCartWidget extends StatelessWidget {
             children: [
               if (cartItems.isNotEmpty)
                 IconButton(
-                  icon: Icon(Icons.delete_sweep, size: 24),
+                  icon: Text('🗑️', style: TextStyle(fontSize: 22, color: Colors.grey[600])),
                   onPressed: onClearCart,
                   tooltip: '清空購物車',
                   color: Colors.grey[600],
@@ -58,11 +58,7 @@ class ShoppingCartWidget extends StatelessWidget {
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         // 大一點的購物車圖示，配合愛心主題
-                        Icon(
-                          Icons.shopping_bag_outlined,
-                          size: 80,
-                          color: Colors.grey[300],
-                        ),
+                        Text('🛍️', style: TextStyle(fontSize: 72, color: Colors.grey[300])),
                         SizedBox(height: 20),
                         Row(
                           mainAxisAlignment: MainAxisAlignment.center,
@@ -105,7 +101,7 @@ class ShoppingCartWidget extends StatelessWidget {
                             alignment: Alignment.centerRight,
                             padding: EdgeInsets.only(right: 16),
                             color: Colors.red,
-                            child: Icon(Icons.delete, color: Colors.white),
+                            child: Text('🗑️', style: TextStyle(fontSize: 22, color: Colors.white)),
                           ),
                           onDismissed: (direction) {
                             onRemoveItem(index);
@@ -259,10 +255,10 @@ class ShoppingCartWidget extends StatelessWidget {
                   SizedBox(
                     width: double.infinity,
                     height: 50,
-                    child: ElevatedButton.icon(
-                      onPressed: onCheckout,
-                      icon: Icon(Icons.payment),
-                      label: Text('結帳', style: TextStyle(fontSize: 18)),
+                      child: ElevatedButton.icon(
+                        onPressed: onCheckout,
+                        icon: Icon(Icons.shopping_bag_outlined, size: 22),
+                        label: Text('結帳', style: TextStyle(fontSize: 18)),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.green,
                         foregroundColor: Colors.white,

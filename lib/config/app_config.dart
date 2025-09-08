@@ -1,5 +1,6 @@
 import 'package:flutter/services.dart';
 import '../services/local_database_service.dart';
+import '../services/receipt_service.dart';
 import '../services/bluetooth_scanner_service.dart';
 
 class AppConfig {
@@ -12,6 +13,9 @@ class AppConfig {
 
   // 初始化本地資料庫
   await LocalDatabaseService.instance.initialize();
+
+  // 初始化收據服務
+  await ReceiptService.instance.initialize();
 
     // 初始化藍芽掃描器服務
     await BluetoothScannerService.instance.initialize();

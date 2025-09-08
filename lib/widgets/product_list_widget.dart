@@ -202,11 +202,7 @@ class _ProductListWidgetState extends State<ProductListWidget> {
                               ),
                             ],
                           ),
-                          trailing: Icon(
-                            Icons.add_shopping_cart,
-                            color: Colors.blue,
-                            size: 24,
-                          ),
+                          trailing: Text('🛒', style: TextStyle(fontSize: 22, color: Colors.blue)),
                           onTap: () => widget.onProductTap(product),
                         ),
                       );

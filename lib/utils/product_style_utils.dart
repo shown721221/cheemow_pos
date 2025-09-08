@@ -55,10 +55,10 @@ class ProductStyleUtils {
     return null;
   }
 
-  /// 取得商品圖標（根據商品類型）
-  static IconData getProductIcon(Product product) {
-    // 商品卡片一律使用購物袋圖標
-    return Icons.shopping_bag;
+  /// 取得商品 emoji 圖示（字串）
+  static String getProductEmoji(Product product) {
+    // 商品卡片一律使用購物袋 emoji
+    return '🛍️';
   }
 
   /// 取得商品圖標顏色
@@ -85,16 +85,16 @@ class ProductStyleUtils {
     }
   }
 
-  /// 取得庫存狀態圖標
-  static IconData getStockStatusIcon(int stock) {
+  /// 取得庫存狀態 emoji
+  static String getStockStatusEmoji(int stock) {
     if (stock > stockLowThreshold) {
-      return Icons.check_circle;
+      return '✅';
     } else if (stock > 0) {
-      return Icons.warning;
+      return '⚠️';
     } else if (stock == 0) {
-      return Icons.error;
+      return '⛔️';
     } else {
-      return Icons.dangerous;
+      return '🚫';
     }
   }
 
@@ -163,10 +163,10 @@ class ProductStyleUtils {
   final baseColor = getStockColor(stock);
   // 避免 withOpacity 的棄用警告，改為 withValues 近似 12% 透明度
   final bg = baseColor.withValues(alpha: 0.12);
-    final icon = getStockStatusIcon(stock);
+    final icon = getStockStatusEmoji(stock);
     final text = getStockStatusDescription(stock);
     return Chip(
-      avatar: Icon(icon, size: 16, color: baseColor),
+      avatar: Text(icon, style: const TextStyle(fontSize: 14)),
       label: Text(text, style: TextStyle(color: baseColor, fontWeight: FontWeight.w600)),
       backgroundColor: bg,
       visualDensity: VisualDensity.compact,

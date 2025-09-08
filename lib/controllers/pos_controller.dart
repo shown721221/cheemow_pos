@@ -199,6 +199,21 @@ class PosController extends ChangeNotifier {
     if (_cartItems.isEmpty) return null;
 
     try {
+      // 結帳前最終把關：折扣不可大於非折扣商品總額（避免負總額）
+      final int nonDiscountTotal = _cartItems
+          .where((item) => !item.product.isDiscountProduct)
+          .fold<int>(0, (sum, item) => sum + item.subtotal);
+      final int discountAbsTotal = _cartItems
+          .where((item) => item.product.isDiscountProduct)
+          .fold<int>(0, (sum, item) => sum + (item.subtotal < 0 ? -item.subtotal : item.subtotal));
+
+      if (discountAbsTotal > nonDiscountTotal) {
+        if (kDebugMode) {
+          print('⛔️ 折扣金額 ($discountAbsTotal) 大於非折扣商品總額 ($nonDiscountTotal)，已阻止結帳');
+        }
+        return null;
+      }
+
       final checkoutTime = DateTime.now();
 
       // 1. 建立收據並儲存（優先級最高）

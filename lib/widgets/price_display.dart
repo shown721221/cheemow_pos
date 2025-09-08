@@ -19,18 +19,11 @@ class PriceDisplay extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // 新台幣1000元鈔票的藍綠色
-    const Color ntd1000Color = Color(0xFF006B7A); // 深藍綠色，接近千元鈔票顏色
-
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(
-          Icons.payments, // 鈔票/付款圖示
-          size: iconSize,
-          color: ntd1000Color, // 固定使用千元鈔票顏色
-        ),
-        SizedBox(width: 4.0),
+  Text('💵', style: TextStyle(fontSize: iconSize)),
+  SizedBox(width: 6.0),
         Text(
           amount.toString(),
           style: TextStyle(
