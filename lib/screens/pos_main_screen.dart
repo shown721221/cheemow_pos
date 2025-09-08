@@ -14,6 +14,8 @@ import '../services/csv_import_service.dart';
 import '../managers/keyboard_scanner_manager.dart';
 import '../dialogs/price_input_dialog_manager.dart';
 import '../utils/product_sort_utils.dart';
+import '../dialogs/dialog_manager.dart';
+import '../config/app_config.dart';
 
 class PosMainScreen extends StatefulWidget {
   const PosMainScreen({super.key});
@@ -38,16 +40,18 @@ class _PosMainScreenState extends State<PosMainScreen> {
     super.initState();
     _loadProducts();
     _listenToBarcodeScanner();
-  // 使用鍵盤掃描管理器，集中處理條碼鍵盤事件
-  _kbScanner = KeyboardScannerManager(onBarcodeScanned: _onBarcodeScanned);
-  ServicesBinding.instance.keyboard.addHandler(_kbScanner!.handleKeyEvent);
+    // 使用鍵盤掃描管理器，集中處理條碼鍵盤事件
+    _kbScanner = KeyboardScannerManager(onBarcodeScanned: _onBarcodeScanned);
+    ServicesBinding.instance.keyboard.addHandler(_kbScanner!.handleKeyEvent);
   }
 
   @override
   void dispose() {
     // 移除鍵盤掃描管理器監聽
     if (_kbScanner != null) {
-      ServicesBinding.instance.keyboard.removeHandler(_kbScanner!.handleKeyEvent);
+      ServicesBinding.instance.keyboard.removeHandler(
+        _kbScanner!.handleKeyEvent,
+      );
       _kbScanner!.dispose();
     }
     super.dispose();
@@ -76,18 +80,20 @@ class _PosMainScreenState extends State<PosMainScreen> {
     final product = await LocalDatabaseService.instance.getProductByBarcode(
       barcode,
     );
+    if (!mounted) return;
     if (product != null) {
       _addToCart(product);
       setState(() {
         lastScannedBarcode = barcode;
       });
     } else {
-      _showProductNotFoundDialog(barcode);
+      // 統一改用 DialogManager 提示
+      DialogManager.showProductNotFound(context, barcode);
     }
   }
 
   void _addToCart(Product product) async {
-    // 如果是特殊商品（價格為0），需要手動輸入價格
+    // 特殊商品（價格為 0）需要輸入實際價格
     if (product.price == 0) {
       final inputPrice = await PriceInputDialogManager.showCustomNumberInput(
         context,
@@ -102,17 +108,9 @@ class _PosMainScreenState extends State<PosMainScreen> {
     }
   }
 
-  // 已移除：以 PriceInputDialogManager 取代
-
-  /// 顯示自定義數字鍵盤輸入對話框
-  // 已移除：以 PriceInputDialogManager 取代
-
-  // 已移除：以 PriceInputDialogManager 取代
-
-  // 已移除：以 PriceInputDialogManager 取代
-
+  // 插入商品到購物車（頂部），若同品且同價已存在則數量+1並移至頂部
   void _addProductToCart(Product product, int actualPrice) {
-    // 如果實際價格與商品原價不同，創建一個新的商品物件
+    // 若實際售價不同，需要建立臨時商品副本
     final productToAdd = actualPrice != product.price
         ? Product(
             id: product.id,
@@ -126,20 +124,18 @@ class _PosMainScreenState extends State<PosMainScreen> {
           )
         : product;
 
-    final existingItemIndex = cartItems.indexWhere(
+    final existingIndex = cartItems.indexWhere(
       (item) =>
           item.product.id == productToAdd.id &&
           item.product.price == actualPrice,
     );
 
     setState(() {
-      if (existingItemIndex >= 0) {
-        // 如果商品已存在，增加數量並移到頂部
-        final existingItem = cartItems.removeAt(existingItemIndex);
-        existingItem.increaseQuantity();
-        cartItems.insert(0, existingItem);
+      if (existingIndex >= 0) {
+        final existing = cartItems.removeAt(existingIndex);
+        existing.increaseQuantity();
+        cartItems.insert(0, existing);
       } else {
-        // 新商品插入到頂部（索引0）
         cartItems.insert(0, CartItem(product: productToAdd));
       }
     });
@@ -147,7 +143,9 @@ class _PosMainScreenState extends State<PosMainScreen> {
 
   void _removeFromCart(int index) {
     setState(() {
-      cartItems.removeAt(index);
+      if (index >= 0 && index < cartItems.length) {
+        cartItems.removeAt(index);
+      }
     });
   }
 
@@ -170,21 +168,7 @@ class _PosMainScreenState extends State<PosMainScreen> {
     });
   }
 
-  void _showProductNotFoundDialog(String barcode) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text('找不到商品'),
-        content: Text('條碼 $barcode 對應的商品不存在'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text('確定'),
-          ),
-        ],
-      ),
-    );
-  }
+  // 本地未使用：找不到商品改由 DialogManager 管理
 
   int get totalAmount {
     return cartItems.fold(0, (total, item) => total + item.subtotal);
@@ -198,27 +182,18 @@ class _PosMainScreenState extends State<PosMainScreen> {
   Future<void> _importCsvData() async {
     // 匯入前的簡單數字密碼確認，預設 0000
     final bool confirmed = await _confirmImportWithPin();
-    if (!confirmed) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('已取消匯入')),
-      );
-      return;
-    }
+    if (!confirmed) return;
 
-    // 顯示loading
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => const Center(child: CircularProgressIndicator()),
-    );
+    // 顯示 loading
+    if (!mounted) return;
+    DialogManager.showLoading(context, message: '匯入中...');
 
     try {
-  final result = await CsvImportService.importFromFile();
-      
-  // 關閉loading
-  if (!mounted) return;
-  Navigator.pop(context);
+      final result = await CsvImportService.importFromFile();
+
+      // 關閉 loading
+      if (!mounted) return;
+      DialogManager.hideLoading(context);
 
       if (result.cancelled) {
         return; // 使用者取消，不顯示任何訊息
@@ -227,67 +202,69 @@ class _PosMainScreenState extends State<PosMainScreen> {
       if (result.success) {
         // 重新載入商品資料
         await _loadProducts();
+        if (!mounted) return;
 
         // 顯示匯入結果
-        _showImportResultDialog(result);
+        DialogManager.showImportResult(context, result);
       } else {
         // 顯示錯誤訊息
-        _showErrorDialog('匯入失敗', result.errorMessage ?? '未知錯誤');
+        DialogManager.showError(context, '匯入失敗', result.errorMessage ?? '未知錯誤');
       }
     } catch (e) {
-  // 關閉loading
-  if (!mounted) return;
-  Navigator.pop(context);
-      _showErrorDialog('匯入失敗', e.toString());
+      // 關閉 loading
+      if (!mounted) return;
+      DialogManager.hideLoading(context);
+      DialogManager.showError(context, '匯入失敗', e.toString());
     }
   }
 
   /// 匯入前 PIN 確認（四位數字，預設 0000）
   Future<bool> _confirmImportWithPin() async {
-  const pin = '0203';
+    final pin = AppConfig.csvImportPin;
     String input = '';
     String? error;
     bool ok = false;
 
-  await showDialog(
+    await showDialog(
       context: context,
       barrierDismissible: false,
       builder: (context) {
         return StatefulBuilder(
           builder: (context, setS) {
             Widget buildNumKey(String number) => SizedBox(
-                  width: 60,
-                  height: 48,
-                  child: ElevatedButton(
-                    onPressed: input.length < 4
-                        ? () => setS(() {
-                              input += number;
-                              error = null;
-                              if (input.length == 4) {
-                                if (input == pin) {
-                                  ok = true;
-                                  Navigator.pop(context);
-                                } else {
-                                  error = '密碼錯誤，請再試一次';
-                                }
-                              }
-                            })
-                        : null,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.blue[50],
-                      foregroundColor: Colors.blue[700],
-                    ),
-                    child: Text(
-                      number,
-                      style: const TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
+              width: 60,
+              height: 48,
+              child: ElevatedButton(
+                onPressed: input.length < 4
+                    ? () => setS(() {
+                        input += number;
+                        error = null;
+                        if (input.length == 4) {
+                          if (input == pin) {
+                            ok = true;
+                            Navigator.pop(context);
+                          } else {
+                            error = '密碼錯誤，請再試一次';
+                          }
+                        }
+                      })
+                    : null,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.blue[50],
+                  foregroundColor: Colors.blue[700],
+                ),
+                child: Text(
+                  number,
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
                   ),
-                );
+                ),
+              ),
+            );
 
-            Widget buildActionKey(String label, VoidCallback onPressed) => SizedBox(
+            Widget buildActionKey(String label, VoidCallback onPressed) =>
+                SizedBox(
                   width: 60,
                   height: 48,
                   child: ElevatedButton(
@@ -302,16 +279,16 @@ class _PosMainScreenState extends State<PosMainScreen> {
 
             String masked = '••••'.substring(0, input.length).padRight(4, '—');
 
-      return AlertDialog(
+            return AlertDialog(
               content: SizedBox(
                 width: 320,
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-        const Text('此動作會取代目前的商品資料。'),
-        const SizedBox(height: 8),
-        const Text('請輸入 4 位數字密碼以繼續：'),
+                    const Text('此動作會取代目前的商品資料。'),
+                    const SizedBox(height: 8),
+                    const Text('請輸入 4 位數字密碼以繼續：'),
                     const SizedBox(height: 12),
                     Container(
                       padding: const EdgeInsets.symmetric(vertical: 12),
@@ -369,15 +346,22 @@ class _PosMainScreenState extends State<PosMainScreen> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                       children: [
-                        buildActionKey('清除', () => setS(() {
-                              input = '';
-                              error = null;
-                            })),
+                        buildActionKey(
+                          '清除',
+                          () => setS(() {
+                            input = '';
+                            error = null;
+                          }),
+                        ),
                         buildNumKey('0'),
-                        buildActionKey('刪除', () => setS(() {
-                              if (input.isNotEmpty) input = input.substring(0, input.length - 1);
-                              error = null;
-                            })),
+                        buildActionKey(
+                          '刪除',
+                          () => setS(() {
+                            if (input.isNotEmpty)
+                              input = input.substring(0, input.length - 1);
+                            error = null;
+                          }),
+                        ),
                       ],
                     ),
                   ],
@@ -395,153 +379,12 @@ class _PosMainScreenState extends State<PosMainScreen> {
       },
     );
 
-  return ok;
+    return ok;
   }
 
-  /// 顯示匯入結果對話框
-  void _showImportResultDialog(CsvImportResult result) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Row(
-          children: [
-            Icon(
-              result.hasErrors ? Icons.warning : Icons.check_circle,
-              color: result.hasErrors ? Colors.orange : Colors.green,
-            ),
-            SizedBox(width: 8),
-            Text('匯入完成'),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('檔案：${result.fileName}'),
-            SizedBox(height: 8),
-            Text(result.statusMessage),
-            if (result.hasErrors) ...[
-              SizedBox(height: 16),
-              Text('錯誤詳情：', style: TextStyle(fontWeight: FontWeight.bold)),
-              SizedBox(height: 8),
-              Container(
-                height: 150,
-                width: double.maxFinite,
-                decoration: BoxDecoration(
-                  border: Border.all(color: Colors.grey),
-                  borderRadius: BorderRadius.circular(4),
-                ),
-                child: Scrollbar(
-                  child: ListView.builder(
-                    itemCount: result.errors.length,
-                    itemBuilder: (context, index) => Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      child: Text(
-                        result.errors[index],
-                        style: TextStyle(fontSize: 12),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text('確定'),
-          ),
-          if (result.hasErrors)
-            TextButton(
-              onPressed: () {
-                Navigator.pop(context);
-                _showCsvFormatHelp();
-              },
-              child: Text('查看格式說明'),
-            ),
-        ],
-      ),
-    );
-  }
+  // 對話框統一改用 DialogManager，移除本地自建實作
 
-  /// 顯示錯誤對話框
-  void _showErrorDialog(String title, String message) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Row(
-          children: [
-            Icon(Icons.error, color: Colors.red),
-            SizedBox(width: 8),
-            Text(title),
-          ],
-        ),
-        content: Text(message),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text('確定'),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              _showCsvFormatHelp();
-            },
-            child: Text('查看格式說明'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  /// 顯示CSV格式說明
-  void _showCsvFormatHelp() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text('CSV格式說明'),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('CSV檔案格式要求：', style: TextStyle(fontWeight: FontWeight.bold)),
-              SizedBox(height: 8),
-              Text('1. 第一行必須是標頭：id,barcode,name,price,category,stock'),
-              Text('2. 每一行代表一個商品'),
-              Text('3. 欄位說明：'),
-              Text('   • id: 商品唯一識別碼'),
-              Text('   • barcode: 商品條碼'),
-              Text('   • name: 商品名稱'),
-              Text('   • price: 價格（整數，單位：台幣元）'),
-              Text('   • category: 商品分類'),
-              Text('   • stock: 庫存數量（整數）'),
-              SizedBox(height: 16),
-              Text('範例：', style: TextStyle(fontWeight: FontWeight.bold)),
-              Container(
-                padding: EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: Colors.grey[100],
-                  borderRadius: BorderRadius.circular(4),
-                ),
-                child: Text(
-                  CsvImportService.generateSampleCsv(),
-                  style: TextStyle(fontSize: 12, fontFamily: 'monospace'),
-                ),
-              ),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text('確定'),
-          ),
-        ],
-      ),
-    );
-  }
+  // CSV 格式說明已統一由 DialogManager.showCsvFormatHelp(context) 處理
 
   @override
   Widget build(BuildContext context) {
@@ -562,13 +405,13 @@ class _PosMainScreenState extends State<PosMainScreen> {
                   _importCsvData();
                   break;
                 case 'export':
-                  _showComingSoonDialog('匯出功能');
+                  DialogManager.showComingSoon(context, '匯出功能');
                   break;
                 case 'receipts':
-                  _showComingSoonDialog('收據清單');
+                  DialogManager.showComingSoon(context, '收據清單');
                   break;
                 case 'revenue':
-                  _showComingSoonDialog('營收總計');
+                  DialogManager.showComingSoon(context, '營收總計');
                   break;
               }
             },
@@ -788,7 +631,11 @@ class _PosMainScreenState extends State<PosMainScreen> {
         .fold<int>(0, (sum, item) => sum + item.subtotal);
     final int discountAbsTotal = cartItems
         .where((item) => item.product.isDiscountProduct)
-        .fold<int>(0, (sum, item) => sum + (item.subtotal < 0 ? -item.subtotal : item.subtotal));
+        .fold<int>(
+          0,
+          (sum, item) =>
+              sum + (item.subtotal < 0 ? -item.subtotal : item.subtotal),
+        );
 
     if (discountAbsTotal > nonDiscountTotal) {
       await showDialog(
@@ -809,23 +656,23 @@ class _PosMainScreenState extends State<PosMainScreen> {
       return; // 阻止結帳
     }
 
-    final payment = await PaymentDialog.show(
-      context,
-      totalAmount: totalAmount,
-    );
+    final payment = await PaymentDialog.show(context, totalAmount: totalAmount);
+    if (!mounted) return;
     if (payment == null) return; // 取消付款
 
-  // 在清空購物車前拍下快照，用於建立收據
-  final itemsSnapshot = List<CartItem>.from(cartItems);
-  // 記錄購物車商品數量
-  final checkedOutCount = itemsSnapshot.length;
+    // 在清空購物車前拍下快照，用於建立收據
+    final itemsSnapshot = List<CartItem>.from(cartItems);
+    // 記錄購物車商品數量
+    final checkedOutCount = itemsSnapshot.length;
     await _processCheckout();
-    if (!context.mounted) return;
+    if (!mounted) return;
 
     // 建立並儲存收據
-  final receipt = Receipt.fromCart(itemsSnapshot)
-        .copyWith(paymentMethod: payment.method);
+    final receipt = Receipt.fromCart(
+      itemsSnapshot,
+    ).copyWith(paymentMethod: payment.method);
     await ReceiptService.instance.saveReceipt(receipt);
+    if (!mounted) return;
 
     // 顯示結帳完成
     ScaffoldMessenger.of(context).showSnackBar(
@@ -863,7 +710,9 @@ class _PosMainScreenState extends State<PosMainScreen> {
       final qty = quantityByBarcode[product.barcode] ?? 0;
       if (qty > 0) {
         // 結帳過的商品：更新結帳時間與庫存（特殊商品不扣庫存）
-        final newStock = product.isSpecialProduct ? product.stock : (product.stock - qty);
+        final newStock = product.isSpecialProduct
+            ? product.stock
+            : (product.stock - qty);
         final updatedProduct = Product(
           id: product.id,
           barcode: product.barcode,
@@ -876,14 +725,16 @@ class _PosMainScreenState extends State<PosMainScreen> {
         );
         updatedProducts.add(updatedProduct);
         updatedCount++;
-        debugPrint('更新商品: ${product.name} (${product.barcode}) -> 結帳時間: $checkoutTime, 庫存: ${product.stock} -> $newStock (扣 $qty)');
+        debugPrint(
+          '更新商品: ${product.name} (${product.barcode}) -> 結帳時間: $checkoutTime, 庫存: ${product.stock} -> $newStock (扣 $qty)',
+        );
       } else {
         // 其他商品保持原狀
         updatedProducts.add(product);
       }
     }
 
-  debugPrint('實際更新了 $updatedCount 個商品');
+    debugPrint('實際更新了 $updatedCount 個商品');
 
     // 重新排序商品
     updatedProducts.sort((a, b) {
@@ -940,10 +791,10 @@ class _PosMainScreenState extends State<PosMainScreen> {
       });
     });
 
-  // 保存更新後的商品資料到本地存儲
-  await _saveProductsToStorage();
+    // 保存更新後的商品資料到本地存儲
+    await _saveProductsToStorage();
 
-  debugPrint('結帳完成，商品列表已更新，實際更新: $updatedCount 個商品');
+    debugPrint('結帳完成，商品列表已更新，實際更新: $updatedCount 個商品');
   }
 
   /// 建構搜尋頁面
@@ -1392,9 +1243,9 @@ class _PosMainScreenState extends State<PosMainScreen> {
       _searchQuery = '篩選結果 (${_selectedFilters.join(', ')})';
     });
 
-  // 顯示搜尋結果通知
-  if (!context.mounted) return;
-  ScaffoldMessenger.of(context).showSnackBar(
+    // 顯示搜尋結果通知
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text('找到 ${filteredProducts.length} 項商品'),
         duration: Duration(seconds: 2),
@@ -1402,34 +1253,13 @@ class _PosMainScreenState extends State<PosMainScreen> {
     );
   }
 
-  /// 顯示敬請期待對話框
-  void _showComingSoonDialog(String featureName) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Row(
-          children: [
-            Icon(Icons.construction, color: Colors.orange),
-            SizedBox(width: 8),
-            Text('敬請期待'),
-          ],
-        ),
-        content: Text('$featureName 功能正在開發中，敬請期待！'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: Text('確定'),
-          ),
-        ],
-      ),
-    );
-  }
+  // 敬請期待改由 DialogManager.showComingSoon(context, featureName) 統一處理
 
   Future<void> _saveProductsToStorage() async {
     try {
       await LocalDatabaseService.instance.saveProducts(products);
     } catch (e) {
-  debugPrint('保存商品資料失敗: $e');
+      debugPrint('保存商品資料失敗: $e');
     }
   }
 
