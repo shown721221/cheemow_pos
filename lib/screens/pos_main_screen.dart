@@ -300,9 +300,25 @@ class _PosMainScreenState extends State<PosMainScreen> {
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     // 保留說明：覆蓋警告與輸入提示（移除標題文字）
-                    Text('⚠️ 這會覆蓋所有商品資料', textAlign: TextAlign.center, style: TextStyle(color: Colors.orange[700], fontSize: 12, fontWeight: FontWeight.w600)),
+                    Text(
+                      '⚠️ 這會覆蓋所有商品資料',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: Colors.orange[700],
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
                     const SizedBox(height: 6),
-                    const Text('✨ 請輸入奇妙數字 ✨', textAlign: TextAlign.center, style: TextStyle(fontSize:13,fontWeight: FontWeight.w600, color: Colors.deepOrange)),
+                    const Text(
+                      '✨ 請輸入奇妙數字 ✨',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.deepOrange,
+                      ),
+                    ),
                     const SizedBox(height: 12),
                     Container(
                       padding: const EdgeInsets.symmetric(vertical: 12),
@@ -693,7 +709,7 @@ class _PosMainScreenState extends State<PosMainScreen> {
         }
       }
 
-  // 建立可愛繽紛的圖像 Widget（統一卡片樣式）
+      // 建立可愛繽紛的圖像 Widget（統一卡片樣式）
       final now = DateTime.now();
       final y = now.year.toString().padLeft(4, '0');
       final m = now.month.toString().padLeft(2, '0');
@@ -703,11 +719,23 @@ class _PosMainScreenState extends State<PosMainScreen> {
       // captureKey 用於不可見的「未遮蔽」版本擷取；預覽不使用 key
       final captureKey = GlobalKey();
 
-      final tsHeadline = const TextStyle(fontSize: 28, fontWeight: FontWeight.w900);
-      final tsSectionLabel = const TextStyle(fontSize: 20, fontWeight: FontWeight.w700);
-      final tsMetricValueLg = const TextStyle(fontSize: 24, fontWeight: FontWeight.w800);
-      final tsMetricValue = const TextStyle(fontSize: 18, fontWeight: FontWeight.w700);
-  // final tsChipValue = const TextStyle(fontSize: 16, fontWeight: FontWeight.w600); // reserved for future chips
+      final tsHeadline = const TextStyle(
+        fontSize: 28,
+        fontWeight: FontWeight.w900,
+      );
+      final tsSectionLabel = const TextStyle(
+        fontSize: 20,
+        fontWeight: FontWeight.w700,
+      );
+      final tsMetricValueLg = const TextStyle(
+        fontSize: 24,
+        fontWeight: FontWeight.w800,
+      );
+      final tsMetricValue = const TextStyle(
+        fontSize: 18,
+        fontWeight: FontWeight.w700,
+      );
+      // final tsChipValue = const TextStyle(fontSize: 16, fontWeight: FontWeight.w600); // reserved for future chips
       // metric card
       Widget metricCard({
         required String icon,
@@ -735,14 +763,16 @@ class _PosMainScreenState extends State<PosMainScreen> {
               const SizedBox(height: 2),
               Text(
                 value,
-                style: (large ? tsMetricValueLg : tsMetricValue).copyWith(color: valueColor ?? Colors.black87),
+                style: (large ? tsMetricValueLg : tsMetricValue).copyWith(
+                  color: valueColor ?? Colors.black87,
+                ),
               ),
             ],
           ),
         );
       }
 
-  Widget revenueWidget({required bool showNumbers, Key? key}) {
+      Widget revenueWidget({required bool showNumbers, Key? key}) {
         String money(int v) {
           final s = v.toString();
           final reg = RegExp(r'\B(?=(\d{3})+(?!\d))');
@@ -761,7 +791,7 @@ class _PosMainScreenState extends State<PosMainScreen> {
           key: key,
           child: Container(
             width: 800,
-            padding: const EdgeInsets.fromLTRB(28,28,28,24),
+            padding: const EdgeInsets.fromLTRB(28, 28, 28, 24),
             decoration: BoxDecoration(
               gradient: const LinearGradient(
                 begin: Alignment.topCenter,
@@ -770,7 +800,11 @@ class _PosMainScreenState extends State<PosMainScreen> {
               ),
               borderRadius: BorderRadius.circular(32),
               boxShadow: [
-                BoxShadow(color: Colors.black.withOpacity(0.08), blurRadius: 26, offset: const Offset(0,10)),
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.08),
+                  blurRadius: 26,
+                  offset: const Offset(0, 10),
+                ),
               ],
             ),
             child: Column(
@@ -779,10 +813,7 @@ class _PosMainScreenState extends State<PosMainScreen> {
               children: [
                 Row(
                   children: [
-                    Text(
-                      '🌈 今日營收',
-                      style: tsHeadline,
-                    ),
+                    Text('🌈 今日營收', style: tsHeadline),
                     const Spacer(),
                     Text(
                       dateStr,
@@ -832,10 +863,7 @@ class _PosMainScreenState extends State<PosMainScreen> {
                         size: 32,
                       ),
                       const SizedBox(width: 12),
-                      Text(
-                        '總營收',
-                        style: tsSectionLabel,
-                      ),
+                      Text('總營收', style: tsSectionLabel),
                       const Spacer(),
                       Text(
                         mask(total),
@@ -1019,39 +1047,143 @@ class _PosMainScreenState extends State<PosMainScreen> {
           await MediaStore.ensureInitialized();
           final mediaStore = MediaStore();
           MediaStore.appFolder = 'cheemow_pos';
-          final saveInfo = await mediaStore.saveFile(
-            tempFilePath: tempPngFile!.path,
+          // ---- 淨空同日重複檔 (含 (1)(2)... ) 以避免再產生編號 ----
+          try {
+            final baseNameNoExt = fileName.substring(
+              0,
+              fileName.length - 4,
+            ); // 去掉 .png
+            for (int i = 0; i < 8; i++) {
+              final candidate = i == 0 ? fileName : '${baseNameNoExt} ($i).png';
+              final deleted = await mediaStore.deleteFile(
+                fileName: candidate,
+                dirType: DirType.download,
+                dirName: DirName.download,
+                relativePath: dateStr,
+              );
+              if (deleted) {
+                // ignore: avoid_print
+                print('[RevenueExport] pre-clean deleted: $candidate');
+              }
+            }
+          } catch (e) {
+            // ignore: avoid_print
+            print('[RevenueExport] pre-clean error: $e');
+          }
+          // 先檢查是否存在 -> 存在則用 editFile 覆寫，不存在則 saveFile
+          final existingUri = await mediaStore.getFileUri(
+            fileName: fileName,
             dirType: DirType.download,
             dirName: DirName.download,
-            // 使用日期子資料夾與人氣指數一致
             relativePath: dateStr,
           );
-          savedPublicPath = saveInfo?.uri.toString();
-          if (savedPublicPath != null) {
-            final pReal = await mediaStore.getFilePathFromUri(
-              uriString: savedPublicPath,
+          if (existingUri != null) {
+            final tmpFile = tempPngFile; // promote for non-null access
+            if (tmpFile == null) throw Exception('temp file missing');
+            // 直接覆寫內容
+            final ok = await mediaStore.editFile(
+              uriString: existingUri.toString(),
+              tempFilePath: tmpFile.path,
             );
-            if (pReal != null) savedPublicPath = pReal;
+            if (ok) {
+              savedPublicPath = await mediaStore.getFilePathFromUri(
+                uriString: existingUri.toString(),
+              );
+              // ignore: avoid_print
+              print('[RevenueExport] edited existing file: $savedPublicPath');
+            } else {
+              // 覆寫失敗：嘗試刪除再重新建立
+              // ignore: avoid_print
+              print('[RevenueExport] editFile failed, fallback delete+save');
+              try {
+                await mediaStore.deleteFile(
+                  fileName: fileName,
+                  dirType: DirType.download,
+                  dirName: DirName.download,
+                  relativePath: dateStr,
+                );
+              } catch (e) {
+                // ignore: avoid_print
+                print('[RevenueExport] delete old file failed: $e');
+              }
+              final saveInfo = await mediaStore.saveFile(
+                tempFilePath: tmpFile.path,
+                dirType: DirType.download,
+                dirName: DirName.download,
+                relativePath: dateStr,
+              );
+              savedPublicPath = saveInfo?.uri.toString();
+              if (saveInfo != null) {
+                if (saveInfo.isDuplicated) {
+                  // ignore: avoid_print
+                  print('[RevenueExport] duplicated created: ${saveInfo.name}');
+                }
+              }
+              if (savedPublicPath != null) {
+                final pReal = await mediaStore.getFilePathFromUri(
+                  uriString: savedPublicPath,
+                );
+                if (pReal != null) savedPublicPath = pReal;
+              }
+            }
+          } else {
+            final tmpFile = tempPngFile; // promote
+            if (tmpFile == null) throw Exception('temp file missing');
+            final saveInfo = await mediaStore.saveFile(
+              tempFilePath: tmpFile.path,
+              dirType: DirType.download,
+              dirName: DirName.download,
+              // 使用日期子資料夾與人氣指數一致
+              relativePath: dateStr,
+            );
+            if (saveInfo != null && saveInfo.isDuplicated) {
+              // 理論上第一次不應 duplicated，若發生記錄
+              // ignore: avoid_print
+              print(
+                '[RevenueExport] unexpected duplicated on first save: ${saveInfo.name}',
+              );
+            }
+            savedPublicPath = saveInfo?.uri.toString();
+            if (savedPublicPath != null) {
+              final pReal = await mediaStore.getFilePathFromUri(
+                uriString: savedPublicPath,
+              );
+              if (pReal != null) savedPublicPath = pReal;
+            }
+            // ignore: avoid_print
+            print('[RevenueExport] created new file: $savedPublicPath');
           }
-          // ignore: avoid_print
-          print('[RevenueExport] downloads(MediaStore): $savedPublicPath');
         } catch (e) {
           // ignore: avoid_print
-            print('[RevenueExport] save to public Downloads failed: $e');
+          print('[RevenueExport] save to public Downloads failed: $e');
         }
-        try { await tempPngFile?.delete(); } catch (_) {}
+        try {
+          await tempPngFile?.delete();
+        } catch (_) {}
       } else {
         String? downloadsPath;
         try {
           final downloads = await getDownloadsDirectory();
           downloadsPath = downloads?.path;
-        } catch (_) { downloadsPath = null; }
+        } catch (_) {
+          downloadsPath = null;
+        }
         if (downloadsPath != null) {
-          final targetDir = Directory(p.join(downloadsPath, 'cheemow_pos', dateStr));
+          final targetDir = Directory(
+            p.join(downloadsPath, 'cheemow_pos', dateStr),
+          );
           if (!await targetDir.exists()) {
-            try { await targetDir.create(recursive: true); } catch (_) {}
+            try {
+              await targetDir.create(recursive: true);
+            } catch (_) {}
           }
-            easyFile = File(p.join(targetDir.path, fileName));
+          easyFile = File(p.join(targetDir.path, fileName));
+          // 若已存在則刪除再寫入，避免殘留舊檔（確保覆寫語意明確）
+          try {
+            if (await easyFile.exists()) {
+              await easyFile.delete();
+            }
+          } catch (_) {}
           try {
             await easyFile.writeAsBytes(bytes, flush: true);
             // ignore: avoid_print
@@ -1108,12 +1240,14 @@ class _PosMainScreenState extends State<PosMainScreen> {
             current += d;
             setS(() => tempValue = int.tryParse(current) ?? 0);
           }
-            void clearAll() {
+
+          void clearAll() {
             setS(() {
               current = '';
               tempValue = 0;
             });
           }
+
           void confirm() async {
             if (tempValue < 0) return; // 不接受負值
             await AppConfig.setPettyCash(tempValue);
@@ -1124,6 +1258,7 @@ class _PosMainScreenState extends State<PosMainScreen> {
               SnackBar(content: Text('零用金已設定為 💲' + tempValue.toString())),
             );
           }
+
           Widget priceDisplay() => Container(
             width: double.infinity,
             padding: const EdgeInsets.all(16),
@@ -1153,7 +1288,10 @@ class _PosMainScreenState extends State<PosMainScreen> {
               ),
               child: Text(
                 n,
-                style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+                style: const TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
           );
@@ -1175,23 +1313,38 @@ class _PosMainScreenState extends State<PosMainScreen> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Text('💰 設定零用金', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                  const Text(
+                    '💰 設定零用金',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
                   const SizedBox(height: 12),
                   priceDisplay(),
                   const SizedBox(height: 16),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: [numKey('1', () => append('1')), numKey('2', () => append('2')), numKey('3', () => append('3'))],
+                    children: [
+                      numKey('1', () => append('1')),
+                      numKey('2', () => append('2')),
+                      numKey('3', () => append('3')),
+                    ],
                   ),
                   const SizedBox(height: 8),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: [numKey('4', () => append('4')), numKey('5', () => append('5')), numKey('6', () => append('6'))],
+                    children: [
+                      numKey('4', () => append('4')),
+                      numKey('5', () => append('5')),
+                      numKey('6', () => append('6')),
+                    ],
                   ),
                   const SizedBox(height: 8),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: [numKey('7', () => append('7')), numKey('8', () => append('8')), numKey('9', () => append('9'))],
+                    children: [
+                      numKey('7', () => append('7')),
+                      numKey('8', () => append('8')),
+                      numKey('9', () => append('9')),
+                    ],
                   ),
                   const SizedBox(height: 8),
                   Row(
@@ -1225,22 +1378,28 @@ class _PosMainScreenState extends State<PosMainScreen> {
             child: ElevatedButton(
               onPressed: input.length < 4
                   ? () => setS(() {
-                        input += d;
-                        if (input.length == 4) {
-                          if (input == pin) {
-                            ok = true;
-                            Navigator.of(ctx).pop();
-                          } else {
-                            input = '';
-                          }
+                      input += d;
+                      if (input.length == 4) {
+                        if (input == pin) {
+                          ok = true;
+                          Navigator.of(ctx).pop();
+                        } else {
+                          input = '';
                         }
-                      })
+                      }
+                    })
                   : null,
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.blue[50],
                 foregroundColor: Colors.blue[700],
               ),
-              child: Text(d, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+              child: Text(
+                d,
+                style: const TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
             ),
           );
           return AlertDialog(
@@ -1250,9 +1409,20 @@ class _PosMainScreenState extends State<PosMainScreen> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Text('✨ 請輸入奇妙數字 ✨', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Colors.deepOrange), textAlign: TextAlign.center),
+                  const Text(
+                    '✨ 請輸入奇妙數字 ✨',
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.deepOrange,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
                   const SizedBox(height: 6),
-                  Text('目前零用金：💲' + AppConfig.pettyCash.toString(), style: TextStyle(fontSize: 12, color: Colors.blueGrey[600])),
+                  Text(
+                    '目前零用金：💲' + AppConfig.pettyCash.toString(),
+                    style: TextStyle(fontSize: 12, color: Colors.blueGrey[600]),
+                  ),
                   const SizedBox(height: 12),
                   Container(
                     padding: const EdgeInsets.symmetric(vertical: 12),
@@ -1264,15 +1434,28 @@ class _PosMainScreenState extends State<PosMainScreen> {
                     child: Text(
                       ('••••'.substring(0, input.length)).padRight(4, '—'),
                       textAlign: TextAlign.center,
-                      style: const TextStyle(fontSize: 24, letterSpacing: 4, fontWeight: FontWeight.bold),
+                      style: const TextStyle(
+                        fontSize: 24,
+                        letterSpacing: 4,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ),
                   const SizedBox(height: 12),
-                  Row(mainAxisAlignment: MainAxisAlignment.spaceEvenly, children: [numKey('1'), numKey('2'), numKey('3')]),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [numKey('1'), numKey('2'), numKey('3')],
+                  ),
                   const SizedBox(height: 8),
-                  Row(mainAxisAlignment: MainAxisAlignment.spaceEvenly, children: [numKey('4'), numKey('5'), numKey('6')]),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [numKey('4'), numKey('5'), numKey('6')],
+                  ),
                   const SizedBox(height: 8),
-                  Row(mainAxisAlignment: MainAxisAlignment.spaceEvenly, children: [numKey('7'), numKey('8'), numKey('9')]),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [numKey('7'), numKey('8'), numKey('9')],
+                  ),
                   const SizedBox(height: 8),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -1556,17 +1739,101 @@ class _PosMainScreenState extends State<PosMainScreen> {
           await MediaStore.ensureInitialized();
           final mediaStore = MediaStore();
           MediaStore.appFolder = 'cheemow_pos';
-          final save = await mediaStore.saveFile(
-            tempFilePath: tmp.path,
+          // ---- 淨空同日重複檔 (含 (1)(2)... ) ----
+          try {
+            final baseNameNoExt = fileName.substring(0, fileName.length - 4);
+            for (int i = 0; i < 8; i++) {
+              final candidate = i == 0 ? fileName : '${baseNameNoExt} ($i).png';
+              final deleted = await mediaStore.deleteFile(
+                fileName: candidate,
+                dirType: DirType.download,
+                dirName: DirName.download,
+                relativePath: dateStr,
+              );
+              if (deleted) {
+                // ignore: avoid_print
+                print('[PopularityExport] pre-clean deleted: $candidate');
+              }
+            }
+          } catch (e) {
+            // ignore: avoid_print
+            print('[PopularityExport] pre-clean error: $e');
+          }
+          final exist = await mediaStore.getFileUri(
+            fileName: fileName,
             dirType: DirType.download,
             dirName: DirName.download,
             relativePath: dateStr,
           );
-          String? uriStr = save?.uri.toString();
-          if (uriStr != null) {
-            final real = await mediaStore.getFilePathFromUri(uriString: uriStr);
-            if (real != null) uriStr = real;
-            savedPath = uriStr;
+          if (exist != null) {
+            final ok = await mediaStore.editFile(
+              uriString: exist.toString(),
+              tempFilePath: tmp.path,
+            );
+            if (ok) {
+              savedPath = await mediaStore.getFilePathFromUri(
+                uriString: exist.toString(),
+              );
+              // ignore: avoid_print
+              print('[PopularityExport] edited existing file: $savedPath');
+            } else {
+              // ignore: avoid_print
+              print('[PopularityExport] editFile failed, fallback delete+save');
+              try {
+                await mediaStore.deleteFile(
+                  fileName: fileName,
+                  dirType: DirType.download,
+                  dirName: DirName.download,
+                  relativePath: dateStr,
+                );
+              } catch (e) {
+                // ignore: avoid_print
+                print('[PopularityExport] delete old failed: $e');
+              }
+              final save = await mediaStore.saveFile(
+                tempFilePath: tmp.path,
+                dirType: DirType.download,
+                dirName: DirName.download,
+                relativePath: dateStr,
+              );
+              String? uriStr = save?.uri.toString();
+              if (save != null && save.isDuplicated) {
+                // ignore: avoid_print
+                print(
+                  '[PopularityExport] duplicated after fallback: ${save.name}',
+                );
+              }
+              if (uriStr != null) {
+                final real = await mediaStore.getFilePathFromUri(
+                  uriString: uriStr,
+                );
+                if (real != null) uriStr = real;
+                savedPath = uriStr;
+              }
+            }
+          } else {
+            final save = await mediaStore.saveFile(
+              tempFilePath: tmp.path,
+              dirType: DirType.download,
+              dirName: DirName.download,
+              relativePath: dateStr,
+            );
+            String? uriStr = save?.uri.toString();
+            if (save != null && save.isDuplicated) {
+              // ignore: avoid_print
+              print(
+                '[PopularityExport] unexpected duplicated on first save: ${save.name}',
+              );
+            }
+            if (uriStr != null) {
+              final real = await mediaStore.getFilePathFromUri(
+                uriString: uriStr,
+              );
+              if (real != null) uriStr = real;
+              savedPath = uriStr;
+            }
+            // ignore: avoid_print
+            print('[PopularityExport] created new file: $savedPath');
           }
         } finally {
           try {
@@ -1584,6 +1851,10 @@ class _PosMainScreenState extends State<PosMainScreen> {
             } catch (_) {}
           }
           final file = File(p.join(dir.path, fileName));
+          // 明確覆寫：若存在先刪除
+          try {
+            if (await file.exists()) await file.delete();
+          } catch (_) {}
           await file.writeAsBytes(bytes, flush: true);
           savedPath = file.path;
         }

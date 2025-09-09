@@ -164,8 +164,8 @@ class _ReceiptListScreenState extends State<ReceiptListScreen> {
     addSeg(r.id);
     addSeg('$hh:$mm');
     addSeg(r.paymentMethod);
-  // 總金額（已是扣除退貨後的淨額）
-  addSeg('💲' + r.totalAmount.toString());
+    // 總金額（已是扣除退貨後的淨額）
+    addSeg('💲' + r.totalAmount.toString());
     addSeg('售出 $nonSpecialQty 件');
     // 使用與商品清單一致的顏色：預購=紫色、折扣=橘色（取自 ProductStyleUtils 規則）
     if (preorderQty > 0) {
