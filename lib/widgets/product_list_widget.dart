@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/product.dart';
 import '../widgets/price_display.dart';
+import '../config/style_config.dart';
 
 class ProductListWidget extends StatefulWidget {
   final List<Product> products;
@@ -50,34 +51,23 @@ class _ProductListWidgetState extends State<ProductListWidget> {
 
   // 根據商品類型取得商品名稱的顏色
   Color _getProductNameColor(Product product) {
-    if (product.isPreOrderProduct) {
-      return Colors.purple[700]!; // 預約商品：紫色
-    } else if (product.isDiscountProduct) {
-      return Colors.orange[700]!; // 折扣商品：橘色
-    } else {
-      return Colors.black87; // 一般商品：黑色
-    }
+    if (product.isPreOrderProduct) return StyleConfig.preorderColor;
+    if (product.isDiscountProduct) return StyleConfig.discountColor;
+    return StyleConfig.normalTextColor;
   }
 
   // 根據商品類型取得卡片的邊框顏色
   Color? _getCardBorderColor(Product product) {
-    if (product.isPreOrderProduct) {
-      return Colors.purple[300]; // 預約商品：淺紫色邊框
-    } else if (product.isDiscountProduct) {
-      return Colors.orange[300]; // 折扣商品：淺橘色邊框
-    }
-    return null; // 一般商品：無特殊邊框
+    if (product.isPreOrderProduct) return StyleConfig.preorderColor.withOpacity(.35);
+    if (product.isDiscountProduct) return StyleConfig.discountColor.withOpacity(.35);
+    return null;
   }
 
   // 根據庫存數量回傳對應的顏色
   Color _getStockColor(int stock) {
-    if (stock > 0) {
-      return Colors.green[700]!; // 正數：綠色
-    } else if (stock == 0) {
-      return Colors.orange[700]!; // 零：橘色
-    } else {
-      return Colors.red[700]!; // 負數：紅色
-    }
+    if (stock > 0) return Colors.green[700]!;
+    if (stock == 0) return Colors.orange[700]!;
+    return Colors.red[700]!;
   }
 
   // 根據庫存數量回傳顯示文字
