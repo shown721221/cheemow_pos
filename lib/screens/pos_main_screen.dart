@@ -19,7 +19,6 @@ import '../services/bluetooth_scanner_service.dart';
 import '../services/csv_import_service.dart';
 import '../managers/keyboard_scanner_manager.dart';
 import '../dialogs/price_input_dialog_manager.dart';
-import '../utils/product_sort_utils.dart';
 import '../dialogs/dialog_manager.dart';
 import '../config/app_config.dart';
 import 'receipt_list_screen.dart';
@@ -88,12 +87,37 @@ class _PosMainScreenState extends State<PosMainScreen> {
     await LocalDatabaseService.instance.ensureSpecialProducts();
 
     final loadedProducts = await LocalDatabaseService.instance.getProducts();
+    final sorted = _sortProductsDaily(loadedProducts);
+    setState(() { products = sorted; });
+  }
 
-    final sorted = ProductSortUtils.sortProducts(loadedProducts);
-
-    setState(() {
-      products = sorted;
+  // 每日排序：今日有售出的商品 (lastCheckoutTime 為今日) 置頂；
+  // 特殊商品永遠最前（預購在折扣前），再來今日售出的普通商品（依時間新→舊），
+  // 其餘按名稱。
+  List<Product> _sortProductsDaily(List<Product> list) {
+    final now = DateTime.now();
+    bool isToday(DateTime? dt) => dt != null && dt.year == now.year && dt.month == now.month && dt.day == now.day;
+    final sorted = [...list];
+    sorted.sort((a, b) {
+      final aSpecial = a.isSpecialProduct;
+      final bSpecial = b.isSpecialProduct;
+      if (aSpecial && !bSpecial) return -1;
+      if (bSpecial && !aSpecial) return 1;
+      if (aSpecial && bSpecial) {
+        if (a.isPreOrderProduct && b.isDiscountProduct) return -1;
+        if (a.isDiscountProduct && b.isPreOrderProduct) return 1;
+        return a.name.compareTo(b.name);
+      }
+      final aToday = isToday(a.lastCheckoutTime);
+      final bToday = isToday(b.lastCheckoutTime);
+      if (aToday && !bToday) return -1;
+      if (bToday && !aToday) return 1;
+      if (aToday && bToday) {
+        return b.lastCheckoutTime!.compareTo(a.lastCheckoutTime!);
+      }
+      return a.name.compareTo(b.name);
     });
+    return sorted;
   }
 
   void _listenToBarcodeScanner() {
@@ -1998,31 +2022,8 @@ class _PosMainScreenState extends State<PosMainScreen> {
 
     debugPrint('實際更新了 $updatedCount 個商品');
 
-    // 重新排序商品
-    updatedProducts.sort((a, b) {
-      // 特殊商品始終在最前面
-      if (a.isSpecialProduct && !b.isSpecialProduct) return -1;
-      if (b.isSpecialProduct && !a.isSpecialProduct) return 1;
-
-      // 兩個都是特殊商品時，預約商品排在折扣商品前面
-      if (a.isSpecialProduct && b.isSpecialProduct) {
-        if (a.isPreOrderProduct && b.isDiscountProduct) return -1;
-        if (a.isDiscountProduct && b.isPreOrderProduct) return 1;
-        return 0;
-      }
-
-      // 兩個都是普通商品時，按最後結帳時間排序
-      if (a.lastCheckoutTime != null && b.lastCheckoutTime != null) {
-        return b.lastCheckoutTime!.compareTo(a.lastCheckoutTime!);
-      } else if (a.lastCheckoutTime != null) {
-        return -1;
-      } else if (b.lastCheckoutTime != null) {
-        return 1;
-      }
-
-      // 兩個都沒有結帳記錄，按商品名稱排序
-      return a.name.compareTo(b.name);
-    });
+  // 重新排序商品（依當日銷售規則）
+  final resorted = _sortProductsDaily(updatedProducts);
 
     // 儲存更新後商品
     await LocalDatabaseService.instance.saveProducts(updatedProducts);
@@ -2031,7 +2032,7 @@ class _PosMainScreenState extends State<PosMainScreen> {
       // 清空購物車
       cartItems.clear();
       // 更新產品列表（這會觸發重新排序和回到頂部）
-      products = updatedProducts;
+  products = resorted;
 
       // 若目前左側使用的是搜尋/篩選結果，將其以條碼對映為最新的商品資料，以避免顯示舊庫存
       if (_searchResults.isNotEmpty) {
@@ -2056,7 +2057,7 @@ class _PosMainScreenState extends State<PosMainScreen> {
     // 保存更新後的商品資料到本地存儲
     await _saveProductsToStorage();
 
-    debugPrint('結帳完成，商品列表已更新，實際更新: $updatedCount 個商品');
+  debugPrint('結帳完成，商品列表已更新，實際更新: $updatedCount 個商品 (daily sort applied)');
   }
 
   /// 建構搜尋頁面
