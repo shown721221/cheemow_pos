@@ -535,9 +535,9 @@ class _PosMainScreenState extends State<PosMainScreen> {
                 value: 'sales_export',
                 child: Row(
                   children: const [
-                    Text('�', style: TextStyle(fontSize: 18)),
+                    Text('📊', style: TextStyle(fontSize: 18)),
                     SizedBox(width: 8),
-                    Text('匯出銷售資料'),
+                    Text('匯出小幫手表格'),
                   ],
                 ),
               ),
