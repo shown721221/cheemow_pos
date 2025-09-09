@@ -441,7 +441,7 @@ class _PosMainScreenState extends State<PosMainScreen> {
               PopupMenuItem<String>(
                 value: 'import',
                 child: Row(
-                  children: [
+                  children: const [
                     Text('🧸', style: TextStyle(fontSize: 18)),
                     SizedBox(width: 8),
                     Text('上架寶貝們'),
@@ -451,19 +451,18 @@ class _PosMainScreenState extends State<PosMainScreen> {
               PopupMenuItem<String>(
                 value: 'export',
                 child: Row(
-                  children: [
-                    Icon(Icons.file_download, size: 20),
+                  children: const [
+                    Text('📤', style: TextStyle(fontSize: 18)),
                     SizedBox(width: 8),
                     Text('匯出商品資料'),
                   ],
                 ),
               ),
-              PopupMenuDivider(),
               PopupMenuItem<String>(
                 value: 'receipts',
                 child: Row(
-                  children: [
-                    Icon(Icons.receipt_long, size: 20),
+                  children: const [
+                    Text('🧾', style: TextStyle(fontSize: 18)),
                     SizedBox(width: 8),
                     Text('收據清單'),
                   ],
@@ -472,10 +471,10 @@ class _PosMainScreenState extends State<PosMainScreen> {
               PopupMenuItem<String>(
                 value: 'revenue',
                 child: Row(
-                  children: [
-                    Icon(Icons.analytics, size: 20),
+                  children: const [
+                    Text('🌤️', style: TextStyle(fontSize: 18)),
                     SizedBox(width: 8),
-                    Text('匯出今日營收（圖檔）'),
+                    Text('闆娘心情指數'),
                   ],
                 ),
               ),
