@@ -2018,7 +2018,7 @@ class _PosMainScreenState extends State<PosMainScreen> {
         }
       }
 
-      // 準備銷售 CSV（所有品項，含特殊商品）
+  // 準備銷售 CSV（排除特殊商品：預購 / 折扣 / 特殊商品類別）
       final salesBuffer = StringBuffer();
       // Header：關鍵欄位置前 + 其餘資訊
       salesBuffer.writeln([
@@ -2072,20 +2072,22 @@ class _PosMainScreenState extends State<PosMainScreen> {
             return v;
           }
 
-          salesBuffer.writeln([
-            esc(p.id),
-            esc(p.name),
-            esc(p.barcode),
-            qty.toString(),
-            esc(r.id),
-            esc(dateTimeStr),
-            esc(r.paymentMethod),
-            methodCode(r.paymentMethod),
-            unitPrice.toString(),
-            lineTotal.toString(),
-            esc(p.category.isEmpty ? '未分類' : p.category),
-            isSpecial,
-          ].join(','));
+          if (!p.isSpecialProduct) {
+            salesBuffer.writeln([
+              esc(p.id),
+              esc(p.name),
+              esc(p.barcode),
+              qty.toString(),
+              esc(r.id),
+              esc(dateTimeStr),
+              esc(r.paymentMethod),
+              methodCode(r.paymentMethod),
+              unitPrice.toString(),
+              lineTotal.toString(),
+              esc(p.category.isEmpty ? '未分類' : p.category),
+              isSpecial,
+            ].join(','));
+          }
 
           if (p.isSpecialProduct) {
             specialBuffer.writeln([
