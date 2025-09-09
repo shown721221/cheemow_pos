@@ -1,13 +1,9 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
-import 'dart:io';
-import 'dart:ui' as ui;
-import 'dart:convert';
-import 'package:path_provider/path_provider.dart';
+// import 'dart:ui' as ui; // 擷取已改用 CaptureUtil，不再直接使用
+// import 'dart:convert'; // 已不直接使用
 import 'package:flutter/services.dart';
-import 'package:media_store_plus/media_store_plus.dart';
-import 'package:path/path.dart' as p;
 import '../widgets/product_list_widget.dart';
 import '../widgets/shopping_cart_widget.dart';
 import '../dialogs/payment_dialog.dart';
@@ -27,6 +23,8 @@ import '../config/app_messages.dart';
 import '../services/time_service.dart';
 import '../controllers/pos_cart_controller.dart';
 import '../utils/product_sorter.dart';
+import '../services/export_service.dart';
+import '../utils/capture_util.dart';
 
 class PosMainScreen extends StatefulWidget {
   const PosMainScreen({super.key});
@@ -754,7 +752,7 @@ class _PosMainScreenState extends State<PosMainScreen> {
       final dateStr = '$y-$m-$d';
 
       // captureKey 用於不可見的「未遮蔽」版本擷取；預覽不使用 key
-      final captureKey = GlobalKey();
+  // captureKey 已由 CaptureUtil 內部自行建立
 
       final tsHeadline = const TextStyle(
         fontSize: 28,
@@ -1013,239 +1011,28 @@ class _PosMainScreenState extends State<PosMainScreen> {
         );
       }
 
-      // 插入透明 Overlay，渲染「未遮蔽」版本做擷取，不影響使用者看到的預覽
-      OverlayEntry? captureEntry;
       if (!mounted) return false;
-      final overlayState = Overlay.of(context, rootOverlay: true);
-      captureEntry = OverlayEntry(
-        builder: (ctx) => IgnorePointer(
-          child: Center(
-            child: Opacity(
-              opacity: 0.01,
-              child: Material(
-                color: Colors.transparent,
-                child: revenueWidget(showNumbers: true, key: captureKey),
-              ),
-            ),
-          ),
-        ),
+      final bytes = await CaptureUtil.captureWidget(
+        context: context,
+        builder: (k) => revenueWidget(showNumbers: true, key: k),
+        pixelRatio: 3.0,
       );
-      overlayState.insert(captureEntry);
 
-      // 等待 1~2 個 frame 確保完成繪製
-      await Future.delayed(const Duration(milliseconds: 16));
-      await WidgetsBinding.instance.endOfFrame;
-      await Future.delayed(const Duration(milliseconds: 16));
-
-      // 擷取圖片
-      late final Uint8List bytes;
-      try {
-        final renderObj = captureKey.currentContext?.findRenderObject();
-        if (renderObj is! RenderRepaintBoundary) {
-          await Future.delayed(const Duration(milliseconds: 32));
-          final ro2 = captureKey.currentContext?.findRenderObject();
-          if (ro2 is! RenderRepaintBoundary) {
-            throw Exception('尚未完成渲染，請重試');
-          }
-          final img2 = await ro2.toImage(pixelRatio: 3.0);
-          final bd2 = await img2.toByteData(format: ui.ImageByteFormat.png);
-          bytes = bd2!.buffer.asUint8List();
-        } else {
-          final image = await renderObj.toImage(pixelRatio: 3.0);
-          final byteData = await image.toByteData(
-            format: ui.ImageByteFormat.png,
-          );
-          bytes = byteData!.buffer.asUint8List();
-        }
-      } finally {
-        try {
-          captureEntry.remove();
-        } catch (_) {}
-      }
-
-      // 準備檔名
       final yy = (now.year % 100).toString().padLeft(2, '0');
       final fileName = '營收_$yy$m$d.png';
-      // Android 的 MediaStore 需要一個暫存檔供複製
-      File? tempPngFile;
-      if (Platform.isAndroid) {
-        final tmp = await getTemporaryDirectory();
-        tempPngFile = File('${tmp.path}/$fileName');
-        try {
-          await tempPngFile.writeAsBytes(bytes, flush: true);
-        } catch (_) {}
+      final res = await ExportService.instance.savePng(fileName: fileName, bytes: bytes);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              res.success
+                  ? AppMessages.exportRevenueSuccess(res.paths.join('\n'))
+                  : AppMessages.exportRevenueFailure(res.error ?? '未知錯誤'),
+            ),
+          ),
+        );
       }
-
-      // 下載（Android: Downloads/cheemow_pos/{dateStr}；桌面也建立同樣層級）
-      File? easyFile;
-      String? savedPublicPath;
-      if (Platform.isAndroid) {
-        try {
-          await MediaStore.ensureInitialized();
-          final mediaStore = MediaStore();
-          MediaStore.appFolder = 'cheemow_pos';
-          // ---- 淨空同日重複檔 (含 (1)(2)... ) 以避免再產生編號 ----
-          try {
-            final baseNameNoExt = fileName.substring(
-              0,
-              fileName.length - 4,
-            ); // 去掉 .png
-            for (int i = 0; i < 8; i++) {
-              final candidate = i == 0 ? fileName : '${baseNameNoExt} ($i).png';
-              final deleted = await mediaStore.deleteFile(
-                fileName: candidate,
-                dirType: DirType.download,
-                dirName: DirName.download,
-                relativePath: dateStr,
-              );
-              if (deleted) {
-                // ignore: avoid_print
-                print('[RevenueExport] pre-clean deleted: $candidate');
-              }
-            }
-          } catch (e) {
-            // ignore: avoid_print
-            print('[RevenueExport] pre-clean error: $e');
-          }
-          // 先檢查是否存在 -> 存在則用 editFile 覆寫，不存在則 saveFile
-          final existingUri = await mediaStore.getFileUri(
-            fileName: fileName,
-            dirType: DirType.download,
-            dirName: DirName.download,
-            relativePath: dateStr,
-          );
-          if (existingUri != null) {
-            final tmpFile = tempPngFile; // promote for non-null access
-            if (tmpFile == null) throw Exception('temp file missing');
-            // 直接覆寫內容
-            final ok = await mediaStore.editFile(
-              uriString: existingUri.toString(),
-              tempFilePath: tmpFile.path,
-            );
-            if (ok) {
-              savedPublicPath = await mediaStore.getFilePathFromUri(
-                uriString: existingUri.toString(),
-              );
-              // ignore: avoid_print
-              print('[RevenueExport] edited existing file: $savedPublicPath');
-            } else {
-              // 覆寫失敗：嘗試刪除再重新建立
-              // ignore: avoid_print
-              print('[RevenueExport] editFile failed, fallback delete+save');
-              try {
-                await mediaStore.deleteFile(
-                  fileName: fileName,
-                  dirType: DirType.download,
-                  dirName: DirName.download,
-                  relativePath: dateStr,
-                );
-              } catch (e) {
-                // ignore: avoid_print
-                print('[RevenueExport] delete old file failed: $e');
-              }
-              final saveInfo = await mediaStore.saveFile(
-                tempFilePath: tmpFile.path,
-                dirType: DirType.download,
-                dirName: DirName.download,
-                relativePath: dateStr,
-              );
-              savedPublicPath = saveInfo?.uri.toString();
-              if (saveInfo != null) {
-                if (saveInfo.isDuplicated) {
-                  // ignore: avoid_print
-                  print('[RevenueExport] duplicated created: ${saveInfo.name}');
-                }
-              }
-              if (savedPublicPath != null) {
-                final pReal = await mediaStore.getFilePathFromUri(
-                  uriString: savedPublicPath,
-                );
-                if (pReal != null) savedPublicPath = pReal;
-              }
-            }
-          } else {
-            final tmpFile = tempPngFile; // promote
-            if (tmpFile == null) throw Exception('temp file missing');
-            final saveInfo = await mediaStore.saveFile(
-              tempFilePath: tmpFile.path,
-              dirType: DirType.download,
-              dirName: DirName.download,
-              // 使用日期子資料夾與人氣指數一致
-              relativePath: dateStr,
-            );
-            if (saveInfo != null && saveInfo.isDuplicated) {
-              // 理論上第一次不應 duplicated，若發生記錄
-              // ignore: avoid_print
-              print(
-                '[RevenueExport] unexpected duplicated on first save: ${saveInfo.name}',
-              );
-            }
-            savedPublicPath = saveInfo?.uri.toString();
-            if (savedPublicPath != null) {
-              final pReal = await mediaStore.getFilePathFromUri(
-                uriString: savedPublicPath,
-              );
-              if (pReal != null) savedPublicPath = pReal;
-            }
-            // ignore: avoid_print
-            print('[RevenueExport] created new file: $savedPublicPath');
-          }
-        } catch (e) {
-          // ignore: avoid_print
-          print('[RevenueExport] save to public Downloads failed: $e');
-        }
-        try {
-          await tempPngFile?.delete();
-        } catch (_) {}
-      } else {
-        String? downloadsPath;
-        try {
-          final downloads = await getDownloadsDirectory();
-          downloadsPath = downloads?.path;
-        } catch (_) {
-          downloadsPath = null;
-        }
-        if (downloadsPath != null) {
-          final targetDir = Directory(
-            p.join(downloadsPath, 'cheemow_pos', dateStr),
-          );
-          if (!await targetDir.exists()) {
-            try {
-              await targetDir.create(recursive: true);
-            } catch (_) {}
-          }
-          easyFile = File(p.join(targetDir.path, fileName));
-          // 若已存在則刪除再寫入，避免殘留舊檔（確保覆寫語意明確）
-          try {
-            if (await easyFile.exists()) {
-              await easyFile.delete();
-            }
-          } catch (_) {}
-          try {
-            await easyFile.writeAsBytes(bytes, flush: true);
-            // ignore: avoid_print
-            print('[RevenueExport] downloads: ${easyFile.path}');
-          } catch (e) {
-            // ignore: avoid_print
-            print('[RevenueExport] write downloads failed: $e');
-            easyFile = null;
-          }
-        }
-      }
-
-      // 預覽已顯示於對話框（只有一個畫面，不會先出現一張又跳到另一張）
-
-      if (!mounted) return true;
-      final paths = [
-        if (Platform.isAndroid && savedPublicPath != null)
-          '下載: $savedPublicPath'
-        else if (easyFile != null)
-          '下載: ${easyFile.path}',
-      ].join('\\n');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(AppMessages.exportRevenueSuccess(paths))),
-      );
-      return true;
+      return res.success;
     } catch (e) {
       try {
         if (Navigator.canPop(context)) Navigator.pop(context);
@@ -1623,7 +1410,7 @@ class _PosMainScreenState extends State<PosMainScreen> {
       final now = DateTime.now();
       final dateStr =
           '${now.year.toString().padLeft(4, '0')}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
-      final captureKey = GlobalKey();
+  // captureKey 已由 CaptureUtil 內部自行建立
       Widget popularityWidget({Key? key}) => RepaintBoundary(
         key: key,
         child: Container(
@@ -1725,183 +1512,20 @@ class _PosMainScreenState extends State<PosMainScreen> {
         );
       }
       if (!mounted) return;
-      // 隱藏透明 Overlay 擷取高解析版本
-      final overlayState = Overlay.of(context, rootOverlay: true);
-      final entry = OverlayEntry(
-        builder: (_) => IgnorePointer(
-          child: Center(
-            child: Opacity(
-              opacity: 0.01,
-              child: Material(
-                color: Colors.transparent,
-                child: popularityWidget(key: captureKey),
-              ),
-            ),
-          ),
-        ),
+      final bytes = await CaptureUtil.captureWidget(
+        context: context,
+        builder: (k) => popularityWidget(key: k),
+        pixelRatio: 3.0,
       );
-      overlayState.insert(entry);
-      await Future.delayed(const Duration(milliseconds: 16));
-      await WidgetsBinding.instance.endOfFrame;
-      await Future.delayed(const Duration(milliseconds: 16));
-      late final Uint8List bytes;
-      try {
-        final ro = captureKey.currentContext?.findRenderObject();
-        if (ro is! RenderRepaintBoundary) {
-          await Future.delayed(const Duration(milliseconds: 32));
-          final ro2 = captureKey.currentContext?.findRenderObject();
-          if (ro2 is! RenderRepaintBoundary) throw Exception('渲染尚未完成');
-          final img2 = await ro2.toImage(pixelRatio: 3.0);
-          final bd2 = await img2.toByteData(format: ui.ImageByteFormat.png);
-          bytes = bd2!.buffer.asUint8List();
-        } else {
-          final img = await ro.toImage(pixelRatio: 3.0);
-          final bd = await img.toByteData(format: ui.ImageByteFormat.png);
-          bytes = bd!.buffer.asUint8List();
-        }
-      } finally {
-        try {
-          entry.remove();
-        } catch (_) {}
-      }
 
       final fileName = '人氣指數_${dateStr}.png';
-      String? savedPath;
-      if (Platform.isAndroid) {
-        File? tmp;
-        try {
-          final tmpDir = await getTemporaryDirectory();
-          tmp = File(p.join(tmpDir.path, fileName));
-          await tmp.writeAsBytes(bytes, flush: true);
-          await MediaStore.ensureInitialized();
-          final mediaStore = MediaStore();
-          MediaStore.appFolder = 'cheemow_pos';
-          // ---- 淨空同日重複檔 (含 (1)(2)... ) ----
-          try {
-            final baseNameNoExt = fileName.substring(0, fileName.length - 4);
-            for (int i = 0; i < 8; i++) {
-              final candidate = i == 0 ? fileName : '${baseNameNoExt} ($i).png';
-              final deleted = await mediaStore.deleteFile(
-                fileName: candidate,
-                dirType: DirType.download,
-                dirName: DirName.download,
-                relativePath: dateStr,
-              );
-              if (deleted) {
-                // ignore: avoid_print
-                print('[PopularityExport] pre-clean deleted: $candidate');
-              }
-            }
-          } catch (e) {
-            // ignore: avoid_print
-            print('[PopularityExport] pre-clean error: $e');
-          }
-          final exist = await mediaStore.getFileUri(
-            fileName: fileName,
-            dirType: DirType.download,
-            dirName: DirName.download,
-            relativePath: dateStr,
-          );
-          if (exist != null) {
-            final ok = await mediaStore.editFile(
-              uriString: exist.toString(),
-              tempFilePath: tmp.path,
-            );
-            if (ok) {
-              savedPath = await mediaStore.getFilePathFromUri(
-                uriString: exist.toString(),
-              );
-              // ignore: avoid_print
-              print('[PopularityExport] edited existing file: $savedPath');
-            } else {
-              // ignore: avoid_print
-              print('[PopularityExport] editFile failed, fallback delete+save');
-              try {
-                await mediaStore.deleteFile(
-                  fileName: fileName,
-                  dirType: DirType.download,
-                  dirName: DirName.download,
-                  relativePath: dateStr,
-                );
-              } catch (e) {
-                // ignore: avoid_print
-                print('[PopularityExport] delete old failed: $e');
-              }
-              final save = await mediaStore.saveFile(
-                tempFilePath: tmp.path,
-                dirType: DirType.download,
-                dirName: DirName.download,
-                relativePath: dateStr,
-              );
-              String? uriStr = save?.uri.toString();
-              if (save != null && save.isDuplicated) {
-                // ignore: avoid_print
-                print(
-                  '[PopularityExport] duplicated after fallback: ${save.name}',
-                );
-              }
-              if (uriStr != null) {
-                final real = await mediaStore.getFilePathFromUri(
-                  uriString: uriStr,
-                );
-                if (real != null) uriStr = real;
-                savedPath = uriStr;
-              }
-            }
-          } else {
-            final save = await mediaStore.saveFile(
-              tempFilePath: tmp.path,
-              dirType: DirType.download,
-              dirName: DirName.download,
-              relativePath: dateStr,
-            );
-            String? uriStr = save?.uri.toString();
-            if (save != null && save.isDuplicated) {
-              // ignore: avoid_print
-              print(
-                '[PopularityExport] unexpected duplicated on first save: ${save.name}',
-              );
-            }
-            if (uriStr != null) {
-              final real = await mediaStore.getFilePathFromUri(
-                uriString: uriStr,
-              );
-              if (real != null) uriStr = real;
-              savedPath = uriStr;
-            }
-            // ignore: avoid_print
-            print('[PopularityExport] created new file: $savedPath');
-          }
-        } finally {
-          try {
-            await tmp?.delete();
-          } catch (_) {}
-        }
-      } else {
-        final downloads = await getDownloadsDirectory();
-        final base = downloads?.path;
-        if (base != null) {
-          final dir = Directory(p.join(base, 'cheemow_pos', dateStr));
-          if (!await dir.exists()) {
-            try {
-              await dir.create(recursive: true);
-            } catch (_) {}
-          }
-          final file = File(p.join(dir.path, fileName));
-          // 明確覆寫：若存在先刪除
-          try {
-            if (await file.exists()) await file.delete();
-          } catch (_) {}
-          await file.writeAsBytes(bytes, flush: true);
-          savedPath = file.path;
-        }
-      }
+      final res = await ExportService.instance.savePng(fileName: fileName, bytes: bytes);
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            savedPath != null
-                ? AppMessages.popularityExportSuccess(savedPath)
+            res.success && res.paths.isNotEmpty
+                ? AppMessages.popularityExportSuccess(res.paths.first)
                 : AppMessages.popularityExportFailure,
           ),
         ),
@@ -1931,21 +1555,12 @@ class _PosMainScreenState extends State<PosMainScreen> {
 
       // 建立日期（資料夾 yyyy-MM-dd，同現有圖片匯出）與檔名日期後綴（yyMMdd）
       final now = DateTime.now();
-      final dateFolder =
-          '${now.year.toString().padLeft(4, '0')}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+  // dateFolder 由 ExportService 處理，不再在此使用
       final dateSuffix =
           '${(now.year % 100).toString().padLeft(2, '0')}${now.month.toString().padLeft(2, '0')}${now.day.toString().padLeft(2, '0')}';
 
       // 與營收 / 人氣匯出保持一致：Downloads/cheemow_pos/<date>
-      if (Platform.isAndroid) {
-        try {
-          await MediaStore.ensureInitialized();
-          MediaStore.appFolder = 'cheemow_pos';
-        } catch (e) {
-          // ignore: avoid_print
-          print('[SalesExport] MediaStore init error: $e');
-        }
-      }
+  // 由 ExportService 處理平台差異
 
       // 付款方式代碼對應（與 ReceiptService._methodCode 一致）
       String methodCode(String method) {
@@ -2061,179 +1676,23 @@ class _PosMainScreenState extends State<PosMainScreen> {
         }
       }
 
-      // 生成內容（加上 UTF-8 BOM 方便 Excel 開啟）
-      List<int> withBom(String s) => [0xEF, 0xBB, 0xBF, ...utf8.encode(s)];
-      final salesBytes = withBom(salesBuffer.toString());
-      final specialBytes = withBom(specialBuffer.toString());
-
-      // 儲存：與圖片匯出一致：Android 走 MediaStore，其他平台直接寫 Downloads/cheemow_pos/<dateFolder>
-      Future<String?> saveBytes(String fileName, List<int> bytes) async {
-        String? savedPath;
-        if (Platform.isAndroid) {
-          final mediaStore = MediaStore();
-          File? tmp;
-          try {
-            tmp = File(p.join((await getTemporaryDirectory()).path, fileName));
-            await tmp.writeAsBytes(bytes, flush: true);
-
-            // 預先清理可能存在的重複命名
-            try {
-              final baseNameNoExt = fileName.replaceAll(RegExp(r'\.csv$'), '');
-              for (int i = 0; i < 6; i++) {
-                final candidate = i == 0
-                    ? fileName
-                    : '${baseNameNoExt} ($i).csv';
-                final deleted = await mediaStore.deleteFile(
-                  fileName: candidate,
-                  dirType: DirType.download,
-                  dirName: DirName.download,
-                  relativePath: dateFolder,
-                );
-                if (deleted) {
-                  // ignore: avoid_print
-                  print('[SalesExport] pre-clean deleted: $candidate');
-                }
-              }
-            } catch (e) {
-              // ignore: avoid_print
-              print('[SalesExport] pre-clean error: $e');
-            }
-
-            final exist = await mediaStore.getFileUri(
-              fileName: fileName,
-              dirType: DirType.download,
-              dirName: DirName.download,
-              relativePath: dateFolder,
-            );
-            if (exist != null) {
-              final ok = await mediaStore.editFile(
-                uriString: exist.toString(),
-                tempFilePath: tmp.path,
-              );
-              if (ok) {
-                savedPath = await mediaStore.getFilePathFromUri(
-                  uriString: exist.toString(),
-                );
-                // ignore: avoid_print
-                print('[SalesExport] edited existing file: $savedPath');
-              } else {
-                // 刪除後重存
-                try {
-                  await mediaStore.deleteFile(
-                    fileName: fileName,
-                    dirType: DirType.download,
-                    dirName: DirName.download,
-                    relativePath: dateFolder,
-                  );
-                } catch (e) {
-                  // ignore: avoid_print
-                  print('[SalesExport] delete old failed: $e');
-                }
-                final save = await mediaStore.saveFile(
-                  tempFilePath: tmp.path,
-                  dirType: DirType.download,
-                  dirName: DirName.download,
-                  relativePath: dateFolder,
-                );
-                String? uriStr = save?.uri.toString();
-                if (uriStr != null) {
-                  final real = await mediaStore.getFilePathFromUri(
-                    uriString: uriStr,
-                  );
-                  if (real != null) uriStr = real;
-                  savedPath = uriStr;
-                }
-                // ignore: avoid_print
-                print('[SalesExport] created new file (fallback): $savedPath');
-              }
-            } else {
-              final save = await mediaStore.saveFile(
-                tempFilePath: tmp.path,
-                dirType: DirType.download,
-                dirName: DirName.download,
-                relativePath: dateFolder,
-              );
-              String? uriStr = save?.uri.toString();
-              if (uriStr != null) {
-                final real = await mediaStore.getFilePathFromUri(
-                  uriString: uriStr,
-                );
-                if (real != null) uriStr = real;
-                savedPath = uriStr;
-              }
-              // ignore: avoid_print
-              print('[SalesExport] created new file: $savedPath');
-            }
-          } finally {
-            try {
-              await tmp?.delete();
-            } catch (_) {}
-          }
-        } else {
-          String? base;
-          try {
-            final downloads = await getDownloadsDirectory();
-            base = downloads?.path;
-          } catch (e) {
-            // ignore: avoid_print
-            print('[SalesExport] getDownloadsDirectory error: $e');
-          }
-          if (base == null) {
-            // 後備：使用文件目錄
-            try {
-              final docs = await getApplicationDocumentsDirectory();
-              base = docs.path;
-              // ignore: avoid_print
-              print('[SalesExport] fallback to documents directory: $base');
-            } catch (e) {
-              // ignore: avoid_print
-              print('[SalesExport] documents directory error: $e');
-            }
-          }
-          if (base != null) {
-            final dir = Directory(p.join(base, 'cheemow_pos', dateFolder));
-            if (!await dir.exists()) {
-              try {
-                await dir.create(recursive: true);
-              } catch (e) {
-                print('[SalesExport] create dir error: $e');
-              }
-            }
-            final file = File(p.join(dir.path, fileName));
-            try {
-              if (await file.exists()) await file.delete();
-            } catch (e) {
-              print('[SalesExport] pre-delete error: $e');
-            }
-            try {
-              await file.writeAsBytes(bytes, flush: true);
-              savedPath = file.path;
-            } catch (e) {
-              // ignore: avoid_print
-              print('[SalesExport] write file error: $e');
-            }
-          }
-        }
-        return savedPath;
-      }
-
       final salesFileName = '銷售_${dateSuffix}.csv';
       final specialFileName = '特殊商品_${dateSuffix}.csv';
-      final salesPath = await saveBytes(salesFileName, salesBytes);
-      final specialPath = await saveBytes(specialFileName, specialBytes);
-
+      final res = await ExportService.instance.saveCsvFiles(
+        files: {
+          salesFileName: salesBuffer.toString(),
+          specialFileName: specialBuffer.toString(),
+        },
+        addBom: true,
+      );
       if (!mounted) return;
-      if (salesPath == null && specialPath == null) {
+      if (res.success) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(AppMessages.salesExportFailure('寫入失敗'))),
+          SnackBar(content: Text(AppMessages.salesExportSuccess(res.paths))),
         );
       } else {
-        final paths = [
-          if (salesPath != null) salesPath,
-          if (specialPath != null) specialPath,
-        ];
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(AppMessages.salesExportSuccess(paths))),
+          SnackBar(content: Text(AppMessages.salesExportFailure(res.error ?? '未知錯誤'))),
         );
       }
     } catch (e) {

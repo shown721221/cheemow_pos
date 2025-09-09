@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import '../config/app_messages.dart';
 import '../models/product.dart';
+import '../widgets/numeric_keypad.dart';
+import '../utils/money_formatter.dart';
 
 /// 價格輸入對話框管理器
 /// 負責處理特殊商品的價格輸入界面
@@ -65,28 +67,35 @@ class PriceInputDialogManager {
 
                     SizedBox(height: 16),
 
-                    // 數字鍵盤（透過回呼直接更新外層 currentPrice）
-                    _buildNumberKeypad(
-                      onAppend: (d) => setState(() => currentPrice += d),
-                      onClear: () => setState(() => currentPrice = ''),
-                      onConfirm: () {
-                        if (currentPrice.isEmpty) return;
-                        final price = int.tryParse(currentPrice);
-                        if (price == null || price <= 0) return;
-                        // 折扣驗證
-                        if (product.isDiscountProduct) {
-                          if (price > currentCartTotal) {
-                            _showDiscountError(
-                              context,
-                              price,
-                              currentCartTotal,
-                            );
-                            return;
-                          }
-                          Navigator.of(context).pop(-price);
-                        } else {
-                          Navigator.of(context).pop(price);
+                    NumericKeypad(
+                      keys: const [
+                        ['1','2','3'],
+                        ['4','5','6'],
+                        ['7','8','9'],
+                        ['🧹','0','✅'],
+                      ],
+                      onKeyTap: (k) {
+                        if (k == '🧹') {
+                          setState(() => currentPrice = '');
+                          return;
                         }
+                        if (k == '✅') {
+                          if (currentPrice.isEmpty) return;
+                          final price = int.tryParse(currentPrice);
+                          if (price == null || price <= 0) return;
+                          if (product.isDiscountProduct) {
+                            if (price > currentCartTotal) {
+                              _showDiscountError(context, price, currentCartTotal);
+                              return;
+                            }
+                            Navigator.of(context).pop(-price);
+                          } else {
+                            Navigator.of(context).pop(price);
+                          }
+                          return;
+                        }
+                        // 數字輸入
+                        setState(() => currentPrice += k);
                       },
                     ),
                   ],
@@ -123,99 +132,15 @@ class PriceInputDialogManager {
         color: Colors.grey[50],
       ),
       child: Text(
-        '💲 ${currentPrice.isEmpty ? "0" : currentPrice}',
+        MoneyFormatter.symbol(
+          int.tryParse(currentPrice.isEmpty ? '0' : currentPrice) ?? 0,
+        ),
         style: TextStyle(
           fontSize: 24,
           fontWeight: FontWeight.bold,
           color: priceColor,
         ),
         textAlign: TextAlign.center,
-      ),
-    );
-  }
-
-  /// 構建數字鍵盤
-  static Widget _buildNumberKeypad({
-    required void Function(String digit) onAppend,
-    required VoidCallback onClear,
-    required VoidCallback onConfirm,
-  }) {
-    return Column(
-      children: [
-        // 第一排：1, 2, 3
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-          children: [
-            _buildNumKey('1', () => onAppend('1')),
-            _buildNumKey('2', () => onAppend('2')),
-            _buildNumKey('3', () => onAppend('3')),
-          ],
-        ),
-        SizedBox(height: 8),
-        // 第二排：4, 5, 6
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-          children: [
-            _buildNumKey('4', () => onAppend('4')),
-            _buildNumKey('5', () => onAppend('5')),
-            _buildNumKey('6', () => onAppend('6')),
-          ],
-        ),
-        SizedBox(height: 8),
-        // 第三排：7, 8, 9
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-          children: [
-            _buildNumKey('7', () => onAppend('7')),
-            _buildNumKey('8', () => onAppend('8')),
-            _buildNumKey('9', () => onAppend('9')),
-          ],
-        ),
-        SizedBox(height: 8),
-        // 第四排：清除, 0, 確認
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-          children: [
-            _buildActionKey('🧹', onClear),
-            _buildNumKey('0', () => onAppend('0')),
-            _buildActionKey('✅', onConfirm),
-          ],
-        ),
-      ],
-    );
-  }
-
-  /// 構建數字按鈕
-  static Widget _buildNumKey(String number, VoidCallback onPressed) {
-    return SizedBox(
-      width: 72,
-      height: 60,
-      child: ElevatedButton(
-        onPressed: onPressed,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.blue[50],
-          foregroundColor: Colors.blue[700],
-        ),
-        child: Text(
-          number,
-          style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
-        ),
-      ),
-    );
-  }
-
-  /// 構建功能按鈕
-  static Widget _buildActionKey(String label, VoidCallback onPressed) {
-    return SizedBox(
-      width: 72,
-      height: 60,
-      child: ElevatedButton(
-        onPressed: onPressed,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.orange[50],
-          foregroundColor: Colors.orange[700],
-        ),
-        child: Text(label, style: TextStyle(fontSize: 18)),
       ),
     );
   }

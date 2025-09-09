@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import '../widgets/price_display.dart';
+import '../utils/money_formatter.dart';
+import '../widgets/numeric_keypad.dart';
 
 class PaymentResult {
   final String method; // 現金/轉帳/LinePay
@@ -146,13 +148,17 @@ class PaymentDialog {
                               },
                             ),
                             const SizedBox(height: 8),
-                            _NumericKeypad(
-                              onKey: (key) {
+                            NumericKeypad(
+                              keys: const [
+                                ['1','2','3'],
+                                ['4','5','6'],
+                                ['7','8','9'],
+                                ['00','0','⌫'],
+                              ],
+                              onKeyTap: (key) {
                                 String t = cashController.text;
                                 if (key == '⌫') {
-                                  if (t.isNotEmpty) {
-                                    t = t.substring(0, t.length - 1);
-                                  }
+                                  if (t.isNotEmpty) t = t.substring(0, t.length - 1);
                                 } else {
                                   t = t + key;
                                 }
@@ -171,8 +177,8 @@ class PaymentDialog {
                                 const SizedBox(width: 8),
                                 Text(
                                   change >= 0
-                                      ? '💲 $change'
-                                      : '不足 💲 ${-change}',
+                                      ? MoneyFormatter.symbol(change)
+                                      : '不足 ${MoneyFormatter.symbol(-change)}',
                                   style: TextStyle(
                                     color: change < 0
                                         ? Colors.red
@@ -318,50 +324,6 @@ class _PaymentPlaceholder extends StatelessWidget {
         color: Colors.grey.shade50,
       ),
       child: Text(label, style: const TextStyle(color: Colors.black54)),
-    );
-  }
-}
-
-class _NumericKeypad extends StatelessWidget {
-  final void Function(String key) onKey;
-  const _NumericKeypad({required this.onKey});
-
-  @override
-  Widget build(BuildContext context) {
-    final keys = [
-      ['1', '2', '3'],
-      ['4', '5', '6'],
-      ['7', '8', '9'],
-      ['00', '0', '⌫'],
-    ];
-    return Column(
-      children: keys.map((row) {
-        return Padding(
-          padding: const EdgeInsets.only(bottom: 8),
-          child: Row(
-            children: row.map((k) {
-              return Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 4),
-                  child: SizedBox(
-                    height: 60,
-                    child: OutlinedButton(
-                      onPressed: () => onKey(k),
-                      child: Text(
-                        k,
-                        style: const TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              );
-            }).toList(),
-          ),
-        );
-      }).toList(),
     );
   }
 }

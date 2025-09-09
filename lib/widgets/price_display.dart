@@ -25,7 +25,7 @@ class PriceDisplay extends StatelessWidget {
   Text('💵', style: TextStyle(fontSize: iconSize)),
   SizedBox(width: 6.0),
         Text(
-          amount.toString(),
+          amount.toString(), // 保持原樣（列表不加千分位避免過寬），如需可改 MoneyFormatter.thousands(amount)
           style: TextStyle(
             fontSize: fontSize,
             color: color,
