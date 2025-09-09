@@ -16,9 +16,9 @@ class AppConfig {
     _pettyCash = value;
     final prefs = await SharedPreferences.getInstance();
     await prefs.setInt(_pettyCashKey, value);
-  final now = DateTime.now();
-  final today = _fmtDate(now);
-  await prefs.setString(_pettyCashDateKey, today);
+    final now = DateTime.now();
+    final today = _fmtDate(now);
+    await prefs.setString(_pettyCashDateKey, today);
   }
 
   static Future<void> initialize() async {
@@ -66,5 +66,5 @@ class AppConfig {
   }
 
   static String _fmtDate(DateTime dt) =>
-      '${dt.year.toString().padLeft(4,'0')}${dt.month.toString().padLeft(2,'0')}${dt.day.toString().padLeft(2,'0')}';
+      '${dt.year.toString().padLeft(4, '0')}${dt.month.toString().padLeft(2, '0')}${dt.day.toString().padLeft(2, '0')}';
 }

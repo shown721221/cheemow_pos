@@ -2,11 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../models/product.dart';
 import '../models/receipt.dart';
+import '../config/app_messages.dart';
 
 /// 對話框管理器
 /// 負責處理所有 POS 系統相關的對話框
 class PosDialogManager {
-  
   /// 顯示特殊商品價格輸入對話框
   static Future<int?> showPriceInputDialog(
     BuildContext context,
@@ -30,11 +30,7 @@ class PosDialogManager {
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: const [
-                      Icon(
-                        Icons.schedule,
-                        color: Colors.purple,
-                        size: 20,
-                      ),
+                      Icon(Icons.schedule, color: Colors.purple, size: 20),
                       SizedBox(width: 8),
                       Text(
                         '預約商品',
@@ -53,11 +49,7 @@ class PosDialogManager {
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: const [
-                      Icon(
-                        Icons.percent,
-                        color: Colors.orange,
-                        size: 20,
-                      ),
+                      Icon(Icons.percent, color: Colors.orange, size: 20),
                       SizedBox(width: 8),
                       Text(
                         '特價商品',
@@ -108,7 +100,7 @@ class PosDialogManager {
                   // 顯示錯誤提示
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
-                      content: Text('請輸入有效的價格'),
+                      content: Text(AppMessages.invalidPrice),
                       backgroundColor: Colors.red,
                     ),
                   );
@@ -129,47 +121,48 @@ class PosDialogManager {
     int totalQuantity,
   ) async {
     return await showDialog<bool>(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text('確認結帳'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('總數量: $totalQuantity 件'),
-              const SizedBox(height: 8),
-              Text(
-                '總金額: \$${totalAmount.toString()}',
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.green,
+          context: context,
+          builder: (BuildContext context) {
+            return AlertDialog(
+              title: const Text('確認結帳'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('總數量: $totalQuantity 件'),
+                  const SizedBox(height: 8),
+                  Text(
+                    '總金額: \$${totalAmount.toString()}',
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.green,
+                    ),
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    Navigator.of(context).pop(false);
+                  },
+                  child: const Text('取消'),
                 ),
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop(false);
-              },
-              child: const Text('取消'),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                Navigator.of(context).pop(true);
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.green,
-                foregroundColor: Colors.white,
-              ),
-              child: const Text('確認結帳'),
-            ),
-          ],
-        );
-      },
-    ) ?? false;
+                ElevatedButton(
+                  onPressed: () {
+                    Navigator.of(context).pop(true);
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.green,
+                    foregroundColor: Colors.white,
+                  ),
+                  child: const Text('確認結帳'),
+                ),
+              ],
+            );
+          },
+        ) ??
+        false;
   }
 
   /// 顯示結帳成功對話框
@@ -255,10 +248,7 @@ class PosDialogManager {
   }
 
   /// 顯示商品未找到對話框
-  static void showProductNotFoundDialog(
-    BuildContext context,
-    String barcode,
-  ) {
+  static void showProductNotFoundDialog(BuildContext context, String barcode) {
     showDialog(
       context: context,
       builder: (BuildContext context) {

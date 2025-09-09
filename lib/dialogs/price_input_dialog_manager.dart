@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../config/app_messages.dart';
 import '../models/product.dart';
 
 /// 價格輸入對話框管理器
@@ -227,9 +228,7 @@ class PriceInputDialogManager {
   ) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(
-          '折扣金額 ($discountAmount 元) 不能大於目前購物車總金額 ($currentTotal 元)',
-        ),
+        content: Text(AppMessages.discountExceed(discountAmount, currentTotal)),
         backgroundColor: Colors.orange[600],
       ),
     );

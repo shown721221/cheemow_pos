@@ -22,6 +22,7 @@ import '../dialogs/price_input_dialog_manager.dart';
 import '../dialogs/dialog_manager.dart';
 import '../config/app_config.dart';
 import 'receipt_list_screen.dart';
+import '../config/app_messages.dart';
 
 class PosMainScreen extends StatefulWidget {
   const PosMainScreen({super.key});
@@ -33,6 +34,9 @@ class PosMainScreen extends StatefulWidget {
 class _PosMainScreenState extends State<PosMainScreen> {
   List<Product> products = [];
   List<CartItem> cartItems = [];
+  // 結帳後暫存最後購物車，用於結帳完成後仍顯示內容直到下一次操作
+  List<CartItem> _lastCheckedOutCart = [];
+  String? _lastCheckoutPaymentMethod; // 顯示『已結帳完成 使用 XX 付款方式』
   String lastScannedBarcode = '';
   KeyboardScannerManager? _kbScanner;
   bool _shouldScrollToTop = false;
@@ -93,9 +97,15 @@ class _PosMainScreenState extends State<PosMainScreen> {
     () async {
       final ok = await _exportTodayRevenueImage();
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(ok ? '啟動自動匯出營收完成' : '啟動自動匯出營收失敗')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            ok
+                ? AppMessages.autoExportRevenueSuccess
+                : AppMessages.autoExportRevenueFailure,
+          ),
+        ),
+      );
     }();
   }
 
@@ -105,7 +115,9 @@ class _PosMainScreenState extends State<PosMainScreen> {
 
     final loadedProducts = await LocalDatabaseService.instance.getProducts();
     final sorted = _sortProductsDaily(loadedProducts);
-    setState(() { products = sorted; });
+    setState(() {
+      products = sorted;
+    });
   }
 
   // 每日排序：今日有售出的商品 (lastCheckoutTime 為今日) 置頂；
@@ -113,7 +125,11 @@ class _PosMainScreenState extends State<PosMainScreen> {
   // 其餘按名稱。
   List<Product> _sortProductsDaily(List<Product> list) {
     final now = DateTime.now();
-    bool isToday(DateTime? dt) => dt != null && dt.year == now.year && dt.month == now.month && dt.day == now.day;
+    bool isToday(DateTime? dt) =>
+        dt != null &&
+        dt.year == now.year &&
+        dt.month == now.month &&
+        dt.day == now.day;
     final sorted = [...list];
     sorted.sort((a, b) {
       final aSpecial = a.isSpecialProduct;
@@ -224,8 +240,19 @@ class _PosMainScreenState extends State<PosMainScreen> {
     return cartItems.fold(0, (total, item) => total + item.quantity);
   }
 
+  void _clearPostCheckoutPreview() {
+    setState(() {
+      _lastCheckedOutCart.clear();
+      _lastCheckoutPaymentMethod = null;
+    });
+  }
+
   // 移除購物車指定索引的項目
   void _removeFromCart(int index) {
+    // 若仍在顯示上一筆結帳結果，任何修改購物車的操作都先清除暫存
+    if (_lastCheckedOutCart.isNotEmpty) {
+      _clearPostCheckoutPreview();
+    }
     setState(() {
       if (index >= 0 && index < cartItems.length) {
         cartItems.removeAt(index);
@@ -466,6 +493,7 @@ class _PosMainScreenState extends State<PosMainScreen> {
             icon: Icon(Icons.more_vert),
             tooltip: '功能選單',
             onSelected: (String value) async {
+              if (_lastCheckedOutCart.isNotEmpty) _clearPostCheckoutPreview();
               switch (value) {
                 case 'import':
                   _importCsvData();
@@ -576,7 +604,11 @@ class _PosMainScreenState extends State<PosMainScreen> {
                       children: [
                         Expanded(
                           child: GestureDetector(
-                            onTap: () => setState(() => _currentPageIndex = 0),
+                            onTap: () {
+                              if (_lastCheckedOutCart.isNotEmpty)
+                                _clearPostCheckoutPreview();
+                              setState(() => _currentPageIndex = 0);
+                            },
                             child: Container(
                               decoration: BoxDecoration(
                                 color: _currentPageIndex == 0
@@ -625,7 +657,11 @@ class _PosMainScreenState extends State<PosMainScreen> {
                         ),
                         Expanded(
                           child: GestureDetector(
-                            onTap: () => setState(() => _currentPageIndex = 1),
+                            onTap: () {
+                              if (_lastCheckedOutCart.isNotEmpty)
+                                _clearPostCheckoutPreview();
+                              setState(() => _currentPageIndex = 1);
+                            },
                             child: Container(
                               decoration: BoxDecoration(
                                 color: _currentPageIndex == 1
@@ -682,7 +718,11 @@ class _PosMainScreenState extends State<PosMainScreen> {
                             products: _searchResults.isNotEmpty
                                 ? _searchResults
                                 : products,
-                            onProductTap: _addToCart,
+                            onProductTap: (p) {
+                              if (_lastCheckedOutCart.isNotEmpty)
+                                _clearPostCheckoutPreview();
+                              _addToCart(p);
+                            },
                             shouldScrollToTop: _shouldScrollToTop,
                           )
                         : _buildSearchPage(),
@@ -701,11 +741,22 @@ class _PosMainScreenState extends State<PosMainScreen> {
                 cartItems: cartItems,
                 onRemoveItem: _removeFromCart,
                 onClearCart: () {
+                  if (_lastCheckedOutCart.isNotEmpty) {
+                    _clearPostCheckoutPreview();
+                    return;
+                  }
                   setState(() {
                     cartItems.clear();
                   });
                 },
                 onCheckout: _checkout,
+                lastCheckedOutCart: _lastCheckedOutCart,
+                lastCheckoutPaymentMethod: _lastCheckoutPaymentMethod,
+                onAnyInteraction: () {
+                  if (_lastCheckedOutCart.isNotEmpty) {
+                    _clearPostCheckoutPreview();
+                  }
+                },
               ),
             ),
           ],
@@ -1246,18 +1297,18 @@ class _PosMainScreenState extends State<PosMainScreen> {
         else if (easyFile != null)
           '下載: ${easyFile.path}',
       ].join('\\n');
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('已匯出今日營收圖\n$paths')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(AppMessages.exportRevenueSuccess(paths))),
+      );
       return true;
     } catch (e) {
       try {
         if (Navigator.canPop(context)) Navigator.pop(context);
       } catch (_) {}
       if (!mounted) return false;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('匯出營收圖失敗: $e')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(AppMessages.exportRevenueFailure(e))),
+      );
       return false;
     }
   }
@@ -1296,7 +1347,7 @@ class _PosMainScreenState extends State<PosMainScreen> {
             Navigator.of(ctx).pop(tempValue);
             setState(() {});
             ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('零用金已設定為 💲' + tempValue.toString())),
+              SnackBar(content: Text(AppMessages.pettyCashSet(tempValue))),
             );
           }
 
@@ -1903,14 +1954,18 @@ class _PosMainScreenState extends State<PosMainScreen> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(savedPath != null ? '已匯出寶寶人氣指數：$savedPath' : '匯出失敗'),
+          content: Text(
+            savedPath != null
+                ? AppMessages.popularityExportSuccess(savedPath)
+                : AppMessages.popularityExportFailure,
+          ),
         ),
       );
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('人氣指數匯出錯誤：$e')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(AppMessages.popularityExportError(e))),
+      );
     }
   }
 
@@ -1982,12 +2037,19 @@ class _PosMainScreenState extends State<PosMainScreen> {
       SnackBar(
         content: Text(
           payment.method == '現金'
-              ? '結帳完成（${payment.method}）。找零 💲${payment.change}，已更新 $checkedOutCount 個商品排序'
-              : '結帳完成（${payment.method}），已更新 $checkedOutCount 個商品排序',
+              ? AppMessages.checkoutCash(
+                  payment.method,
+                  payment.change,
+                  checkedOutCount,
+                )
+              : AppMessages.checkoutOther(payment.method, checkedOutCount),
         ),
         duration: Duration(seconds: 3),
       ),
     );
+    setState(() {
+      _lastCheckoutPaymentMethod = payment.method;
+    });
   }
 
   Future<void> _processCheckout() async {
@@ -2039,17 +2101,17 @@ class _PosMainScreenState extends State<PosMainScreen> {
 
     debugPrint('實際更新了 $updatedCount 個商品');
 
-  // 重新排序商品（依當日銷售規則）
-  final resorted = _sortProductsDaily(updatedProducts);
+    // 重新排序商品（依當日銷售規則）
+    final resorted = _sortProductsDaily(updatedProducts);
 
     // 儲存更新後商品
     await LocalDatabaseService.instance.saveProducts(updatedProducts);
 
     setState(() {
-      // 清空購物車
+      // 暫存結帳前的購物車內容供結帳完成後顯示
+      _lastCheckedOutCart = List<CartItem>.from(cartItems);
       cartItems.clear();
-      // 更新產品列表（這會觸發重新排序和回到頂部）
-  products = resorted;
+      products = resorted;
 
       // 若目前左側使用的是搜尋/篩選結果，將其以條碼對映為最新的商品資料，以避免顯示舊庫存
       if (_searchResults.isNotEmpty) {
@@ -2074,7 +2136,7 @@ class _PosMainScreenState extends State<PosMainScreen> {
     // 保存更新後的商品資料到本地存儲
     await _saveProductsToStorage();
 
-  debugPrint('結帳完成，商品列表已更新，實際更新: $updatedCount 個商品 (daily sort applied)');
+    debugPrint('結帳完成，商品列表已更新，實際更新: $updatedCount 個商品 (daily sort applied)');
   }
 
   /// 建構搜尋頁面
@@ -2527,7 +2589,7 @@ class _PosMainScreenState extends State<PosMainScreen> {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('找到 ${filteredProducts.length} 項商品'),
+        content: Text(AppMessages.searchResultCount(filteredProducts.length)),
         duration: Duration(seconds: 2),
       ),
     );

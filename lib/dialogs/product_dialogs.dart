@@ -1,17 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../models/product.dart';
+import '../config/app_messages.dart';
 
 /// 商品相關對話框
 class ProductDialogs {
-  
   /// 顯示特殊商品價格輸入對話框
   static Future<int?> showPriceInputDialog(
-    BuildContext context, 
-    Product product
+    BuildContext context,
+    Product product,
   ) async {
     final TextEditingController priceController = TextEditingController();
-    
+
     return showDialog<int>(
       context: context,
       builder: (BuildContext context) {
@@ -25,11 +25,7 @@ class ProductDialogs {
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: const [
-                      Icon(
-                        Icons.schedule,
-                        color: Colors.purple,
-                        size: 20,
-                      ),
+                      Icon(Icons.schedule, color: Colors.purple, size: 20),
                       SizedBox(width: 8),
                       Text(
                         '預約商品',
@@ -48,11 +44,7 @@ class ProductDialogs {
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: const [
-                      Icon(
-                        Icons.percent,
-                        color: Colors.orange,
-                        size: 20,
-                      ),
+                      Icon(Icons.percent, color: Colors.orange, size: 20),
                       SizedBox(width: 8),
                       Text(
                         '特價商品',
@@ -71,11 +63,11 @@ class ProductDialogs {
                 inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                 decoration: InputDecoration(
                   labelText: '價格',
-                  hintText: product.isPreOrderProduct 
-                      ? '輸入預購價格' 
-                      : product.isDiscountProduct 
-                          ? '輸入奇妙數字' 
-                          : '請輸入價格',
+                  hintText: product.isPreOrderProduct
+                      ? '輸入預購價格'
+                      : product.isDiscountProduct
+                      ? '輸入奇妙數字'
+                      : '請輸入價格',
                   border: const OutlineInputBorder(),
                 ),
                 onSubmitted: (value) {
@@ -84,7 +76,7 @@ class ProductDialogs {
                     // 對於折扣商品，將輸入的數字轉為負數
                     if (product.isDiscountProduct) {
                       price = -price;
-                    } 
+                    }
                     Navigator.of(context).pop(price);
                   }
                 },
@@ -113,7 +105,7 @@ class ProductDialogs {
                   } catch (e) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
-                        content: Text('請輸入有效的數字'),
+                        content: Text(AppMessages.invalidNumber),
                         backgroundColor: Colors.red,
                       ),
                     );
@@ -121,7 +113,7 @@ class ProductDialogs {
                 } else {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
-                      content: Text('請輸入價格'),
+                      content: Text(AppMessages.enterPrice),
                       backgroundColor: Colors.red,
                     ),
                   );

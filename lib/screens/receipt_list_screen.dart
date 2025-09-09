@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../config/app_config.dart';
 import '../models/cart_item.dart';
+import '../config/app_messages.dart';
 import '../models/receipt.dart';
 import '../services/local_database_service.dart';
 import '../services/receipt_service.dart';
@@ -57,9 +58,9 @@ class _ReceiptListScreenState extends State<ReceiptListScreen> {
                 _future = _loadReceipts();
               });
               if (!mounted) return;
-              ScaffoldMessenger.of(
-                context,
-              ).showSnackBar(const SnackBar(content: Text('已清空收據清單')));
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text(AppMessages.clearedReceipts)),
+              );
             },
           ),
         ],
