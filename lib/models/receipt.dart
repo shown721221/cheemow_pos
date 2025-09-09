@@ -20,7 +20,6 @@ class Receipt {
     this.paymentMethod = '現金',
     List<String>? refundedProductIds,
   }) : refundedProductIds = refundedProductIds ?? const [];
-  
 
   /// 從 JSON 建立 Receipt 物件
   factory Receipt.fromJson(Map<String, dynamic> json) {
@@ -51,7 +50,7 @@ class Receipt {
       'totalAmount': totalAmount,
       'totalQuantity': totalQuantity,
       'paymentMethod': paymentMethod,
-  'refundedProductIds': refundedProductIds,
+      'refundedProductIds': refundedProductIds,
     };
   }
 
@@ -88,7 +87,7 @@ class Receipt {
       totalAmount: totalAmount,
       totalQuantity: totalQuantity,
       paymentMethod: '現金',
-  refundedProductIds: const [],
+      refundedProductIds: const [],
     );
   }
 

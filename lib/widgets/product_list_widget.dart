@@ -39,7 +39,7 @@ class _ProductListWidgetState extends State<ProductListWidget> {
   @override
   void didUpdateWidget(ProductListWidget oldWidget) {
     super.didUpdateWidget(oldWidget);
-    
+
     // 如果標記為需要滾動到頂部，直接執行
     if (widget.shouldScrollToTop && !oldWidget.shouldScrollToTop) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -202,7 +202,8 @@ class _ProductListWidgetState extends State<ProductListWidget> {
                               ),
                             ],
                           ),
-                          trailing: Text('🛒', style: TextStyle(fontSize: 22, color: Colors.blue)),
+                          // 移除多餘的加入購物車圖示，整張卡片點擊即可加入
+                          // trailing: Text('🛒', style: TextStyle(fontSize: 22, color: Colors.blue)),
                           onTap: () => widget.onProductTap(product),
                         ),
                       );

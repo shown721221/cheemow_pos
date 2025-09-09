@@ -6,6 +6,7 @@ import 'dart:ui' as ui;
 import 'package:path_provider/path_provider.dart';
 import 'package:flutter/services.dart';
 import 'package:media_store_plus/media_store_plus.dart';
+import 'package:path/path.dart' as p;
 import '../widgets/product_list_widget.dart';
 import '../widgets/shopping_cart_widget.dart';
 import '../dialogs/payment_dialog.dart';
@@ -50,9 +51,11 @@ class _PosMainScreenState extends State<PosMainScreen> {
     _kbScanner = KeyboardScannerManager(onBarcodeScanned: _onBarcodeScanned);
     ServicesBinding.instance.keyboard.addHandler(_kbScanner!.handleKeyEvent);
 
-  // 開發用途：可用 dart-define 控制啟動時自動匯出今日營收圖片
-  // 例如：flutter run -d <device> --dart-define=EXPORT_REVENUE_ON_START=true
-  WidgetsBinding.instance.addPostFrameCallback((_) => _maybeAutoExportRevenueOnStart());
+    // 開發用途：可用 dart-define 控制啟動時自動匯出今日營收圖片
+    // 例如：flutter run -d <device> --dart-define=EXPORT_REVENUE_ON_START=true
+    WidgetsBinding.instance.addPostFrameCallback(
+      (_) => _maybeAutoExportRevenueOnStart(),
+    );
   }
 
   @override
@@ -74,9 +77,9 @@ class _PosMainScreenState extends State<PosMainScreen> {
     () async {
       final ok = await _exportTodayRevenueImage();
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(ok ? '啟動自動匯出營收完成' : '啟動自動匯出營收失敗')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(ok ? '啟動自動匯出營收完成' : '啟動自動匯出營收失敗')));
     }();
   }
 
@@ -135,7 +138,8 @@ class _PosMainScreenState extends State<PosMainScreen> {
   void _addProductToCart(Product product, int actualPrice) {
     // 1) 判斷購物車內是否已存在相同商品且相同價格的項目
     final existingIndex = cartItems.indexWhere(
-      (item) => item.product.id == product.id && item.product.price == actualPrice,
+      (item) =>
+          item.product.id == product.id && item.product.price == actualPrice,
     );
 
     // 2) 若存在：數量 +1 並移至頂部
@@ -412,13 +416,10 @@ class _PosMainScreenState extends State<PosMainScreen> {
           PopupMenuButton<String>(
             icon: Icon(Icons.more_vert),
             tooltip: '功能選單',
-    onSelected: (String value) async {
+            onSelected: (String value) async {
               switch (value) {
                 case 'import':
                   _importCsvData();
-                  break;
-                case 'export':
-                  DialogManager.showComingSoon(context, '匯出功能');
                   break;
                 case 'receipts':
                   Navigator.push(
@@ -426,13 +427,13 @@ class _PosMainScreenState extends State<PosMainScreen> {
                     MaterialPageRoute(
                       builder: (_) => const ReceiptListScreen(),
                     ),
-                  ).then((_) {
-                    // 從收據頁返回後重新載入商品，以反映退貨後的庫存變化
-                    _loadProducts();
-                  });
+                  ).then((_) => _loadProducts());
                   break;
                 case 'revenue':
-      await _exportTodayRevenueImage();
+                  await _exportTodayRevenueImage();
+                  break;
+                case 'popularity':
+                  await _exportTodayPopularityImage();
                   break;
               }
             },
@@ -469,12 +470,22 @@ class _PosMainScreenState extends State<PosMainScreen> {
                 ),
               ),
               PopupMenuItem<String>(
-        value: 'revenue',
+                value: 'revenue',
                 child: Row(
                   children: [
                     Icon(Icons.analytics, size: 20),
                     SizedBox(width: 8),
-          Text('匯出今日營收（圖檔）'),
+                    Text('匯出今日營收（圖檔）'),
+                  ],
+                ),
+              ),
+              PopupMenuItem<String>(
+                value: 'popularity',
+                child: Row(
+                  children: const [
+                    Text('📈', style: TextStyle(fontSize: 18)),
+                    SizedBox(width: 8),
+                    Text('寶寶人氣指數'),
                   ],
                 ),
               ),
@@ -685,10 +696,16 @@ class _PosMainScreenState extends State<PosMainScreen> {
       final d = now.day.toString().padLeft(2, '0');
       final dateStr = '$y-$m-$d';
 
-  // captureKey 用於不可見的「未遮蔽」版本擷取；預覽不使用 key
-  final captureKey = GlobalKey();
+      // captureKey 用於不可見的「未遮蔽」版本擷取；預覽不使用 key
+      final captureKey = GlobalKey();
 
-      Widget metricCard({required String icon, required String title, required String value, required Color bg, Color? valueColor}) {
+      Widget metricCard({
+        required String icon,
+        required String title,
+        required String value,
+        required Color bg,
+        Color? valueColor,
+      }) {
         return Container(
           padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
           decoration: BoxDecoration(
@@ -700,11 +717,18 @@ class _PosMainScreenState extends State<PosMainScreen> {
             children: [
               Text(icon, style: const TextStyle(fontSize: 22)),
               const SizedBox(height: 6),
-              Text(title, style: const TextStyle(fontSize: 14, color: Colors.black54)),
+              Text(
+                title,
+                style: const TextStyle(fontSize: 14, color: Colors.black54),
+              ),
               const SizedBox(height: 2),
               Text(
                 value,
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: valueColor ?? Colors.black87),
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w800,
+                  color: valueColor ?? Colors.black87,
+                ),
               ),
             ],
           ),
@@ -745,26 +769,64 @@ class _PosMainScreenState extends State<PosMainScreen> {
               children: [
                 Row(
                   children: [
-                    const Text('🌈 今日營收', style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900)),
+                    const Text(
+                      '🌈 今日營收',
+                      style: TextStyle(
+                        fontSize: 28,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
                     const Spacer(),
-                    Text(dateStr, style: const TextStyle(fontSize: 18, color: Colors.black54)),
+                    Text(
+                      dateStr,
+                      style: const TextStyle(
+                        fontSize: 18,
+                        color: Colors.black54,
+                      ),
+                    ),
                   ],
                 ),
                 const SizedBox(height: 12),
                 Container(
-                  padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 16,
+                    horizontal: 20,
+                  ),
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(16),
-                    boxShadow: [BoxShadow(color: Colors.black26, blurRadius: 10, offset: Offset(0, 2))],
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black26,
+                        blurRadius: 10,
+                        offset: Offset(0, 2),
+                      ),
+                    ],
                   ),
                   child: Row(
                     children: [
-                      const Icon(Icons.star_rounded, color: Colors.amber, size: 32),
+                      const Icon(
+                        Icons.star_rounded,
+                        color: Colors.amber,
+                        size: 32,
+                      ),
                       const SizedBox(width: 12),
-                      const Text('總營收', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700)),
+                      const Text(
+                        '總營收',
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
                       const Spacer(),
-                      Text(mask(total), style: const TextStyle(fontSize: 28, fontWeight: FontWeight.w900, color: Colors.teal)),
+                      Text(
+                        mask(total),
+                        style: const TextStyle(
+                          fontSize: 28,
+                          fontWeight: FontWeight.w900,
+                          color: Colors.teal,
+                        ),
+                      ),
                     ],
                   ),
                 ),
@@ -772,15 +834,30 @@ class _PosMainScreenState extends State<PosMainScreen> {
                 Row(
                   children: [
                     Expanded(
-                      child: metricCard(icon: '💵', title: '現金', value: mask(cash), bg: bg3),
+                      child: metricCard(
+                        icon: '💵',
+                        title: '現金',
+                        value: mask(cash),
+                        bg: bg3,
+                      ),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
-                      child: metricCard(icon: '🔁', title: '轉帳', value: mask(transfer), bg: bg4),
+                      child: metricCard(
+                        icon: '🔁',
+                        title: '轉帳',
+                        value: mask(transfer),
+                        bg: bg4,
+                      ),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
-                      child: metricCard(icon: '📲', title: 'LinePay', value: mask(linepay), bg: bg2),
+                      child: metricCard(
+                        icon: '📲',
+                        title: 'LinePay',
+                        value: mask(linepay),
+                        bg: bg2,
+                      ),
                     ),
                   ],
                 ),
@@ -788,18 +865,32 @@ class _PosMainScreenState extends State<PosMainScreen> {
                 Row(
                   children: [
                     Expanded(
-                      child: metricCard(icon: '🧸', title: '預購小計', value: mask(preorder), bg: bg1),
+                      child: metricCard(
+                        icon: '🧸',
+                        title: '預購小計',
+                        value: mask(preorder),
+                        bg: bg1,
+                      ),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
-                      child: metricCard(icon: '✨', title: '折扣小計', value: mask(discount), bg: const Color(0xFFFFEEF0), valueColor: Colors.pink),
+                      child: metricCard(
+                        icon: '✨',
+                        title: '折扣小計',
+                        value: mask(discount),
+                        bg: const Color(0xFFFFEEF0),
+                        valueColor: Colors.pink,
+                      ),
                     ),
                   ],
                 ),
                 const SizedBox(height: 8),
                 const Align(
                   alignment: Alignment.centerRight,
-                  child: Text('cheemow POS', style: TextStyle(fontSize: 12, color: Colors.black45)),
+                  child: Text(
+                    'cheemow POS',
+                    style: TextStyle(fontSize: 12, color: Colors.black45),
+                  ),
                 ),
               ],
             ),
@@ -828,7 +919,10 @@ class _PosMainScreenState extends State<PosMainScreen> {
                         maxHeight: MediaQuery.of(ctx).size.height * 0.85,
                       ),
                       child: GestureDetector(
-                        onTap: () { previewShowNumbers = !previewShowNumbers; setLocal((){}); },
+                        onTap: () {
+                          previewShowNumbers = !previewShowNumbers;
+                          setLocal(() {});
+                        },
                         child: revenueWidget(showNumbers: previewShowNumbers),
                       ),
                     ),
@@ -879,11 +973,15 @@ class _PosMainScreenState extends State<PosMainScreen> {
           bytes = bd2!.buffer.asUint8List();
         } else {
           final image = await renderObj.toImage(pixelRatio: 3.0);
-          final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
+          final byteData = await image.toByteData(
+            format: ui.ImageByteFormat.png,
+          );
           bytes = byteData!.buffer.asUint8List();
         }
       } finally {
-        try { captureEntry.remove(); } catch (_) {}
+        try {
+          captureEntry.remove();
+        } catch (_) {}
       }
 
       // 準備檔名
@@ -894,42 +992,48 @@ class _PosMainScreenState extends State<PosMainScreen> {
       if (Platform.isAndroid) {
         final tmp = await getTemporaryDirectory();
         tempPngFile = File('${tmp.path}/$fileName');
-        try { await tempPngFile.writeAsBytes(bytes, flush: true); } catch (_) {}
+        try {
+          await tempPngFile.writeAsBytes(bytes, flush: true);
+        } catch (_) {}
       }
 
       // 下載（Android 使用 MediaStore 存到公用 Downloads；桌面用系統 Downloads）
       File? easyFile;
       String? savedPublicPath;
-  if (Platform.isAndroid) {
+      if (Platform.isAndroid) {
         try {
-            await MediaStore.ensureInitialized();
-            final mediaStore = MediaStore();
+          await MediaStore.ensureInitialized();
+          final mediaStore = MediaStore();
           // 設定應用在公用 Downloads 的根資料夾名稱
           MediaStore.appFolder = 'cheemow_pos';
-            // 將備份檔複製到公用 Downloads/cheemow_pos/yyyy-mm-dd
-            final saveInfo = await mediaStore.saveFile(
-      tempFilePath: tempPngFile!.path,
+          // 將備份檔複製到公用 Downloads/cheemow_pos/yyyy-mm-dd
+          final saveInfo = await mediaStore.saveFile(
+            tempFilePath: tempPngFile!.path,
             dirType: DirType.download,
             dirName: DirName.download,
-              // 直接存到 Downloads/cheemow_pos 根目錄（檔名已含日期，不會撞名）
-              relativePath: FilePath.root,
+            // 直接存到 Downloads/cheemow_pos 根目錄（檔名已含日期，不會撞名）
+            relativePath: FilePath.root,
+          );
+          savedPublicPath = saveInfo?.uri.toString();
+          // 嘗試解析實體路徑，方便在「檔案」App 中查看
+          if (savedPublicPath != null) {
+            final p = await mediaStore.getFilePathFromUri(
+              uriString: savedPublicPath,
             );
-            savedPublicPath = saveInfo?.uri.toString();
-            // 嘗試解析實體路徑，方便在「檔案」App 中查看
-            if (savedPublicPath != null) {
-              final p = await mediaStore.getFilePathFromUri(uriString: savedPublicPath);
-              if (p != null) {
-                savedPublicPath = p;
-              }
+            if (p != null) {
+              savedPublicPath = p;
             }
+          }
           // ignore: avoid_print
           print('[RevenueExport] downloads(MediaStore): $savedPublicPath');
         } catch (e) {
           // ignore: avoid_print
           print('[RevenueExport] save to public Downloads failed: $e');
         }
-    // 移除暫存檔
-    try { await tempPngFile?.delete(); } catch (_) {}
+        // 移除暫存檔
+        try {
+          await tempPngFile?.delete();
+        } catch (_) {}
       } else {
         String? downloadsPath;
         try {
@@ -953,23 +1057,316 @@ class _PosMainScreenState extends State<PosMainScreen> {
         }
       }
 
-  // 預覽已顯示於對話框（只有一個畫面，不會先出現一張又跳到另一張）
+      // 預覽已顯示於對話框（只有一個畫面，不會先出現一張又跳到另一張）
 
       if (!mounted) return true;
       final paths = [
-        if (Platform.isAndroid && savedPublicPath != null) '下載: $savedPublicPath' else if (easyFile != null) '下載: ${easyFile.path}',
+        if (Platform.isAndroid && savedPublicPath != null)
+          '下載: $savedPublicPath'
+        else if (easyFile != null)
+          '下載: ${easyFile.path}',
       ].join('\\n');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('已匯出今日營收圖\n$paths')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('已匯出今日營收圖\n$paths')));
       return true;
     } catch (e) {
-      try { if (Navigator.canPop(context)) Navigator.pop(context); } catch (_) {}
+      try {
+        if (Navigator.canPop(context)) Navigator.pop(context);
+      } catch (_) {}
       if (!mounted) return false;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('匯出營收圖失敗: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('匯出營收圖失敗: $e')));
       return false;
+    }
+  }
+
+  // 新增：寶寶人氣指數匯出（與營收匯出相同的穩定預覽 + 隱藏擷取流程）
+  Future<void> _exportTodayPopularityImage() async {
+    try {
+      final receipts = await ReceiptService.instance.getTodayReceipts();
+      final Map<String, int> categoryCount = {};
+      int preorderQty = 0, discountQty = 0, normalQty = 0;
+      for (final r in receipts) {
+        final refunded = r.refundedProductIds.toSet();
+        for (final it in r.items) {
+          if (refunded.contains(it.product.id)) continue;
+          final p = it.product;
+          if (p.isPreOrderProduct)
+            preorderQty += it.quantity;
+          else if (p.isDiscountProduct)
+            discountQty += it.quantity;
+          else
+            normalQty += it.quantity;
+          final cat = p.category.isEmpty ? '未分類' : p.category;
+          categoryCount.update(
+            cat,
+            (v) => v + it.quantity,
+            ifAbsent: () => it.quantity,
+          );
+        }
+      }
+      final fixedCats = [
+        'Duffy',
+        'ShellieMay',
+        'Gelatoni',
+        'StellaLou',
+        'CookieAnn',
+        'OluMel',
+        'LinaBell',
+      ];
+      final Map<String, int> baseMap = {for (final c in fixedCats) c: 0};
+      int others = 0;
+      categoryCount.forEach((k, v) {
+        if (baseMap.containsKey(k))
+          baseMap[k] = baseMap[k]! + v;
+        else
+          others += v;
+      });
+      final totalAll = normalQty + preorderQty + discountQty;
+      String pct(int v) => totalAll == 0
+          ? '0%'
+          : ((v * 1000 / (totalAll == 0 ? 1 : totalAll)).round() / 10)
+                    .toStringAsFixed(1) +
+                '%';
+      final sortable = [
+        ...baseMap.entries.map((e) => MapEntry(e.key, e.value)),
+        MapEntry('其他角色', others),
+      ]..sort((a, b) => b.value.compareTo(a.value));
+      String deco(String raw) {
+        switch (raw) {
+          case 'Duffy':
+            return '🐻 Duffy';
+          case 'ShellieMay':
+            return '🐻 ShellieMay';
+          case 'Gelatoni':
+            return '🐱 Gelatoni';
+          case 'StellaLou':
+            return '🐰 StellaLou';
+          case 'CookieAnn':
+            return '🐶 CookieAnn';
+          case 'OluMel':
+            return '🐢 OluMel';
+          case 'LinaBell':
+            return '🦊 LinaBell';
+          case '其他角色':
+            return '🏰 其他角色';
+          default:
+            return raw;
+        }
+      }
+
+      // 角色代表色（可再微調）
+      final popularityColors = <String, Color>{
+        'Duffy': Colors.brown[400]!,
+        'ShellieMay': Colors.pink[300]!,
+        'Gelatoni': Colors.teal[400]!,
+        'StellaLou': Colors.purple[300]!,
+        'CookieAnn': Colors.amber[400]!,
+        'OluMel': Colors.green[300]!,
+        'LinaBell': Colors.pink[200]!,
+        '其他角色': Colors.blueGrey[300]!,
+      };
+      final now = DateTime.now();
+      final dateStr =
+          '${now.year.toString().padLeft(4, '0')}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+      final captureKey = GlobalKey();
+      Widget popularityWidget({Key? key}) => RepaintBoundary(
+        key: key,
+        child: Container(
+          padding: const EdgeInsets.fromLTRB(28, 24, 28, 20),
+          width: 560, // 縮窄整體寬度，減少右側留白
+          decoration: BoxDecoration(
+            // 淡漸層背景讓卡片更柔和
+            gradient: const LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [Colors.white, Color(0xFFF8FAFC)],
+            ),
+            borderRadius: BorderRadius.circular(32),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.08),
+                blurRadius: 26,
+                offset: const Offset(0, 10),
+              ),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Row(
+                children: [
+                  const Text(
+                    '🍼 寶寶人氣指數',
+                    style: TextStyle(fontSize: 24, fontWeight: FontWeight.w800),
+                  ),
+                  const Spacer(),
+                  Text(
+                    dateStr,
+                    style: const TextStyle(
+                      color: Colors.black45,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 22),
+              Wrap(
+                spacing: 14,
+                runSpacing: 14,
+                children: [
+                  _metricChip('交易筆數', receipts.length, Colors.indigo[600]!),
+                  _metricChip('總件數', totalAll, Colors.teal[700]!),
+                  _metricChip('一般件數', normalQty, Colors.blue[600]!),
+                  _metricChip('預購件數', preorderQty, Colors.purple[600]!),
+                  _metricChip('折扣件數', discountQty, Colors.orange[700]!),
+                ],
+              ),
+              const SizedBox(height: 18), // 移除表頭後保留適度空隙
+              for (int i = 0; i < sortable.length; i++) ...[
+                _categoryBarNew(
+                  deco(sortable[i].key),
+                  sortable[i].value,
+                  pct(sortable[i].value),
+                  totalAll,
+                  popularityColors[sortable[i].key] ?? Colors.blueGrey,
+                  i == 0
+                      ? '🥇'
+                      : i == 1
+                      ? '🥈'
+                      : i == 2
+                      ? '🥉'
+                      : null,
+                ),
+              ],
+              const SizedBox(height: 20),
+              Align(
+                alignment: Alignment.centerRight,
+                child: Text(
+                  'CheeMeow POS',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.blueGrey[300],
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+
+      // 預覽對話框（使用者看到穩定版本）
+      if (mounted) {
+        // ignore: unawaited_futures
+        showDialog(
+          context: context,
+          barrierDismissible: true,
+          builder: (_) => Dialog(
+            backgroundColor: Colors.transparent,
+            insetPadding: const EdgeInsets.all(16),
+            child: SingleChildScrollView(child: popularityWidget()),
+          ),
+        );
+      }
+      if (!mounted) return;
+      // 隱藏透明 Overlay 擷取高解析版本
+      final overlayState = Overlay.of(context, rootOverlay: true);
+      final entry = OverlayEntry(
+        builder: (_) => IgnorePointer(
+          child: Center(
+            child: Opacity(
+              opacity: 0.01,
+              child: Material(
+                color: Colors.transparent,
+                child: popularityWidget(key: captureKey),
+              ),
+            ),
+          ),
+        ),
+      );
+      overlayState.insert(entry);
+      await Future.delayed(const Duration(milliseconds: 16));
+      await WidgetsBinding.instance.endOfFrame;
+      await Future.delayed(const Duration(milliseconds: 16));
+      late final Uint8List bytes;
+      try {
+        final ro = captureKey.currentContext?.findRenderObject();
+        if (ro is! RenderRepaintBoundary) {
+          await Future.delayed(const Duration(milliseconds: 32));
+          final ro2 = captureKey.currentContext?.findRenderObject();
+          if (ro2 is! RenderRepaintBoundary) throw Exception('渲染尚未完成');
+          final img2 = await ro2.toImage(pixelRatio: 3.0);
+          final bd2 = await img2.toByteData(format: ui.ImageByteFormat.png);
+          bytes = bd2!.buffer.asUint8List();
+        } else {
+          final img = await ro.toImage(pixelRatio: 3.0);
+          final bd = await img.toByteData(format: ui.ImageByteFormat.png);
+          bytes = bd!.buffer.asUint8List();
+        }
+      } finally {
+        try {
+          entry.remove();
+        } catch (_) {}
+      }
+
+      final fileName = '人氣指數_${dateStr}.png';
+      String? savedPath;
+      if (Platform.isAndroid) {
+        File? tmp;
+        try {
+          final tmpDir = await getTemporaryDirectory();
+          tmp = File(p.join(tmpDir.path, fileName));
+          await tmp.writeAsBytes(bytes, flush: true);
+          await MediaStore.ensureInitialized();
+          final mediaStore = MediaStore();
+          MediaStore.appFolder = 'cheemow_pos';
+          final save = await mediaStore.saveFile(
+            tempFilePath: tmp.path,
+            dirType: DirType.download,
+            dirName: DirName.download,
+            relativePath: dateStr,
+          );
+          String? uriStr = save?.uri.toString();
+          if (uriStr != null) {
+            final real = await mediaStore.getFilePathFromUri(uriString: uriStr);
+            if (real != null) uriStr = real;
+            savedPath = uriStr;
+          }
+        } finally {
+          try {
+            await tmp?.delete();
+          } catch (_) {}
+        }
+      } else {
+        final downloads = await getDownloadsDirectory();
+        final base = downloads?.path;
+        if (base != null) {
+          final dir = Directory(p.join(base, 'cheemow_pos', dateStr));
+          if (!await dir.exists()) {
+            try {
+              await dir.create(recursive: true);
+            } catch (_) {}
+          }
+          final file = File(p.join(dir.path, fileName));
+          await file.writeAsBytes(bytes, flush: true);
+          savedPath = file.path;
+        }
+      }
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(savedPath != null ? '已匯出寶寶人氣指數：$savedPath' : '匯出失敗'),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('人氣指數匯出錯誤：$e')));
     }
   }
 
@@ -1019,16 +1416,20 @@ class _PosMainScreenState extends State<PosMainScreen> {
 
     // 建立並儲存收據：自訂編號（每日序號），時間精度到分鐘
     final now = DateTime.now();
-    final id = await ReceiptService.instance
-        .generateReceiptId(payment.method, now: now);
-    final tsMinute = DateTime(now.year, now.month, now.day, now.hour, now.minute);
+    final id = await ReceiptService.instance.generateReceiptId(
+      payment.method,
+      now: now,
+    );
+    final tsMinute = DateTime(
+      now.year,
+      now.month,
+      now.day,
+      now.hour,
+      now.minute,
+    );
     final receipt = Receipt.fromCart(
       itemsSnapshot,
-    ).copyWith(
-      id: id,
-      timestamp: tsMinute,
-      paymentMethod: payment.method,
-    );
+    ).copyWith(id: id, timestamp: tsMinute, paymentMethod: payment.method);
     await ReceiptService.instance.saveReceipt(receipt);
     if (!mounted) return;
 
@@ -1622,4 +2023,118 @@ class _PosMainScreenState extends State<PosMainScreen> {
   }
 
   //（已移除）場次功能不使用
+
+  Widget _metricChip(String label, int value, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 14),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.08),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: color.withOpacity(0.4), width: 1),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(label, style: TextStyle(fontSize: 11, color: _darken(color))),
+          const SizedBox(height: 2),
+          Text(
+            '$value',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w700,
+              color: _darken(color),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Color _darken(Color c) {
+    final hsl = HSLColor.fromColor(c);
+    final dark = hsl.withLightness((hsl.lightness * 0.7).clamp(0.0, 1.0));
+    return dark.toColor();
+  }
+
+  Widget _categoryBarNew(
+    String name,
+    int count,
+    String percent,
+    int total,
+    Color barColor, [
+    String? medal,
+  ]) {
+    final ratio = total == 0 ? 0.0 : count / total;
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 5),
+      child: Row(
+        children: [
+          // 獎牌欄位（可為 null）
+          SizedBox(
+            width: 26,
+            child: Text(
+              medal ?? '',
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontSize: 14),
+            ),
+          ),
+          SizedBox(
+            width: 128, // 增加可視文字寬（原 120）
+            child: Text(
+              name,
+              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          SizedBox(
+            width: 50, // 微放大，搭配字體
+            child: Text(
+              '$count',
+              textAlign: TextAlign.right,
+              style: const TextStyle(
+                fontSize: 13,
+                color: Colors.black87,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+          const SizedBox(width: 4),
+          Flexible(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 230), // 縮短條形寬度騰出文字空間
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(9),
+                child: Stack(
+                  children: [
+                    Container(height: 18, color: Colors.blueGrey[50]),
+                    FractionallySizedBox(
+                      widthFactor: ratio.clamp(0.0, 1.0),
+                      child: Container(
+                        height: 18,
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [barColor.withOpacity(0.85), barColor],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: 8), // 百分比更靠近
+          SizedBox(
+            width: 56,
+            child: Text(
+              percent,
+              textAlign: TextAlign.right,
+              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }

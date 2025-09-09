@@ -23,24 +23,24 @@ class ReceiptService {
       if (_prefs == null) return false;
 
       // 取得現有收據列表
-  final receipts = await getReceipts();
-      
+      final receipts = await getReceipts();
+
       // 加入新收據到列表開頭（最新的在前面）
       receipts.insert(0, receipt);
-      
+
       // 限制收據數量（防止資料過多）
       if (receipts.length > 1000) {
         receipts.removeRange(1000, receipts.length);
       }
-      
+
       // 儲存更新後的收據列表
       final receiptsJson = receipts.map((r) => r.toJson()).toList();
-  await _prefs!.setString('receipts', jsonEncode(receiptsJson));
-      
-  debugPrint('收據已儲存: ${receipt.id}, 時間: ${receipt.formattedDateTime}');
+      await _prefs!.setString('receipts', jsonEncode(receiptsJson));
+
+      debugPrint('收據已儲存: ${receipt.id}, 時間: ${receipt.formattedDateTime}');
       return true;
     } catch (e) {
-  debugPrint('儲存收據失敗: $e');
+      debugPrint('儲存收據失敗: $e');
       return false;
     }
   }
@@ -50,7 +50,7 @@ class ReceiptService {
     try {
       if (_prefs == null) return [];
 
-  final receiptsString = _prefs!.getString('receipts');
+      final receiptsString = _prefs!.getString('receipts');
       if (receiptsString == null) return [];
 
       final receiptsList = jsonDecode(receiptsString) as List;
@@ -67,7 +67,7 @@ class ReceiptService {
     DateTime endDate,
   ) async {
     final allReceipts = await getReceipts();
-    
+
     // 區間為 [startDate, endDate)（含起不含迄）
     return allReceipts.where((receipt) {
       final t = receipt.timestamp;
@@ -82,7 +82,7 @@ class ReceiptService {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
     final tomorrow = today.add(Duration(days: 1));
-    
+
     return getReceiptsByDateRange(today, tomorrow);
   }
 
@@ -91,7 +91,7 @@ class ReceiptService {
     final now = DateTime.now();
     final firstDay = DateTime(now.year, now.month, 1);
     final lastDay = DateTime(now.year, now.month + 1, 0);
-    
+
     return getReceiptsByDateRange(firstDay, lastDay);
   }
 
@@ -104,17 +104,26 @@ class ReceiptService {
   /// 計算今日營收
   Future<int> getTodayRevenue() async {
     final todayReceipts = await getTodayReceipts();
-    return todayReceipts.fold<int>(0, (sum, receipt) => sum + receipt.totalAmount);
+    return todayReceipts.fold<int>(
+      0,
+      (sum, receipt) => sum + receipt.totalAmount,
+    );
   }
 
   /// 計算本月營收
   Future<int> getThisMonthRevenue() async {
     final monthReceipts = await getThisMonthReceipts();
-    return monthReceipts.fold<int>(0, (sum, receipt) => sum + receipt.totalAmount);
+    return monthReceipts.fold<int>(
+      0,
+      (sum, receipt) => sum + receipt.totalAmount,
+    );
   }
 
   /// 產生收據編號：methodCode-NNN（每日從 001 起，跨付款方式共用序號）
-  Future<String> generateReceiptId(String paymentMethod, {DateTime? now}) async {
+  Future<String> generateReceiptId(
+    String paymentMethod, {
+    DateTime? now,
+  }) async {
     final DateTime t = now ?? DateTime.now();
     final DateTime dayStart = DateTime(t.year, t.month, t.day);
     final DateTime dayEnd = dayStart.add(const Duration(days: 1));
@@ -162,14 +171,14 @@ class ReceiptService {
 
       final receipts = await getReceipts();
       receipts.removeWhere((receipt) => receipt.id == receiptId);
-      
+
       final receiptsJson = receipts.map((r) => r.toJson()).toList();
       await _prefs!.setString('receipts', jsonEncode(receiptsJson));
-      
-  debugPrint('收據已刪除: $receiptId');
+
+      debugPrint('收據已刪除: $receiptId');
       return true;
     } catch (e) {
-  debugPrint('刪除收據失敗: $e');
+      debugPrint('刪除收據失敗: $e');
       return false;
     }
   }
@@ -198,12 +207,12 @@ class ReceiptService {
   Future<bool> clearAllReceipts() async {
     try {
       if (_prefs == null) return false;
-      
-  await _prefs!.remove('receipts');
-  debugPrint('所有收據已清空');
+
+      await _prefs!.remove('receipts');
+      debugPrint('所有收據已清空');
       return true;
     } catch (e) {
-  debugPrint('清空收據失敗: $e');
+      debugPrint('清空收據失敗: $e');
       return false;
     }
   }
@@ -217,7 +226,7 @@ class ReceiptService {
         'receiptsCount': receipts.length,
         'receipts': receipts.map((r) => r.toJson()).toList(),
       };
-      
+
       return jsonEncode(backupData);
     } catch (e) {
       debugPrint('匯出收據失敗: $e');
