@@ -56,7 +56,11 @@ class PriceInputDialogManager {
                     SizedBox(height: 16),
 
                     // 價格顯示區域
-                    _buildPriceDisplay(currentPrice, product.isDiscountProduct),
+                    _buildPriceDisplay(
+                      currentPrice,
+                      isDiscount: product.isDiscountProduct,
+                      isPreorder: product.isPreOrderProduct,
+                    ),
 
                     SizedBox(height: 16),
 
@@ -96,7 +100,19 @@ class PriceInputDialogManager {
   }
 
   /// 構建價格顯示區域
-  static Widget _buildPriceDisplay(String currentPrice, bool isDiscount) {
+  static Widget _buildPriceDisplay(
+    String currentPrice, {
+    required bool isDiscount,
+    required bool isPreorder,
+  }) {
+    Color priceColor;
+    if (isDiscount) {
+      priceColor = Colors.orange[700]!;
+    } else if (isPreorder) {
+      priceColor = Colors.purple[700]!;
+    } else {
+      priceColor = Colors.blueGrey[800]!; // 一般情況統一一個深色
+    }
     return Container(
       width: double.infinity,
       padding: EdgeInsets.all(16),
@@ -106,11 +122,11 @@ class PriceInputDialogManager {
         color: Colors.grey[50],
       ),
       child: Text(
-        'NT\$ ${currentPrice.isEmpty ? "0" : currentPrice}',
+        '💲 ${currentPrice.isEmpty ? "0" : currentPrice}',
         style: TextStyle(
           fontSize: 24,
           fontWeight: FontWeight.bold,
-          color: isDiscount ? Colors.orange[700] : Colors.black,
+          color: priceColor,
         ),
         textAlign: TextAlign.center,
       ),

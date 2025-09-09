@@ -435,6 +435,9 @@ class _PosMainScreenState extends State<PosMainScreen> {
                 case 'popularity':
                   await _exportTodayPopularityImage();
                   break;
+                case 'pettycash':
+                  await _showSetPettyCashDialog();
+                  break;
               }
             },
             itemBuilder: (BuildContext context) => [
@@ -485,6 +488,16 @@ class _PosMainScreenState extends State<PosMainScreen> {
                     Text('📈', style: TextStyle(fontSize: 18)),
                     SizedBox(width: 8),
                     Text('寶寶人氣指數'),
+                  ],
+                ),
+              ),
+              PopupMenuItem<String>(
+                value: 'pettycash',
+                child: Row(
+                  children: const [
+                    Text('�', style: TextStyle(fontSize: 18)),
+                    SizedBox(width: 8),
+                    Text('設定零用金'),
                   ],
                 ),
               ),
@@ -785,6 +798,20 @@ class _PosMainScreenState extends State<PosMainScreen> {
                     ),
                   ],
                 ),
+                if (AppConfig.pettyCash > 0) ...[
+                  const SizedBox(height: 4),
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: Text(
+                      '零用金 💲' + AppConfig.pettyCash.toString(),
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.black54,
+                      ),
+                    ),
+                  ),
+                ],
                 const SizedBox(height: 12),
                 Container(
                   padding: const EdgeInsets.symmetric(
@@ -996,54 +1023,47 @@ class _PosMainScreenState extends State<PosMainScreen> {
         } catch (_) {}
       }
 
-      // 下載（Android 使用 MediaStore 存到公用 Downloads；桌面用系統 Downloads）
+      // 下載（Android: Downloads/cheemow_pos/{dateStr}；桌面也建立同樣層級）
       File? easyFile;
       String? savedPublicPath;
       if (Platform.isAndroid) {
         try {
           await MediaStore.ensureInitialized();
           final mediaStore = MediaStore();
-          // 設定應用在公用 Downloads 的根資料夾名稱
           MediaStore.appFolder = 'cheemow_pos';
-          // 將備份檔複製到公用 Downloads/cheemow_pos/yyyy-mm-dd
           final saveInfo = await mediaStore.saveFile(
             tempFilePath: tempPngFile!.path,
             dirType: DirType.download,
             dirName: DirName.download,
-            // 直接存到 Downloads/cheemow_pos 根目錄（檔名已含日期，不會撞名）
-            relativePath: FilePath.root,
+            // 使用日期子資料夾與人氣指數一致
+            relativePath: dateStr,
           );
           savedPublicPath = saveInfo?.uri.toString();
-          // 嘗試解析實體路徑，方便在「檔案」App 中查看
           if (savedPublicPath != null) {
-            final p = await mediaStore.getFilePathFromUri(
+            final pReal = await mediaStore.getFilePathFromUri(
               uriString: savedPublicPath,
             );
-            if (p != null) {
-              savedPublicPath = p;
-            }
+            if (pReal != null) savedPublicPath = pReal;
           }
           // ignore: avoid_print
           print('[RevenueExport] downloads(MediaStore): $savedPublicPath');
         } catch (e) {
           // ignore: avoid_print
-          print('[RevenueExport] save to public Downloads failed: $e');
+            print('[RevenueExport] save to public Downloads failed: $e');
         }
-        // 移除暫存檔
-        try {
-          await tempPngFile?.delete();
-        } catch (_) {}
+        try { await tempPngFile?.delete(); } catch (_) {}
       } else {
         String? downloadsPath;
         try {
           final downloads = await getDownloadsDirectory();
           downloadsPath = downloads?.path;
-        } catch (_) {
-          downloadsPath = null;
-        }
+        } catch (_) { downloadsPath = null; }
         if (downloadsPath != null) {
-          final targetDir = Directory(downloadsPath);
-          easyFile = File('${targetDir.path}/$fileName');
+          final targetDir = Directory(p.join(downloadsPath, 'cheemow_pos', dateStr));
+          if (!await targetDir.exists()) {
+            try { await targetDir.create(recursive: true); } catch (_) {}
+          }
+            easyFile = File(p.join(targetDir.path, fileName));
           try {
             await easyFile.writeAsBytes(bytes, flush: true);
             // ignore: avoid_print
@@ -1079,6 +1099,235 @@ class _PosMainScreenState extends State<PosMainScreen> {
       ).showSnackBar(SnackBar(content: Text('匯出營收圖失敗: $e')));
       return false;
     }
+  }
+
+  Future<void> _showSetPettyCashDialog() async {
+    final pin = AppConfig.csvImportPin;
+    // 若已有值且要修改，先輸入 PIN
+    if (AppConfig.pettyCash > 0) {
+      final ok = await _confirmPin(pin: pin);
+      if (!ok) return;
+    }
+    int tempValue = AppConfig.pettyCash;
+    await showDialog<int>(
+      context: context,
+      barrierDismissible: true,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setS) {
+          String current = tempValue == 0 ? '' : tempValue.toString();
+          void append(String d) {
+            if (current.length >= 7) return;
+            current += d;
+            setS(() => tempValue = int.tryParse(current) ?? 0);
+          }
+            void clearAll() {
+            setS(() {
+              current = '';
+              tempValue = 0;
+            });
+          }
+          void confirm() async {
+            if (tempValue < 0) return; // 不接受負值
+            await AppConfig.setPettyCash(tempValue);
+            if (!mounted) return;
+            Navigator.of(ctx).pop(tempValue);
+            setState(() {});
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('零用金已設定為 💲' + tempValue.toString())),
+            );
+          }
+          Widget priceDisplay() => Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              border: Border.all(color: Colors.grey[400]!),
+              borderRadius: BorderRadius.circular(8),
+              color: Colors.grey[50],
+            ),
+            child: Text(
+              '💲 ${current.isEmpty ? '0' : current}',
+              style: TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+                color: Colors.blueGrey[800],
+              ),
+              textAlign: TextAlign.center,
+            ),
+          );
+          Widget numKey(String n, VoidCallback onTap) => SizedBox(
+            width: 72,
+            height: 60,
+            child: ElevatedButton(
+              onPressed: onTap,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.blue[50],
+                foregroundColor: Colors.blue[700],
+              ),
+              child: Text(
+                n,
+                style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+              ),
+            ),
+          );
+          Widget actionKey(String label, VoidCallback onTap) => SizedBox(
+            width: 72,
+            height: 60,
+            child: ElevatedButton(
+              onPressed: onTap,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.orange[50],
+                foregroundColor: Colors.orange[700],
+              ),
+              child: Text(label, style: const TextStyle(fontSize: 18)),
+            ),
+          );
+          return AlertDialog(
+            content: SizedBox(
+              width: 300,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text(
+                    '設定零用金',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 12),
+                  priceDisplay(),
+                  const SizedBox(height: 16),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [numKey('1', () => append('1')), numKey('2', () => append('2')), numKey('3', () => append('3'))],
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [numKey('4', () => append('4')), numKey('5', () => append('5')), numKey('6', () => append('6'))],
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [numKey('7', () => append('7')), numKey('8', () => append('8')), numKey('9', () => append('9'))],
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      actionKey('🧹', clearAll),
+                      numKey('0', () => append('0')),
+                      actionKey('✅', confirm),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Future<bool> _confirmPin({required String pin}) async {
+    String input = '';
+    bool ok = false;
+    await showDialog(
+      context: context,
+      barrierDismissible: true,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setS) {
+          Widget numKey(String d) => SizedBox(
+            width: 70,
+            height: 56,
+            child: ElevatedButton(
+              onPressed: input.length < 4
+                  ? () => setS(() {
+                        input += d;
+                        if (input.length == 4) {
+                          if (input == pin) {
+                            ok = true;
+                            Navigator.of(ctx).pop();
+                          } else {
+                            input = '';
+                          }
+                        }
+                      })
+                  : null,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.blue[50],
+                foregroundColor: Colors.blue[700],
+              ),
+              child: Text(d, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+            ),
+          );
+          return AlertDialog(
+            title: const Text('輸入管理 PIN'),
+            content: SizedBox(
+              width: 320,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    '請輸入 4 位數字以修改零用金',
+                    style: TextStyle(color: Colors.orange[700], fontSize: 12),
+                  ),
+                  const SizedBox(height: 12),
+                  Container(
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    decoration: BoxDecoration(
+                      border: Border.all(color: Colors.grey[300]!),
+                      borderRadius: BorderRadius.circular(8),
+                      color: Colors.grey[50],
+                    ),
+                    child: Text(
+                      ('••••'.substring(0, input.length)).padRight(4, '—'),
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(fontSize: 24, letterSpacing: 4, fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Row(mainAxisAlignment: MainAxisAlignment.spaceEvenly, children: [numKey('1'), numKey('2'), numKey('3')]),
+                  const SizedBox(height: 8),
+                  Row(mainAxisAlignment: MainAxisAlignment.spaceEvenly, children: [numKey('4'), numKey('5'), numKey('6')]),
+                  const SizedBox(height: 8),
+                  Row(mainAxisAlignment: MainAxisAlignment.spaceEvenly, children: [numKey('7'), numKey('8'), numKey('9')]),
+                  const SizedBox(height: 8),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      SizedBox(
+                        width: 70,
+                        height: 56,
+                        child: ElevatedButton(
+                          onPressed: () => setS(() => input = ''),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.orange[50],
+                            foregroundColor: Colors.orange[700],
+                          ),
+                          child: const Text('清除'),
+                        ),
+                      ),
+                      numKey('0'),
+                      SizedBox(
+                        width: 70,
+                        height: 56,
+                        child: ElevatedButton(
+                          onPressed: () => Navigator.of(ctx).pop(),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.grey[200],
+                            foregroundColor: Colors.grey[700],
+                          ),
+                          child: const Text('取消'),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
+    return ok;
   }
 
   // 新增：寶寶人氣指數匯出（與營收匯出相同的穩定預覽 + 隱藏擷取流程）
@@ -1437,7 +1686,7 @@ class _PosMainScreenState extends State<PosMainScreen> {
       SnackBar(
         content: Text(
           payment.method == '現金'
-              ? '結帳完成（${payment.method}）。找零 NT\$${payment.change}，已更新 $checkedOutCount 個商品排序'
+              ? '結帳完成（${payment.method}）。找零 💲${payment.change}，已更新 $checkedOutCount 個商品排序'
               : '結帳完成（${payment.method}），已更新 $checkedOutCount 個商品排序',
         ),
         duration: Duration(seconds: 3),

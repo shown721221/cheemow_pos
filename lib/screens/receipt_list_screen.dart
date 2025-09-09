@@ -18,6 +18,7 @@ class _ReceiptListScreenState extends State<ReceiptListScreen> {
   final Set<String> _payFilters = {}; // 現金/轉帳/LinePay
   bool _withDiscount = false;
   bool _withPreorder = false;
+  bool _withRefund = false; // 退貨篩選
   bool _onlyToday = true;
 
   @override
@@ -163,6 +164,8 @@ class _ReceiptListScreenState extends State<ReceiptListScreen> {
     addSeg(r.id);
     addSeg('$hh:$mm');
     addSeg(r.paymentMethod);
+  // 總金額（已是扣除退貨後的淨額）
+  addSeg('💲' + r.totalAmount.toString());
     addSeg('售出 $nonSpecialQty 件');
     // 使用與商品清單一致的顏色：預購=紫色、折扣=橘色（取自 ProductStyleUtils 規則）
     if (preorderQty > 0) {
@@ -241,6 +244,12 @@ class _ReceiptListScreenState extends State<ReceiptListScreen> {
             selected: _withPreorder,
             onSelected: (s) => setState(() => _withPreorder = s),
           ),
+          const SizedBox(width: 8),
+          FilterChip(
+            label: const Text('退貨'),
+            selected: _withRefund,
+            onSelected: (s) => setState(() => _withRefund = s),
+          ),
         ],
       ),
     );
@@ -271,6 +280,9 @@ class _ReceiptListScreenState extends State<ReceiptListScreen> {
       list = list.where(
         (r) => r.items.any((it) => it.product.isPreOrderProduct),
       );
+    }
+    if (_withRefund) {
+      list = list.where((r) => r.refundedProductIds.isNotEmpty);
     }
     return list.toList();
   }
@@ -439,7 +451,7 @@ class _ReceiptListScreenState extends State<ReceiptListScreen> {
                               ),
                             ),
                             subtitle: Text(
-                              '單價 NT\$${it.product.price} × ${it.quantity}',
+                              '單價 💲${it.product.price} × ${it.quantity}',
                               style: TextStyle(
                                 color: refunded ? Colors.red[400] : null,
                                 decoration: refunded
@@ -483,7 +495,7 @@ class _ReceiptListScreenState extends State<ReceiptListScreen> {
                           style: TextStyle(fontWeight: FontWeight.bold),
                         ),
                         Text(
-                          'NT\$${current.items.where((i) => !current.refundedProductIds.contains(i.product.id)).fold<int>(0, (s, it) => s + it.subtotal)}',
+                          '💲${current.items.where((i) => !current.refundedProductIds.contains(i.product.id)).fold<int>(0, (s, it) => s + it.subtotal)}',
                           style: const TextStyle(fontWeight: FontWeight.bold),
                         ),
                       ],
