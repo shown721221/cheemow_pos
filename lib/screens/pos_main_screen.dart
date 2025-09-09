@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'dart:io';
 import 'dart:ui' as ui;
+import 'dart:convert';
 import 'package:path_provider/path_provider.dart';
 import 'package:flutter/services.dart';
 import 'package:media_store_plus/media_store_plus.dart';
@@ -1975,9 +1976,266 @@ class _PosMainScreenState extends State<PosMainScreen> {
   // TODO: 實作銷售資料匯出（今日 / 全部 / 日期區間）
   Future<void> _exportSalesData() async {
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('銷售資料匯出功能開發中')),
-    );
+    try {
+      final receipts = await ReceiptService.instance.getTodayReceipts();
+      if (receipts.isEmpty) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text(AppMessages.salesExportNoData)),
+        );
+        return;
+      }
+
+      // 建立日期（資料夾 yyyy-MM-dd，同現有圖片匯出）與檔名日期後綴（yyMMdd）
+      final now = DateTime.now();
+      final dateFolder = '${now.year.toString().padLeft(4, '0')}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+      final dateSuffix = '${(now.year % 100).toString().padLeft(2, '0')}${now.month.toString().padLeft(2, '0')}${now.day.toString().padLeft(2, '0')}';
+
+      // 付款方式代碼對應（與 ReceiptService._methodCode 一致）
+      String methodCode(String method) {
+        switch (method) {
+          case '現金':
+            return '1';
+          case '轉帳':
+            return '2';
+          case 'LinePay':
+            return '3';
+          default:
+            return '9';
+        }
+      }
+
+      // 準備銷售 CSV（所有品項，含特殊商品）
+      final salesBuffer = StringBuffer();
+      // Header：關鍵欄位置前 + 其餘資訊
+      salesBuffer.writeln([
+        '商品代碼', // product.id
+        '商品名稱',
+        '條碼',
+        '售出數量',
+        '收據單號',
+        '日期時間',
+        '付款方式',
+        '付款方式代號',
+        '單價',
+        '總價',
+        '類別',
+        '是否特殊',
+      ].join(','));
+
+      // 準備特殊商品 CSV（僅預購/折扣或標記為特殊商品）
+      final specialBuffer = StringBuffer();
+      specialBuffer.writeln([
+        '收據單號',
+        '日期時間',
+        '付款方式',
+        '付款方式代號',
+        '商品名稱',
+        '銷售數量',
+        '單價',
+        '總價',
+      ].join(','));
+
+      // 逐收據展開
+      for (final r in receipts) {
+        final refunded = r.refundedProductIds.toSet();
+        for (final it in r.items) {
+          final p = it.product;
+            if (refunded.contains(p.id)) continue; // 排除已退貨項目
+          final qty = it.quantity;
+          final unitPrice = p.price; // 折扣品可能為負
+          final lineTotal = unitPrice * qty;
+          final isSpecial = p.isSpecialProduct ? 'Y' : 'N';
+          // 日期時間格式：yyyy/MM/dd HH:mm:ss 更精確
+          final ts = r.timestamp;
+          final dateTimeStr = '${ts.year.toString().padLeft(4, '0')}/${ts.month.toString().padLeft(2, '0')}/${ts.day.toString().padLeft(2, '0')} ${ts.hour.toString().padLeft(2, '0')}:${ts.minute.toString().padLeft(2, '0')}:${ts.second.toString().padLeft(2, '0')}';
+
+          // 依序寫入（基本不含逗號，仍做最小轉義）
+          String esc(String v) {
+            if (v.contains(',') || v.contains('"') || v.contains('\n')) {
+              final escaped = v.replaceAll('"', '""');
+              return '"$escaped"';
+            }
+            return v;
+          }
+
+          salesBuffer.writeln([
+            esc(p.id),
+            esc(p.name),
+            esc(p.barcode),
+            qty.toString(),
+            esc(r.id),
+            esc(dateTimeStr),
+            esc(r.paymentMethod),
+            methodCode(r.paymentMethod),
+            unitPrice.toString(),
+            lineTotal.toString(),
+            esc(p.category.isEmpty ? '未分類' : p.category),
+            isSpecial,
+          ].join(','));
+
+          if (p.isSpecialProduct) {
+            specialBuffer.writeln([
+              esc(r.id),
+              esc(dateTimeStr),
+              esc(r.paymentMethod),
+              methodCode(r.paymentMethod),
+              esc(p.name),
+              qty.toString(),
+              unitPrice.toString(),
+              lineTotal.toString(),
+            ].join(','));
+          }
+        }
+      }
+
+      // 生成內容（加上 UTF-8 BOM 方便 Excel 開啟）
+      List<int> withBom(String s) => [0xEF, 0xBB, 0xBF, ...utf8.encode(s)];
+      final salesBytes = withBom(salesBuffer.toString());
+      final specialBytes = withBom(specialBuffer.toString());
+
+      // 儲存：與圖片匯出一致：Android 走 MediaStore，其他平台直接寫 Downloads/cheemow_pos/<dateFolder>
+      Future<String?> saveBytes(String fileName, List<int> bytes) async {
+        String? savedPath;
+        if (Platform.isAndroid) {
+          final mediaStore = MediaStore();
+          File? tmp;
+          try {
+            tmp = File(p.join((await getTemporaryDirectory()).path, fileName));
+            await tmp.writeAsBytes(bytes, flush: true);
+
+            // 預先清理可能存在的重複命名
+            try {
+              final baseNameNoExt = fileName.replaceAll(RegExp(r'\.csv$'), '');
+              for (int i = 0; i < 6; i++) {
+                final candidate = i == 0 ? fileName : '${baseNameNoExt} ($i).csv';
+                final deleted = await mediaStore.deleteFile(
+                  fileName: candidate,
+                  dirType: DirType.download,
+                  dirName: DirName.download,
+                  relativePath: dateFolder,
+                );
+                if (deleted) {
+                  // ignore: avoid_print
+                  print('[SalesExport] pre-clean deleted: $candidate');
+                }
+              }
+            } catch (e) {
+              // ignore: avoid_print
+              print('[SalesExport] pre-clean error: $e');
+            }
+
+            final exist = await mediaStore.getFileUri(
+              fileName: fileName,
+              dirType: DirType.download,
+              dirName: DirName.download,
+              relativePath: dateFolder,
+            );
+            if (exist != null) {
+              final ok = await mediaStore.editFile(
+                uriString: exist.toString(),
+                tempFilePath: tmp.path,
+              );
+              if (ok) {
+                savedPath = await mediaStore.getFilePathFromUri(
+                  uriString: exist.toString(),
+                );
+                // ignore: avoid_print
+                print('[SalesExport] edited existing file: $savedPath');
+              } else {
+                // 刪除後重存
+                try {
+                  await mediaStore.deleteFile(
+                    fileName: fileName,
+                    dirType: DirType.download,
+                    dirName: DirName.download,
+                    relativePath: dateFolder,
+                  );
+                } catch (e) {
+                  // ignore: avoid_print
+                  print('[SalesExport] delete old failed: $e');
+                }
+                final save = await mediaStore.saveFile(
+                  tempFilePath: tmp.path,
+                  dirType: DirType.download,
+                  dirName: DirName.download,
+                  relativePath: dateFolder,
+                );
+                String? uriStr = save?.uri.toString();
+                if (uriStr != null) {
+                  final real = await mediaStore.getFilePathFromUri(
+                    uriString: uriStr,
+                  );
+                  if (real != null) uriStr = real;
+                  savedPath = uriStr;
+                }
+                // ignore: avoid_print
+                print('[SalesExport] created new file (fallback): $savedPath');
+              }
+            } else {
+              final save = await mediaStore.saveFile(
+                tempFilePath: tmp.path,
+                dirType: DirType.download,
+                dirName: DirName.download,
+                relativePath: dateFolder,
+              );
+              String? uriStr = save?.uri.toString();
+              if (uriStr != null) {
+                final real = await mediaStore.getFilePathFromUri(
+                  uriString: uriStr,
+                );
+                if (real != null) uriStr = real;
+                savedPath = uriStr;
+              }
+              // ignore: avoid_print
+              print('[SalesExport] created new file: $savedPath');
+            }
+          } finally {
+            try {
+              await tmp?.delete();
+            } catch (_) {}
+          }
+        } else {
+          final downloads = await getDownloadsDirectory();
+          final base = downloads?.path;
+            if (base != null) {
+            final dir = Directory(p.join(base, 'cheemow_pos', dateFolder));
+            if (!await dir.exists()) {
+              try {
+                await dir.create(recursive: true);
+              } catch (_) {}
+            }
+            final file = File(p.join(dir.path, fileName));
+            try { if (await file.exists()) await file.delete(); } catch (_) {}
+            await file.writeAsBytes(bytes, flush: true);
+            savedPath = file.path;
+          }
+        }
+        return savedPath;
+      }
+
+      final salesFileName = '銷售_${dateSuffix}.csv';
+      final specialFileName = '特殊商品_${dateSuffix}.csv';
+      final salesPath = await saveBytes(salesFileName, salesBytes);
+      final specialPath = await saveBytes(specialFileName, specialBytes);
+
+      if (!mounted) return;
+      if (salesPath == null && specialPath == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(AppMessages.salesExportFailure('寫入失敗'))),
+        );
+      } else {
+        final paths = [if (salesPath != null) salesPath, if (specialPath != null) specialPath];
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(AppMessages.salesExportSuccess(paths))),
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(AppMessages.salesExportFailure(e))),
+      );
+    }
   }
 
   void _checkout() async {
