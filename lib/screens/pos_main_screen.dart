@@ -1977,6 +1977,8 @@ class _PosMainScreenState extends State<PosMainScreen> {
   Future<void> _exportSalesData() async {
     if (!mounted) return;
     try {
+  // 確保收據服務初始化（避免尚未初始化導致 _prefs 為 null）
+  await ReceiptService.instance.initialize();
       final receipts = await ReceiptService.instance.getTodayReceipts();
       if (receipts.isEmpty) {
         if (!mounted) return;
@@ -2097,7 +2099,7 @@ class _PosMainScreenState extends State<PosMainScreen> {
       // 儲存：與圖片匯出一致：Android 走 MediaStore，其他平台直接寫 Downloads/cheemow_pos/<dateFolder>
       Future<String?> saveBytes(String fileName, List<int> bytes) async {
         String? savedPath;
-        if (Platform.isAndroid) {
+  if (Platform.isAndroid) {
           final mediaStore = MediaStore();
           File? tmp;
           try {
@@ -2196,19 +2198,40 @@ class _PosMainScreenState extends State<PosMainScreen> {
             } catch (_) {}
           }
         } else {
-          final downloads = await getDownloadsDirectory();
-          final base = downloads?.path;
-            if (base != null) {
+          String? base;
+          try {
+            final downloads = await getDownloadsDirectory();
+            base = downloads?.path;
+          } catch (e) {
+            // ignore: avoid_print
+            print('[SalesExport] getDownloadsDirectory error: $e');
+          }
+          if (base == null) {
+            // 後備：使用文件目錄
+            try {
+              final docs = await getApplicationDocumentsDirectory();
+              base = docs.path;
+              // ignore: avoid_print
+              print('[SalesExport] fallback to documents directory: $base');
+            } catch (e) {
+              // ignore: avoid_print
+              print('[SalesExport] documents directory error: $e');
+            }
+          }
+          if (base != null) {
             final dir = Directory(p.join(base, 'cheemow_pos', dateFolder));
             if (!await dir.exists()) {
-              try {
-                await dir.create(recursive: true);
-              } catch (_) {}
+              try { await dir.create(recursive: true); } catch (e) { print('[SalesExport] create dir error: $e'); }
             }
             final file = File(p.join(dir.path, fileName));
-            try { if (await file.exists()) await file.delete(); } catch (_) {}
-            await file.writeAsBytes(bytes, flush: true);
-            savedPath = file.path;
+            try { if (await file.exists()) await file.delete(); } catch (e) { print('[SalesExport] pre-delete error: $e'); }
+            try {
+              await file.writeAsBytes(bytes, flush: true);
+              savedPath = file.path;
+            } catch (e) {
+              // ignore: avoid_print
+              print('[SalesExport] write file error: $e');
+            }
           }
         }
         return savedPath;
