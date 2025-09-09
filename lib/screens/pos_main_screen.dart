@@ -693,7 +693,7 @@ class _PosMainScreenState extends State<PosMainScreen> {
         }
       }
 
-      // 建立可愛繽紛的圖像 Widget
+  // 建立可愛繽紛的圖像 Widget（統一卡片樣式）
       final now = DateTime.now();
       final y = now.year.toString().padLeft(4, '0');
       final m = now.month.toString().padLeft(2, '0');
@@ -739,7 +739,7 @@ class _PosMainScreenState extends State<PosMainScreen> {
         );
       }
 
-      Widget revenueWidget({required bool showNumbers, Key? key}) {
+  Widget revenueWidget({required bool showNumbers, Key? key}) {
         String money(int v) {
           final s = v.toString();
           final reg = RegExp(r'\B(?=(\d{3})+(?!\d))');
@@ -758,14 +758,17 @@ class _PosMainScreenState extends State<PosMainScreen> {
           key: key,
           child: Container(
             width: 800,
-            padding: const EdgeInsets.all(24),
+            padding: const EdgeInsets.fromLTRB(28,28,28,24),
             decoration: BoxDecoration(
               gradient: const LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [Color(0xFFFFF0F6), Color(0xFFE8F5FF)],
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [Colors.white, Color(0xFFF8FAFC)],
               ),
-              borderRadius: BorderRadius.circular(24),
+              borderRadius: BorderRadius.circular(32),
+              boxShadow: [
+                BoxShadow(color: Colors.black.withOpacity(0.08), blurRadius: 26, offset: const Offset(0,10)),
+              ],
             ),
             child: Column(
               mainAxisSize: MainAxisSize.min,

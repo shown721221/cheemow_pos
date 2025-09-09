@@ -616,7 +616,15 @@ class _ReceiptListScreenState extends State<ReceiptListScreen> {
                     ),
                   ),
                   const SizedBox(height: 6),
-                  Text(promptText, textAlign: TextAlign.center),
+                  Text(
+                    promptText,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.deepOrange,
+                    ),
+                  ),
                   const SizedBox(height: 12),
                   Container(
                     padding: const EdgeInsets.symmetric(vertical: 12),
