@@ -1993,6 +1993,17 @@ class _PosMainScreenState extends State<PosMainScreen> {
       final dateFolder = '${now.year.toString().padLeft(4, '0')}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
       final dateSuffix = '${(now.year % 100).toString().padLeft(2, '0')}${now.month.toString().padLeft(2, '0')}${now.day.toString().padLeft(2, '0')}';
 
+      // 與營收 / 人氣匯出保持一致：Downloads/cheemow_pos/<date>
+      if (Platform.isAndroid) {
+        try {
+          await MediaStore.ensureInitialized();
+          MediaStore.appFolder = 'cheemow_pos';
+        } catch (e) {
+          // ignore: avoid_print
+          print('[SalesExport] MediaStore init error: $e');
+        }
+      }
+
       // 付款方式代碼對應（與 ReceiptService._methodCode 一致）
       String methodCode(String method) {
         switch (method) {
