@@ -487,7 +487,7 @@ class _PosMainScreenState extends State<PosMainScreen> {
                 value: 'pettycash',
                 child: Row(
                   children: const [
-                    Text('�', style: TextStyle(fontSize: 18)),
+                    Text('💰', style: TextStyle(fontSize: 18)),
                     SizedBox(width: 8),
                     Text('設定零用金'),
                   ],
@@ -1179,10 +1179,7 @@ class _PosMainScreenState extends State<PosMainScreen> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Text(
-                    '設定零用金',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                  ),
+                  const Text('💰 設定零用金', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 12),
                   priceDisplay(),
                   const SizedBox(height: 16),
