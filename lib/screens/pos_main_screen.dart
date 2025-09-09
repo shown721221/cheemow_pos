@@ -1977,8 +1977,8 @@ class _PosMainScreenState extends State<PosMainScreen> {
   Future<void> _exportSalesData() async {
     if (!mounted) return;
     try {
-  // 確保收據服務初始化（避免尚未初始化導致 _prefs 為 null）
-  await ReceiptService.instance.initialize();
+      // 確保收據服務初始化（避免尚未初始化導致 _prefs 為 null）
+      await ReceiptService.instance.initialize();
       final receipts = await ReceiptService.instance.getTodayReceipts();
       if (receipts.isEmpty) {
         if (!mounted) return;
@@ -1990,8 +1990,10 @@ class _PosMainScreenState extends State<PosMainScreen> {
 
       // 建立日期（資料夾 yyyy-MM-dd，同現有圖片匯出）與檔名日期後綴（yyMMdd）
       final now = DateTime.now();
-      final dateFolder = '${now.year.toString().padLeft(4, '0')}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
-      final dateSuffix = '${(now.year % 100).toString().padLeft(2, '0')}${now.month.toString().padLeft(2, '0')}${now.day.toString().padLeft(2, '0')}';
+      final dateFolder =
+          '${now.year.toString().padLeft(4, '0')}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+      final dateSuffix =
+          '${(now.year % 100).toString().padLeft(2, '0')}${now.month.toString().padLeft(2, '0')}${now.day.toString().padLeft(2, '0')}';
 
       // 與營收 / 人氣匯出保持一致：Downloads/cheemow_pos/<date>
       if (Platform.isAndroid) {
@@ -2018,50 +2020,54 @@ class _PosMainScreenState extends State<PosMainScreen> {
         }
       }
 
-  // 準備銷售 CSV（排除特殊商品：預購 / 折扣 / 特殊商品類別）
+      // 準備銷售 CSV（排除特殊商品：預購 / 折扣 / 特殊商品類別）
       final salesBuffer = StringBuffer();
       // Header：關鍵欄位置前 + 其餘資訊
-      salesBuffer.writeln([
-        '商品代碼', // product.id
-        '商品名稱',
-        '條碼',
-        '售出數量',
-        '收據單號',
-        '日期時間',
-        '付款方式',
-        '付款方式代號',
-        '單價',
-        '總價',
-        '類別',
-        '是否特殊',
-      ].join(','));
+      salesBuffer.writeln(
+        [
+          '商品代碼', // product.id
+          '商品名稱',
+          '條碼',
+          '售出數量',
+          '收據單號',
+          '日期時間',
+          '付款方式',
+          '付款方式代號',
+          '單價',
+          '總價',
+          '類別',
+        ].join(','),
+      );
 
       // 準備特殊商品 CSV（僅預購/折扣或標記為特殊商品）
       final specialBuffer = StringBuffer();
-      specialBuffer.writeln([
-        '收據單號',
-        '日期時間',
-        '付款方式',
-        '付款方式代號',
-        '商品名稱',
-        '銷售數量',
-        '單價',
-        '總價',
-      ].join(','));
+      specialBuffer.writeln(
+        [
+          '收據單號',
+          '日期時間',
+          '付款方式',
+          '付款方式代號',
+          '商品名稱',
+          '銷售數量',
+          '單價',
+          '總價',
+        ].join(','),
+      );
 
       // 逐收據展開
       for (final r in receipts) {
         final refunded = r.refundedProductIds.toSet();
         for (final it in r.items) {
           final p = it.product;
-            if (refunded.contains(p.id)) continue; // 排除已退貨項目
+          if (refunded.contains(p.id)) continue; // 排除已退貨項目
           final qty = it.quantity;
           final unitPrice = p.price; // 折扣品可能為負
           final lineTotal = unitPrice * qty;
-          final isSpecial = p.isSpecialProduct ? 'Y' : 'N';
+          // 已排除特殊商品，不需要是否特殊欄位
           // 日期時間格式：yyyy/MM/dd HH:mm:ss 更精確
           final ts = r.timestamp;
-          final dateTimeStr = '${ts.year.toString().padLeft(4, '0')}/${ts.month.toString().padLeft(2, '0')}/${ts.day.toString().padLeft(2, '0')} ${ts.hour.toString().padLeft(2, '0')}:${ts.minute.toString().padLeft(2, '0')}:${ts.second.toString().padLeft(2, '0')}';
+          final dateTimeStr =
+              '${ts.year.toString().padLeft(4, '0')}/${ts.month.toString().padLeft(2, '0')}/${ts.day.toString().padLeft(2, '0')} ${ts.hour.toString().padLeft(2, '0')}:${ts.minute.toString().padLeft(2, '0')}:${ts.second.toString().padLeft(2, '0')}';
 
           // 依序寫入（基本不含逗號，仍做最小轉義）
           String esc(String v) {
@@ -2073,33 +2079,36 @@ class _PosMainScreenState extends State<PosMainScreen> {
           }
 
           if (!p.isSpecialProduct) {
-            salesBuffer.writeln([
-              esc(p.id),
-              esc(p.name),
-              esc(p.barcode),
-              qty.toString(),
-              esc(r.id),
-              esc(dateTimeStr),
-              esc(r.paymentMethod),
-              methodCode(r.paymentMethod),
-              unitPrice.toString(),
-              lineTotal.toString(),
-              esc(p.category.isEmpty ? '未分類' : p.category),
-              isSpecial,
-            ].join(','));
+            salesBuffer.writeln(
+              [
+                esc(p.id),
+                esc(p.name),
+                esc(p.barcode),
+                qty.toString(),
+                esc(r.id),
+                esc(dateTimeStr),
+                esc(r.paymentMethod),
+                methodCode(r.paymentMethod),
+                unitPrice.toString(),
+                lineTotal.toString(),
+                esc(p.category.isEmpty ? '未分類' : p.category),
+              ].join(','),
+            );
           }
 
           if (p.isSpecialProduct) {
-            specialBuffer.writeln([
-              esc(r.id),
-              esc(dateTimeStr),
-              esc(r.paymentMethod),
-              methodCode(r.paymentMethod),
-              esc(p.name),
-              qty.toString(),
-              unitPrice.toString(),
-              lineTotal.toString(),
-            ].join(','));
+            specialBuffer.writeln(
+              [
+                esc(r.id),
+                esc(dateTimeStr),
+                esc(r.paymentMethod),
+                methodCode(r.paymentMethod),
+                esc(p.name),
+                qty.toString(),
+                unitPrice.toString(),
+                lineTotal.toString(),
+              ].join(','),
+            );
           }
         }
       }
@@ -2112,7 +2121,7 @@ class _PosMainScreenState extends State<PosMainScreen> {
       // 儲存：與圖片匯出一致：Android 走 MediaStore，其他平台直接寫 Downloads/cheemow_pos/<dateFolder>
       Future<String?> saveBytes(String fileName, List<int> bytes) async {
         String? savedPath;
-  if (Platform.isAndroid) {
+        if (Platform.isAndroid) {
           final mediaStore = MediaStore();
           File? tmp;
           try {
@@ -2123,7 +2132,9 @@ class _PosMainScreenState extends State<PosMainScreen> {
             try {
               final baseNameNoExt = fileName.replaceAll(RegExp(r'\.csv$'), '');
               for (int i = 0; i < 6; i++) {
-                final candidate = i == 0 ? fileName : '${baseNameNoExt} ($i).csv';
+                final candidate = i == 0
+                    ? fileName
+                    : '${baseNameNoExt} ($i).csv';
                 final deleted = await mediaStore.deleteFile(
                   fileName: candidate,
                   dirType: DirType.download,
@@ -2234,10 +2245,18 @@ class _PosMainScreenState extends State<PosMainScreen> {
           if (base != null) {
             final dir = Directory(p.join(base, 'cheemow_pos', dateFolder));
             if (!await dir.exists()) {
-              try { await dir.create(recursive: true); } catch (e) { print('[SalesExport] create dir error: $e'); }
+              try {
+                await dir.create(recursive: true);
+              } catch (e) {
+                print('[SalesExport] create dir error: $e');
+              }
             }
             final file = File(p.join(dir.path, fileName));
-            try { if (await file.exists()) await file.delete(); } catch (e) { print('[SalesExport] pre-delete error: $e'); }
+            try {
+              if (await file.exists()) await file.delete();
+            } catch (e) {
+              print('[SalesExport] pre-delete error: $e');
+            }
             try {
               await file.writeAsBytes(bytes, flush: true);
               savedPath = file.path;
@@ -2261,7 +2280,10 @@ class _PosMainScreenState extends State<PosMainScreen> {
           SnackBar(content: Text(AppMessages.salesExportFailure('寫入失敗'))),
         );
       } else {
-        final paths = [if (salesPath != null) salesPath, if (specialPath != null) specialPath];
+        final paths = [
+          if (salesPath != null) salesPath,
+          if (specialPath != null) specialPath,
+        ];
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(AppMessages.salesExportSuccess(paths))),
         );
