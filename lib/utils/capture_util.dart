@@ -32,14 +32,21 @@ class CaptureUtil {
     );
     overlay.insert(entry);
     try {
-      // 等待 2 frame 確保繪製完成
-      await Future.delayed(const Duration(milliseconds: 16));
-      await WidgetsBinding.instance.endOfFrame;
-      await Future.delayed(const Duration(milliseconds: 16));
+      // 主動排程 frame（測試環境下若沒有輸入事件可能不會自動刷新）
+      final binding = WidgetsBinding.instance;
+      binding.scheduleFrame();
+      // 等待繪製一幀；加入 timeout 防止測試環境掛住
+      try {
+        await binding.endOfFrame.timeout(const Duration(milliseconds: 300));
+      } catch (_) {
+        // 繪製等待逾時，繼續嘗試擷取（可能仍已完成）
+      }
       final ro = key.currentContext?.findRenderObject();
       if (ro is! RenderRepaintBoundary) {
         // 再給一次機會
         await Future.delayed(const Duration(milliseconds: 32));
+        binding.scheduleFrame();
+        try { await binding.endOfFrame.timeout(const Duration(milliseconds: 200)); } catch (_) {}
         final ro2 = key.currentContext?.findRenderObject();
         if (ro2 is! RenderRepaintBoundary) {
           throw Exception('渲染尚未完成，無法擷取');

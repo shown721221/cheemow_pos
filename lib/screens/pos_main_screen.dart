@@ -25,6 +25,7 @@ import '../controllers/pos_cart_controller.dart';
 import '../utils/product_sorter.dart';
 import '../services/export_service.dart';
 import '../utils/capture_util.dart';
+import '../dialogs/pin_dialog.dart';
 
 class PosMainScreen extends StatefulWidget {
   const PosMainScreen({super.key});
@@ -242,177 +243,12 @@ class _PosMainScreenState extends State<PosMainScreen> {
   /// 匯入前 PIN 確認（四位數字，預設 0000）
   Future<bool> _confirmImportWithPin() async {
     final pin = AppConfig.csvImportPin;
-    String input = '';
-    String? error;
-    bool ok = false;
 
-    await showDialog(
+    return PinDialog.show(
       context: context,
-      barrierDismissible: true, // 點擊外部即取消
-      builder: (context) {
-        return StatefulBuilder(
-          builder: (context, setS) {
-            Widget buildNumKey(String number) => SizedBox(
-              width: 72,
-              height: 60,
-              child: ElevatedButton(
-                onPressed: input.length < 4
-                    ? () => setS(() {
-                        input += number;
-                        error = null;
-                        if (input.length == 4) {
-                          if (input == pin) {
-                            ok = true;
-                            Navigator.pop(context);
-                          } else {
-                            error = '密碼錯誤，請再試一次';
-                          }
-                        }
-                      })
-                    : null,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.blue[50],
-                  foregroundColor: Colors.blue[700],
-                ),
-                child: Text(
-                  number,
-                  style: const TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-            );
-
-            Widget buildActionKey(String label, VoidCallback onPressed) =>
-                SizedBox(
-                  width: 72,
-                  height: 60,
-                  child: ElevatedButton(
-                    onPressed: onPressed,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.orange[50],
-                      foregroundColor: Colors.orange[700],
-                    ),
-                    child: Text(label, style: const TextStyle(fontSize: 18)),
-                  ),
-                );
-
-            String masked = '••••'.substring(0, input.length).padRight(4, '—');
-
-            return AlertDialog(
-              content: SizedBox(
-                width: 320,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    // 保留說明：覆蓋警告與輸入提示（移除標題文字）
-                    Text(
-                      '⚠️ 這會覆蓋所有商品資料',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        color: Colors.orange[700],
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    const Text(
-                      '✨ 請輸入奇妙數字 ✨',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.deepOrange,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    Container(
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      decoration: BoxDecoration(
-                        border: Border.all(color: Colors.grey[300]!),
-                        borderRadius: BorderRadius.circular(8),
-                        color: Colors.grey[50],
-                      ),
-                      child: Text(
-                        masked,
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(
-                          fontSize: 24,
-                          letterSpacing: 4,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                    if (error != null) ...[
-                      const SizedBox(height: 8),
-                      Text(
-                        error!,
-                        style: TextStyle(color: Colors.red[700], fontSize: 12),
-                      ),
-                    ],
-                    const SizedBox(height: 12),
-                    // 數字鍵盤
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                      children: [
-                        buildNumKey('1'),
-                        buildNumKey('2'),
-                        buildNumKey('3'),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                      children: [
-                        buildNumKey('4'),
-                        buildNumKey('5'),
-                        buildNumKey('6'),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                      children: [
-                        buildNumKey('7'),
-                        buildNumKey('8'),
-                        buildNumKey('9'),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                      children: [
-                        buildActionKey(
-                          '🧹',
-                          () => setS(() {
-                            input = '';
-                            error = null;
-                          }),
-                        ),
-                        buildNumKey('0'),
-                        buildActionKey(
-                          '⌫',
-                          () => setS(() {
-                            if (input.isNotEmpty) {
-                              input = input.substring(0, input.length - 1);
-                            }
-                            error = null;
-                          }),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            );
-          },
-        );
-      },
+      pin: pin,
+      subtitle: '⚠️ 這會覆蓋所有商品資料',
     );
-
-    return ok;
   }
 
   // 對話框統一改用 DialogManager，移除本地自建實作
@@ -1049,7 +885,11 @@ class _PosMainScreenState extends State<PosMainScreen> {
     final pin = AppConfig.csvImportPin;
     // 若已有值且要修改，先輸入 PIN
     if (AppConfig.pettyCash > 0) {
-      final ok = await _confirmPin(pin: pin);
+      final ok = await PinDialog.show(
+        context: context,
+        pin: pin,
+        subtitle: '目前零用金：💲' + AppConfig.pettyCash.toString(),
+      );
       if (!ok) return;
     }
     int tempValue = AppConfig.pettyCash;
@@ -1186,139 +1026,6 @@ class _PosMainScreenState extends State<PosMainScreen> {
         },
       ),
     );
-  }
-
-  Future<bool> _confirmPin({required String pin}) async {
-    String input = '';
-    bool ok = false;
-    await showDialog(
-      context: context,
-      barrierDismissible: true,
-      builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setS) {
-          Widget numKey(String d) => SizedBox(
-            width: 70,
-            height: 56,
-            child: ElevatedButton(
-              onPressed: input.length < 4
-                  ? () => setS(() {
-                      input += d;
-                      if (input.length == 4) {
-                        if (input == pin) {
-                          ok = true;
-                          Navigator.of(ctx).pop();
-                        } else {
-                          input = '';
-                        }
-                      }
-                    })
-                  : null,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.blue[50],
-                foregroundColor: Colors.blue[700],
-              ),
-              child: Text(
-                d,
-                style: const TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-          );
-          return AlertDialog(
-            // 移除標題，統一樣式
-            content: SizedBox(
-              width: 320,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Text(
-                    '✨ 請輸入奇妙數字 ✨',
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.deepOrange,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    '目前零用金：💲' + AppConfig.pettyCash.toString(),
-                    style: TextStyle(fontSize: 12, color: Colors.blueGrey[600]),
-                  ),
-                  const SizedBox(height: 12),
-                  Container(
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    decoration: BoxDecoration(
-                      border: Border.all(color: Colors.grey[300]!),
-                      borderRadius: BorderRadius.circular(8),
-                      color: Colors.grey[50],
-                    ),
-                    child: Text(
-                      ('••••'.substring(0, input.length)).padRight(4, '—'),
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(
-                        fontSize: 24,
-                        letterSpacing: 4,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: [numKey('1'), numKey('2'), numKey('3')],
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: [numKey('4'), numKey('5'), numKey('6')],
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: [numKey('7'), numKey('8'), numKey('9')],
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: [
-                      SizedBox(
-                        width: 70,
-                        height: 56,
-                        child: ElevatedButton(
-                          onPressed: () => setS(() => input = ''),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.orange[50],
-                            foregroundColor: Colors.orange[700],
-                          ),
-                          child: const Text('清除'),
-                        ),
-                      ),
-                      numKey('0'),
-                      SizedBox(
-                        width: 70,
-                        height: 56,
-                        child: ElevatedButton(
-                          onPressed: () => Navigator.of(ctx).pop(),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.grey[200],
-                            foregroundColor: Colors.grey[700],
-                          ),
-                          child: const Text('取消'),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          );
-        },
-      ),
-    );
-    return ok;
   }
 
   // 新增：寶寶人氣指數匯出（與營收匯出相同的穩定預覽 + 隱藏擷取流程）
