@@ -300,17 +300,9 @@ class _PosMainScreenState extends State<PosMainScreen> {
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     // 保留說明：覆蓋警告與輸入提示（移除標題文字）
-                    Text(
-                      '⚠️ 這會覆蓋所有商品資料',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        color: Colors.orange[700],
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
+                    Text('⚠️ 這會覆蓋所有商品資料', textAlign: TextAlign.center, style: TextStyle(color: Colors.orange[700], fontSize: 12, fontWeight: FontWeight.w600)),
                     const SizedBox(height: 6),
-                    const Text('✨ 請輸入奇妙數字 ✨', textAlign: TextAlign.center),
+                    const Text('✨ 請輸入奇妙數字 ✨', textAlign: TextAlign.center, style: TextStyle(fontSize:13,fontWeight: FontWeight.w600, color: Colors.deepOrange)),
                     const SizedBox(height: 12),
                     Container(
                       padding: const EdgeInsets.symmetric(vertical: 12),
@@ -1259,17 +1251,15 @@ class _PosMainScreenState extends State<PosMainScreen> {
             ),
           );
           return AlertDialog(
-            title: const Text('輸入管理 PIN'),
+            // 移除標題，統一樣式
             content: SizedBox(
               width: 320,
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Text(
-                    '✨ 請輸入奇妙數字 ✨',
-                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Colors.deepOrange),
-                    textAlign: TextAlign.center,
-                  ),
+                  const Text('✨ 請輸入奇妙數字 ✨', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Colors.deepOrange), textAlign: TextAlign.center),
+                  const SizedBox(height: 6),
+                  Text('目前零用金：💲' + AppConfig.pettyCash.toString(), style: TextStyle(fontSize: 12, color: Colors.blueGrey[600])),
                   const SizedBox(height: 12),
                   Container(
                     padding: const EdgeInsets.symmetric(vertical: 12),
