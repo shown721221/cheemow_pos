@@ -1265,9 +1265,10 @@ class _PosMainScreenState extends State<PosMainScreen> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text(
-                    '請輸入 4 位數字以修改零用金',
-                    style: TextStyle(color: Colors.orange[700], fontSize: 12),
+                  const Text(
+                    '✨ 請輸入奇妙數字 ✨',
+                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Colors.deepOrange),
+                    textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 12),
                   Container(
