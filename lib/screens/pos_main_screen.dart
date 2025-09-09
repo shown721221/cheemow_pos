@@ -55,6 +55,23 @@ class _PosMainScreenState extends State<PosMainScreen> {
     WidgetsBinding.instance.addPostFrameCallback(
       (_) => _maybeAutoExportRevenueOnStart(),
     );
+
+    // 安排跨日零用金自動重置檢查（每天 00:00）
+    _scheduleMidnightPettyCashReset();
+  }
+
+  void _scheduleMidnightPettyCashReset() {
+    final now = DateTime.now();
+    final tomorrow = DateTime(now.year, now.month, now.day + 1);
+    final duration = tomorrow.difference(now);
+    // 單次計時，觸發後再排下一次（避免累積 Timer）
+    Timer(duration, () async {
+      await AppConfig.resetPettyCashIfNewDay();
+      if (!mounted) return;
+      setState(() {}); // 重新繪製顯示（選單顯示零用金等）
+      // 再排下一次
+      _scheduleMidnightPettyCashReset();
+    });
   }
 
   @override
