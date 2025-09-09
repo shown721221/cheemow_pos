@@ -2079,11 +2079,18 @@ class _PosMainScreenState extends State<PosMainScreen> {
           }
 
           if (!p.isSpecialProduct) {
+            // 保留前導 0：若為純數字且以 0 開頭，加上一個前置單引號讓 Excel 視為文字（顯示時不會出現單引號）。
+            String preserveLeadingZeros(String v) {
+              if (RegExp(r'^0\d+$').hasMatch(v)) {
+                return "'" + v; // Excel 解析後仍顯示原字串
+              }
+              return v;
+            }
             salesBuffer.writeln(
               [
-                esc(p.id),
+                esc(preserveLeadingZeros(p.id)),
                 esc(p.name),
-                esc(p.barcode),
+                esc(preserveLeadingZeros(p.barcode)),
                 qty.toString(),
                 esc(r.id),
                 esc(dateTimeStr),
