@@ -703,12 +703,19 @@ class _PosMainScreenState extends State<PosMainScreen> {
       // captureKey 用於不可見的「未遮蔽」版本擷取；預覽不使用 key
       final captureKey = GlobalKey();
 
+      final tsHeadline = const TextStyle(fontSize: 28, fontWeight: FontWeight.w900);
+      final tsSectionLabel = const TextStyle(fontSize: 20, fontWeight: FontWeight.w700);
+      final tsMetricValueLg = const TextStyle(fontSize: 24, fontWeight: FontWeight.w800);
+      final tsMetricValue = const TextStyle(fontSize: 18, fontWeight: FontWeight.w700);
+  // final tsChipValue = const TextStyle(fontSize: 16, fontWeight: FontWeight.w600); // reserved for future chips
+      // metric card
       Widget metricCard({
         required String icon,
         required String title,
         required String value,
         required Color bg,
         Color? valueColor,
+        bool large = false,
       }) {
         return Container(
           padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
@@ -728,11 +735,7 @@ class _PosMainScreenState extends State<PosMainScreen> {
               const SizedBox(height: 2),
               Text(
                 value,
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w800,
-                  color: valueColor ?? Colors.black87,
-                ),
+                style: (large ? tsMetricValueLg : tsMetricValue).copyWith(color: valueColor ?? Colors.black87),
               ),
             ],
           ),
@@ -776,12 +779,9 @@ class _PosMainScreenState extends State<PosMainScreen> {
               children: [
                 Row(
                   children: [
-                    const Text(
+                    Text(
                       '🌈 今日營收',
-                      style: TextStyle(
-                        fontSize: 28,
-                        fontWeight: FontWeight.w900,
-                      ),
+                      style: tsHeadline,
                     ),
                     const Spacer(),
                     Text(
@@ -832,21 +832,14 @@ class _PosMainScreenState extends State<PosMainScreen> {
                         size: 32,
                       ),
                       const SizedBox(width: 12),
-                      const Text(
+                      Text(
                         '總營收',
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.w700,
-                        ),
+                        style: tsSectionLabel,
                       ),
                       const Spacer(),
                       Text(
                         mask(total),
-                        style: const TextStyle(
-                          fontSize: 28,
-                          fontWeight: FontWeight.w900,
-                          color: Colors.teal,
-                        ),
+                        style: tsHeadline.copyWith(color: Colors.teal),
                       ),
                     ],
                   ),
