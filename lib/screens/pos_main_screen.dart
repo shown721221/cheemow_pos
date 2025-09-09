@@ -24,6 +24,8 @@ import '../dialogs/dialog_manager.dart';
 import '../config/app_config.dart';
 import 'receipt_list_screen.dart';
 import '../config/app_messages.dart';
+import '../controllers/pos_cart_controller.dart';
+import '../utils/product_sorter.dart';
 
 class PosMainScreen extends StatefulWidget {
   const PosMainScreen({super.key});
@@ -35,6 +37,7 @@ class PosMainScreen extends StatefulWidget {
 class _PosMainScreenState extends State<PosMainScreen> {
   List<Product> products = [];
   List<CartItem> cartItems = [];
+  late final PosCartController _cartController = PosCartController(cartItems);
   // 結帳後暫存最後購物車，用於結帳完成後仍顯示內容直到下一次操作
   List<CartItem> _lastCheckedOutCart = [];
   String? _lastCheckoutPaymentMethod; // 顯示『已結帳完成 使用 XX 付款方式』
@@ -115,7 +118,7 @@ class _PosMainScreenState extends State<PosMainScreen> {
     await LocalDatabaseService.instance.ensureSpecialProducts();
 
     final loadedProducts = await LocalDatabaseService.instance.getProducts();
-    final sorted = _sortProductsDaily(loadedProducts);
+  final sorted = ProductSorter.sortDaily(loadedProducts);
     setState(() {
       products = sorted;
     });
@@ -124,35 +127,7 @@ class _PosMainScreenState extends State<PosMainScreen> {
   // 每日排序：今日有售出的商品 (lastCheckoutTime 為今日) 置頂；
   // 特殊商品永遠最前（預購在折扣前），再來今日售出的普通商品（依時間新→舊），
   // 其餘按名稱。
-  List<Product> _sortProductsDaily(List<Product> list) {
-    final now = DateTime.now();
-    bool isToday(DateTime? dt) =>
-        dt != null &&
-        dt.year == now.year &&
-        dt.month == now.month &&
-        dt.day == now.day;
-    final sorted = [...list];
-    sorted.sort((a, b) {
-      final aSpecial = a.isSpecialProduct;
-      final bSpecial = b.isSpecialProduct;
-      if (aSpecial && !bSpecial) return -1;
-      if (bSpecial && !aSpecial) return 1;
-      if (aSpecial && bSpecial) {
-        if (a.isPreOrderProduct && b.isDiscountProduct) return -1;
-        if (a.isDiscountProduct && b.isPreOrderProduct) return 1;
-        return a.name.compareTo(b.name);
-      }
-      final aToday = isToday(a.lastCheckoutTime);
-      final bToday = isToday(b.lastCheckoutTime);
-      if (aToday && !bToday) return -1;
-      if (bToday && !aToday) return 1;
-      if (aToday && bToday) {
-        return b.lastCheckoutTime!.compareTo(a.lastCheckoutTime!);
-      }
-      return a.name.compareTo(b.name);
-    });
-    return sorted;
-  }
+  // 已抽離至 ProductSorter.sortDaily
 
   void _listenToBarcodeScanner() {
     BluetoothScannerService.instance.barcodeStream.listen((barcode) {
@@ -194,38 +169,8 @@ class _PosMainScreenState extends State<PosMainScreen> {
 
   // 插入商品到購物車（頂部），若同品且同價已存在則數量+1並移至頂部
   void _addProductToCart(Product product, int actualPrice) {
-    // 1) 判斷購物車內是否已存在相同商品且相同價格的項目
-    final existingIndex = cartItems.indexWhere(
-      (item) =>
-          item.product.id == product.id && item.product.price == actualPrice,
-    );
-
-    // 2) 若存在：數量 +1 並移至頂部
-    if (existingIndex >= 0) {
-      setState(() {
-        cartItems[existingIndex].increaseQuantity();
-        final item = cartItems.removeAt(existingIndex);
-        cartItems.insert(0, item);
-      });
-      return;
-    }
-
-    // 3) 若不存在：建立商品（若價格不同，建立臨時副本），插入頂部
-    final productToAdd = actualPrice != product.price
-        ? Product(
-            id: product.id,
-            barcode: product.barcode,
-            name: product.name,
-            price: actualPrice,
-            category: product.category,
-            stock: product.stock,
-            isActive: product.isActive,
-            lastCheckoutTime: product.lastCheckoutTime,
-          )
-        : product;
-
     setState(() {
-      cartItems.insert(0, CartItem(product: productToAdd, quantity: 1));
+      _cartController.addProduct(product, actualPrice);
     });
   }
 
@@ -233,13 +178,9 @@ class _PosMainScreenState extends State<PosMainScreen> {
 
   // 本地未使用：找不到商品改由 DialogManager 管理
 
-  int get totalAmount {
-    return cartItems.fold(0, (total, item) => total + item.subtotal);
-  }
+  int get totalAmount => _cartController.totalAmount;
 
-  int get totalQuantity {
-    return cartItems.fold(0, (total, item) => total + item.quantity);
-  }
+  int get totalQuantity => _cartController.totalQuantity;
 
   void _clearPostCheckoutPreview() {
     setState(() {
@@ -255,9 +196,7 @@ class _PosMainScreenState extends State<PosMainScreen> {
       _clearPostCheckoutPreview();
     }
     setState(() {
-      if (index >= 0 && index < cartItems.length) {
-        cartItems.removeAt(index);
-      }
+      _cartController.removeAt(index);
     });
   }
 
@@ -2306,16 +2245,8 @@ class _PosMainScreenState extends State<PosMainScreen> {
   void _checkout() async {
     // 直接進入付款方式（極簡流程）
     // 結帳前最終把關：折扣不可大於非折扣商品總額
-    final int nonDiscountTotal = cartItems
-        .where((item) => !item.product.isDiscountProduct)
-        .fold<int>(0, (sum, item) => sum + item.subtotal);
-    final int discountAbsTotal = cartItems
-        .where((item) => item.product.isDiscountProduct)
-        .fold<int>(
-          0,
-          (sum, item) =>
-              sum + (item.subtotal < 0 ? -item.subtotal : item.subtotal),
-        );
+  final int nonDiscountTotal = _cartController.nonDiscountTotal;
+  final int discountAbsTotal = _cartController.discountAbsTotal;
 
     if (discountAbsTotal > nonDiscountTotal) {
       await showDialog(
@@ -2436,7 +2367,7 @@ class _PosMainScreenState extends State<PosMainScreen> {
     debugPrint('實際更新了 $updatedCount 個商品');
 
     // 重新排序商品（依當日銷售規則）
-    final resorted = _sortProductsDaily(updatedProducts);
+  final resorted = ProductSorter.sortDaily(updatedProducts);
 
     // 儲存更新後商品
     await LocalDatabaseService.instance.saveProducts(updatedProducts);
