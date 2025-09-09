@@ -515,6 +515,9 @@ class _PosMainScreenState extends State<PosMainScreen> {
                 case 'pettycash':
                   await _showSetPettyCashDialog();
                   break;
+                case 'sales_export':
+                  await _exportSalesData();
+                  break;
               }
             },
             itemBuilder: (BuildContext context) => [
@@ -529,12 +532,12 @@ class _PosMainScreenState extends State<PosMainScreen> {
                 ),
               ),
               PopupMenuItem<String>(
-                value: 'export',
+                value: 'sales_export',
                 child: Row(
                   children: const [
-                    Text('📤', style: TextStyle(fontSize: 18)),
+                    Text('�', style: TextStyle(fontSize: 18)),
                     SizedBox(width: 8),
-                    Text('匯出商品資料'),
+                    Text('匯出銷售資料'),
                   ],
                 ),
               ),
@@ -1967,6 +1970,14 @@ class _PosMainScreenState extends State<PosMainScreen> {
         SnackBar(content: Text(AppMessages.popularityExportError(e))),
       );
     }
+  }
+
+  // TODO: 實作銷售資料匯出（今日 / 全部 / 日期區間）
+  Future<void> _exportSalesData() async {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('銷售資料匯出功能開發中')),
+    );
   }
 
   void _checkout() async {

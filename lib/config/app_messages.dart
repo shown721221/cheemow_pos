@@ -26,6 +26,11 @@ class AppMessages {
   // 收據
   static const String clearedReceipts = '已清空收據清單';
 
+    // 銷售資料匯出
+    static const String salesExportNoData = '沒有可匯出的銷售資料';
+    static String salesExportSuccess(List<String> paths) => '已匯出銷售資料\n${paths.join('\n')}';
+    static String salesExportFailure(Object e) => '匯出銷售資料失敗: $e';
+
   // 價格 / 折扣輸入驗證
   static const String invalidNumber = '請輸入有效的數字';
   static const String enterPrice = '請輸入價格';
