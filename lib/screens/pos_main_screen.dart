@@ -24,6 +24,7 @@ import '../dialogs/dialog_manager.dart';
 import '../config/app_config.dart';
 import 'receipt_list_screen.dart';
 import '../config/app_messages.dart';
+import '../services/time_service.dart';
 import '../controllers/pos_cart_controller.dart';
 import '../utils/product_sorter.dart';
 
@@ -68,16 +69,16 @@ class _PosMainScreenState extends State<PosMainScreen> {
     _scheduleMidnightPettyCashReset();
   }
 
+  Timer? _midnightTimer;
+
   void _scheduleMidnightPettyCashReset() {
-    final now = DateTime.now();
-    final tomorrow = DateTime(now.year, now.month, now.day + 1);
-    final duration = tomorrow.difference(now);
-    // 單次計時，觸發後再排下一次（避免累積 Timer）
-    Timer(duration, () async {
+    _midnightTimer?.cancel();
+    final now = TimeService.now();
+    final tomorrowMidnight = DateTime(now.year, now.month, now.day + 1);
+    _midnightTimer = TimeService.scheduleAt(tomorrowMidnight, () async {
       await AppConfig.resetPettyCashIfNewDay();
       if (!mounted) return;
-      setState(() {}); // 重新繪製顯示（選單顯示零用金等）
-      // 再排下一次
+      setState(() {});
       _scheduleMidnightPettyCashReset();
     });
   }
@@ -91,7 +92,8 @@ class _PosMainScreenState extends State<PosMainScreen> {
       );
       _kbScanner!.dispose();
     }
-    super.dispose();
+  _midnightTimer?.cancel();
+  super.dispose();
   }
 
   void _maybeAutoExportRevenueOnStart() {

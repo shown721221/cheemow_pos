@@ -6,12 +6,16 @@
 // tree, read text, and verify that the values of widget properties are correct.
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:cheemow_pos/main.dart';
+import 'package:cheemow_pos/services/time_service.dart';
 
 
 void main() {
-  testWidgets(
-    'POS App smoke test (暫時跳過 - 待時間服務抽象)',
-    (WidgetTester tester) async {},
-    skip: true,
-  );
+  testWidgets('POS App smoke test', (WidgetTester tester) async {
+    // 關閉實際排程避免長時間 Timer
+    TimeService.disableSchedulingForTests = true;
+    await tester.pumpWidget(const MyApp());
+    await tester.pump(const Duration(milliseconds: 100));
+    expect(find.textContaining('POS'), findsWidgets);
+  });
 }
