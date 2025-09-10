@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:cheemow_pos/utils/money_formatter.dart';
 
 /// 價格顯示元件，使用鈔票圖示替代 NT$ 文字
 class PriceDisplay extends StatelessWidget {
@@ -7,6 +8,7 @@ class PriceDisplay extends StatelessWidget {
   final double fontSize;
   final Color? color;
   final FontWeight? fontWeight;
+  final bool thousands; // 是否以千分位顯示數字
 
   const PriceDisplay({
     super.key,
@@ -15,6 +17,7 @@ class PriceDisplay extends StatelessWidget {
     this.fontSize = 16.0,
     this.color,
     this.fontWeight,
+  this.thousands = false,
   });
 
   @override
@@ -25,7 +28,7 @@ class PriceDisplay extends StatelessWidget {
   Text('💵', style: TextStyle(fontSize: iconSize)),
   SizedBox(width: 6.0),
         Text(
-          amount.toString(), // 保持原樣（列表不加千分位避免過寬），如需可改 MoneyFormatter.thousands(amount)
+          thousands ? MoneyFormatter.thousands(amount) : amount.toString(),
           style: TextStyle(
             fontSize: fontSize,
             color: color,
@@ -48,9 +51,10 @@ class LargePriceDisplay extends StatelessWidget {
     return PriceDisplay(
       amount: amount,
       iconSize: 28.0,
-      fontSize: 24.0,
+  fontSize: 24.0,
       fontWeight: FontWeight.bold,
       color: Colors.green[700],
+  thousands: true,
     );
   }
 }

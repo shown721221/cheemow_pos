@@ -1,4 +1,5 @@
 import '../config/constants.dart';
+import '../utils/money_formatter.dart';
 
 /// 商品模型類別
 class Product {
@@ -33,8 +34,8 @@ class Product {
   // 檢查是否為折扣商品 - 修正商品名稱為 "祝您有奇妙的一天"
   bool get isDiscountProduct => barcode == AppConstants.barcodeDiscount;
 
-  // 格式化價格顯示（純文字版本，用於列印等場合）
-  String get formattedPrice => 'NT\$ $price';
+  // 格式化價格顯示（純文字版本，用於列印等場合）。UI 請優先用 PriceDisplay 或 MoneyFormatter.symbol。
+  String get formattedPrice => MoneyFormatter.symbol(price);
 
   // 取得價格數字（用於 UI 顯示搭配圖示）
   String get priceText => price.toString();

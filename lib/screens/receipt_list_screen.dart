@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../utils/money_formatter.dart';
 
 import '../config/app_config.dart';
 import '../models/cart_item.dart';
@@ -167,7 +168,7 @@ class _ReceiptListScreenState extends State<ReceiptListScreen> {
     addSeg('$hh:$mm');
     addSeg(r.paymentMethod);
     // 總金額（已是扣除退貨後的淨額）
-    addSeg('💲' + r.totalAmount.toString());
+  addSeg(MoneyFormatter.symbol(r.totalAmount));
     addSeg('售出 $nonSpecialQty 件');
     // 使用與商品清單一致的顏色：預購=紫色、折扣=橘色（取自 ProductStyleUtils 規則）
     if (preorderQty > 0) {
@@ -453,7 +454,7 @@ class _ReceiptListScreenState extends State<ReceiptListScreen> {
                               ),
                             ),
                             subtitle: Text(
-                              '單價 💲${it.product.price} × ${it.quantity}',
+                              '單價 ${MoneyFormatter.symbol(it.product.price)} × ${it.quantity}',
                               style: TextStyle(
                                 color: refunded ? Colors.red[400] : null,
                                 decoration: refunded
@@ -497,7 +498,9 @@ class _ReceiptListScreenState extends State<ReceiptListScreen> {
                           style: TextStyle(fontWeight: FontWeight.bold),
                         ),
                         Text(
-                          '💲${current.items.where((i) => !current.refundedProductIds.contains(i.product.id)).fold<int>(0, (s, it) => s + it.subtotal)}',
+              MoneyFormatter.symbol(current.items
+                .where((i) => !current.refundedProductIds.contains(i.product.id))
+                .fold<int>(0, (s, it) => s + it.subtotal)),
                           style: const TextStyle(fontWeight: FontWeight.bold),
                         ),
                       ],

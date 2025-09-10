@@ -16,6 +16,7 @@ import '../services/bluetooth_scanner_service.dart';
 import '../services/csv_import_service.dart';
 import '../managers/keyboard_scanner_manager.dart';
 import '../dialogs/price_input_dialog_manager.dart';
+import '../utils/money_formatter.dart';
 import '../dialogs/dialog_manager.dart';
 import '../config/app_config.dart';
 import 'receipt_list_screen.dart';
@@ -624,12 +625,7 @@ class _PosMainScreenState extends State<PosMainScreen> {
       }
 
       Widget revenueWidget({required bool showNumbers, Key? key}) {
-        String money(int v) {
-          final s = v.toString();
-          final reg = RegExp(r'\B(?=(\d{3})+(?!\d))');
-          final withComma = s.replaceAllMapped(reg, (m) => ',');
-          return withComma; // 去除 NT$ 前綴
-        }
+  String money(int v) => MoneyFormatter.thousands(v);
 
         Color bg1 = const Color(0xFFFFF0F6); // 粉
         Color bg2 = const Color(0xFFE8F5FF); // 淡藍
@@ -680,7 +676,7 @@ class _PosMainScreenState extends State<PosMainScreen> {
                   Align(
                     alignment: Alignment.centerRight,
                     child: Text(
-                      '零用金 💲' + AppConfig.pettyCash.toString(),
+                      MoneyFormatter.symbol(AppConfig.pettyCash),
                       style: const TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
