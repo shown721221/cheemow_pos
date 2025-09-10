@@ -102,6 +102,7 @@ class AppMessages {
   static const String cartEmptyTitle = '帶寶寶回家吧';
   static const String appTitle = 'Cheemow POS';
   static const String salesTabLabel = '銷售';
+    static const String revenueTodayTitle = '🌈 今日營收';
 
   // 商品列表（空狀態 / 庫存）
   static const String productListEmptyTitle = '暫無商品資料';
@@ -145,6 +146,12 @@ class AppMessages {
   static const String cashLabel = '💵 現金';
   static const String transferLabel = '🔁 轉帳';
   static const String linePayLabel = '📲 LinePay';
+    static const String enterPaidAmount = '輸入實收金額';
+    static const String changeLabel = '找零';
+    static const String insufficient = '不足';
+    static const String confirmPayment = '確認付款';
+    static const String paymentTransferPlaceholder = '預留：轉帳帳號圖片/資訊';
+    static const String paymentLinePayPlaceholder = '預留：LinePay QR Code 圖片';
 
   // 報表指標標籤
   static const String totalRevenueLabel = '總營收';

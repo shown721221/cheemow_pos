@@ -3,6 +3,7 @@ import '../config/constants.dart';
 import '../widgets/price_display.dart';
 import '../utils/money_formatter.dart';
 import '../widgets/numeric_keypad.dart';
+import '../config/app_messages.dart';
 import '../utils/money_util.dart';
 
 class PaymentResult {
@@ -77,7 +78,7 @@ class PaymentDialog {
                             children: [
                               Expanded(
                                 child: _PayOptionButton(
-                                  label: '💵 現金',
+                                  label: AppMessages.cashLabel,
                                   selected: method == PaymentMethods.cash,
                                   onTap: () => setState(() => method = PaymentMethods.cash),
                                 ),
@@ -85,7 +86,7 @@ class PaymentDialog {
                               const SizedBox(width: 8),
                               Expanded(
                                 child: _PayOptionButton(
-                                  label: '🔁 轉帳',
+                                  label: AppMessages.transferLabel,
                                   selected: method == PaymentMethods.transfer,
                                   onTap: () => setState(() => method = PaymentMethods.transfer),
                                 ),
@@ -93,7 +94,7 @@ class PaymentDialog {
                               const SizedBox(width: 8),
                               Expanded(
                                 child: _PayOptionButton(
-                                  label: '📲 LinePay',
+                                  label: AppMessages.linePayLabel,
                                   selected: method == PaymentMethods.linePay,
                                   onTap: () => setState(() => method = PaymentMethods.linePay),
                                 ),
@@ -107,7 +108,7 @@ class PaymentDialog {
                               keyboardType: TextInputType.number,
                               readOnly: true, // 避免平板 IME 失效問題，改用自訂小鍵盤
                               decoration: const InputDecoration(
-                                hintText: '輸入實收金額',
+                                hintText: AppMessages.enterPaidAmount,
                                 border: OutlineInputBorder(),
                               ),
                               onTap: () {
@@ -169,15 +170,13 @@ class PaymentDialog {
                             Row(
                               mainAxisAlignment: MainAxisAlignment.end,
                               children: [
-                                const Text(
-                                  '找零',
-                                  style: TextStyle(color: Colors.black54),
-                                ),
+                const Text(AppMessages.changeLabel,
+                  style: TextStyle(color: Colors.black54)),
                                 const SizedBox(width: 8),
                                 Text(
                                   change >= 0
                                       ? MoneyFormatter.symbol(change)
-                                      : '不足 ${MoneyFormatter.symbol(-change)}',
+                                      : '${AppMessages.insufficient} ${MoneyFormatter.symbol(-change)}',
                                   style: TextStyle(
                                     color: change < 0
                                         ? Colors.red
@@ -188,9 +187,9 @@ class PaymentDialog {
                               ],
                             ),
                           ] else if (method == PaymentMethods.transfer) ...[
-                            _PaymentPlaceholder(label: '預留：轉帳帳號圖片/資訊'),
+                            _PaymentPlaceholder(label: AppMessages.paymentTransferPlaceholder),
                           ] else if (method == PaymentMethods.linePay) ...[
-                            _PaymentPlaceholder(label: '預留：LinePay QR Code 圖片'),
+                            _PaymentPlaceholder(label: AppMessages.paymentLinePayPlaceholder),
                           ],
                         ],
                       ),
@@ -217,7 +216,7 @@ class PaymentDialog {
                     backgroundColor: Colors.green,
                     foregroundColor: Colors.white,
                   ),
-                  child: const Text('確認付款'),
+                  child: const Text(AppMessages.confirmPayment),
                 ),
               ],
             );

@@ -32,6 +32,7 @@ import '../services/sales_export_service.dart';
 import '../widgets/search_filter_bar.dart';
 import '../services/product_update_service.dart';
 import '../services/barcode_scan_helper.dart';
+import '../config/style_config.dart';
 
 class PosMainScreen extends StatefulWidget {
   const PosMainScreen({super.key});
@@ -649,10 +650,10 @@ class _PosMainScreenState extends State<PosMainScreen> {
       Widget revenueWidget({required bool showNumbers, Key? key}) {
         String money(int v) => MoneyFormatter.thousands(v);
 
-        Color bg1 = const Color(0xFFFFF0F6); // 粉
-        Color bg2 = const Color(0xFFE8F5FF); // 淡藍
-        Color bg3 = const Color(0xFFEFFFF2); // 淡綠
-        Color bg4 = const Color(0xFFFFF9E6); // 淡黃
+  Color bg1 = StyleConfig.revenueBgPreorder; // 粉
+  Color bg2 = StyleConfig.revenueBgLinePay; // 淡藍
+  Color bg3 = StyleConfig.revenueBgCash; // 淡綠
+  Color bg4 = StyleConfig.revenueBgTransfer; // 淡黃
 
         String mask(int v) => showNumbers ? money(v) : '💰';
 
@@ -682,15 +683,9 @@ class _PosMainScreenState extends State<PosMainScreen> {
               children: [
                 Row(
                   children: [
-                    Text('🌈 今日營收', style: tsHeadline),
+                    Text(AppMessages.revenueTodayTitle, style: tsHeadline),
                     const Spacer(),
-                    Text(
-                      dateStr,
-                      style: const TextStyle(
-                        fontSize: 18,
-                        color: Colors.black54,
-                      ),
-                    ),
+                    Text(dateStr, style: StyleConfig.revenueDateTextStyle),
                   ],
                 ),
                 if (AppConfig.pettyCash > 0) ...[
@@ -802,7 +797,7 @@ class _PosMainScreenState extends State<PosMainScreen> {
                 const Align(
                   alignment: Alignment.centerRight,
                   child: Text(
-                    'cheemow POS',
+                    AppMessages.appTitle,
                     style: TextStyle(fontSize: 12, color: Colors.black45),
                   ),
                 ),
