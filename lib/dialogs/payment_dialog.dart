@@ -3,6 +3,7 @@ import '../config/constants.dart';
 import '../widgets/price_display.dart';
 import '../utils/money_formatter.dart';
 import '../widgets/numeric_keypad.dart';
+import '../utils/money_util.dart';
 
 class PaymentResult {
   final String method; // 現金/轉帳/LinePay
@@ -114,12 +115,10 @@ class PaymentDialog {
                               },
                             ),
                             const SizedBox(height: 8),
-                            // 動態快速金額（台幣面額 50/100/500/1000 的「後面三種」）
+              // 動態快速金額（後面三種）
                             Builder(
                               builder: (context) {
-                                final suggestions = _suggestCashOptions(
-                                  totalAmount,
-                                );
+                final suggestions = MoneyUtil.suggestCashOptions(totalAmount);
                                 if (suggestions.isEmpty) {
                                   return const SizedBox.shrink();
                                 }
@@ -228,32 +227,7 @@ class PaymentDialog {
     );
   }
 
-  // 依台幣常見面額（50/100/500/1000）計算大於等於應收金額的「後面三種」可能實收金額
-  static List<int> _suggestCashOptions(int total) {
-    int ceilTo(int base) {
-      if (base <= 0) return total;
-      final m = total % base;
-      return m == 0 ? total : total + (base - m);
-    }
-
-    // 先找各面額的「向上取整」
-    final s50 = ceilTo(50);
-    final s100 = ceilTo(100);
-    final s500 = ceilTo(500);
-    final s1000 = ceilTo(1000);
-
-    // 蒐集候選值（可能會有與 total 相等的值，代表剛好）
-    final candidates = <int>{s50, s100, s500, s1000, total};
-    // 移除小於 total 的（保險起見）
-    final filtered = candidates.where((v) => v >= total).toList()..sort();
-
-    // 去除剛好，取唯一並排序
-    final uniqueAsc = filtered.where((v) => v > total).toSet().toList()..sort();
-
-    if (uniqueAsc.length <= 3) return uniqueAsc;
-    // 一律取「最後三個」（最大三個）
-    return uniqueAsc.sublist(uniqueAsc.length - 3);
-  }
+  // 已移至 MoneyUtil.suggestCashOptions
 }
 
 class _PayOptionButton extends StatelessWidget {
