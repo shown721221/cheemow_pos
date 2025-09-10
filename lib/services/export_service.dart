@@ -149,21 +149,24 @@ class ExportService {
   }
 
   Future<String?> _resolveBaseDirectory(String dateFolder) async {
-    if (testOverrideBaseDir != null)
+    if (testOverrideBaseDir != null) {
       return '${testOverrideBaseDir!}/$dateFolder';
+    }
     if (Platform.isAndroid) {
       // MediaStore 真正控制，但仍回報一個推測路徑
       try {
         final downloads = await getDownloadsDirectory();
-        if (downloads != null)
+        if (downloads != null) {
           return '${downloads.path}/cheemeow_pos/$dateFolder';
+        }
       } catch (_) {}
       return '/storage/emulated/0/Download/cheemeow_pos/$dateFolder';
     }
     try {
       final downloads = await getDownloadsDirectory();
-      if (downloads != null)
+      if (downloads != null) {
         return '${downloads.path}/cheemeow_pos/$dateFolder';
+      }
     } catch (_) {}
     try {
       final docs = await getApplicationDocumentsDirectory();
