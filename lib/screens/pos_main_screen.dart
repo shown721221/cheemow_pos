@@ -119,7 +119,7 @@ class _PosMainScreenState extends State<PosMainScreen> {
     await LocalDatabaseService.instance.ensureSpecialProducts();
 
     final loadedProducts = await LocalDatabaseService.instance.getProducts();
-  final sorted = ProductSorter.sortDaily(loadedProducts);
+  final sorted = ProductSorter.sortDaily(loadedProducts, now: TimeService.now());
     setState(() {
       products = sorted;
     });

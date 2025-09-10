@@ -2,6 +2,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/foundation.dart';
 import 'dart:convert';
 import '../models/receipt.dart';
+import 'time_service.dart';
 
 /// 收據資料服務 - 負責收據的儲存和讀取
 class ReceiptService {
@@ -79,7 +80,7 @@ class ReceiptService {
 
   /// 取得今日收據
   Future<List<Receipt>> getTodayReceipts() async {
-    final now = DateTime.now();
+    final now = TimeService.now();
     final today = DateTime(now.year, now.month, now.day);
     final tomorrow = today.add(Duration(days: 1));
 
@@ -88,11 +89,14 @@ class ReceiptService {
 
   /// 取得本月收據
   Future<List<Receipt>> getThisMonthReceipts() async {
-    final now = DateTime.now();
+    final now = TimeService.now();
     final firstDay = DateTime(now.year, now.month, 1);
-    final lastDay = DateTime(now.year, now.month + 1, 0);
+    // 以半開區間 [firstDay, nextMonthFirstDay)
+    final nextMonthFirstDay = (now.month == 12)
+        ? DateTime(now.year + 1, 1, 1)
+        : DateTime(now.year, now.month + 1, 1);
 
-    return getReceiptsByDateRange(firstDay, lastDay);
+    return getReceiptsByDateRange(firstDay, nextMonthFirstDay);
   }
 
   /// 計算總營收
@@ -124,7 +128,7 @@ class ReceiptService {
     String paymentMethod, {
     DateTime? now,
   }) async {
-    final DateTime t = now ?? DateTime.now();
+    final DateTime t = now ?? TimeService.now();
     final DateTime dayStart = DateTime(t.year, t.month, t.day);
     final DateTime dayEnd = dayStart.add(const Duration(days: 1));
 
@@ -153,14 +157,17 @@ class ReceiptService {
     final allReceipts = await getReceipts();
     final todayReceipts = await getTodayReceipts();
     final monthReceipts = await getThisMonthReceipts();
+    final totalRevenue = await getTotalRevenue();
+    final todayRevenue = await getTodayRevenue();
+    final monthRevenue = await getThisMonthRevenue();
 
     return {
       'totalReceipts': allReceipts.length,
       'todayReceipts': todayReceipts.length,
       'monthReceipts': monthReceipts.length,
-      'totalRevenue': getTotalRevenue(),
-      'todayRevenue': getTodayRevenue(),
-      'monthRevenue': getThisMonthRevenue(),
+      'totalRevenue': totalRevenue,
+      'todayRevenue': todayRevenue,
+      'monthRevenue': monthRevenue,
     };
   }
 
@@ -222,7 +229,7 @@ class ReceiptService {
     try {
       final receipts = await getReceipts();
       final backupData = {
-        'exportTime': DateTime.now().toIso8601String(),
+        'exportTime': TimeService.now().toIso8601String(),
         'receiptsCount': receipts.length,
         'receipts': receipts.map((r) => r.toJson()).toList(),
       };

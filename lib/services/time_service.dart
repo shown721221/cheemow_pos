@@ -8,8 +8,11 @@ class TimeService {
   /// 是否在測試中停用所有實際 Timer 排程（避免 24h Timer）
   static bool disableSchedulingForTests = false;
 
+  /// 測試/模擬時可覆寫現在時間提供者
+  static DateTime Function()? nowOverride;
+
   /// 取得現在時間（之後可改為可替換 provider）
-  static DateTime now() => DateTime.now();
+  static DateTime now() => nowOverride?.call() ?? DateTime.now();
 
   /// 排程在指定目標時間執行 callback。
   /// 若目標時間已過，立即執行（同步）。
