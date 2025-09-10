@@ -32,7 +32,6 @@ import '../services/sales_export_service.dart';
 import '../widgets/search_filter_bar.dart';
 import '../services/product_update_service.dart';
 import '../services/barcode_scan_helper.dart';
-import '../config/constants.dart';
 
 class PosMainScreen extends StatefulWidget {
   const PosMainScreen({super.key});
@@ -1299,8 +1298,7 @@ class _PosMainScreenState extends State<PosMainScreen> {
 
     // 在清空購物車前拍下快照，用於建立收據
     final itemsSnapshot = List<CartItem>.from(cartItems);
-    // 記錄購物車商品數量
-    final checkedOutCount = itemsSnapshot.length;
+  // 記錄購物車商品數量（已不另行顯示數量，保留 snapshot 用於收據）
     await _processCheckout();
     if (!mounted) return;
 
@@ -1323,18 +1321,11 @@ class _PosMainScreenState extends State<PosMainScreen> {
     await ReceiptService.instance.saveReceipt(receipt);
     if (!mounted) return;
 
-    // 顯示結帳完成
+    // 顯示結帳完成（統一格式：結帳完成！總金額 N ，(付款方式)）
+    final unifiedTotal = itemsSnapshot.fold<int>(0, (sum, i) => sum + i.subtotal);
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(
-          payment.method == PaymentMethods.cash
-              ? AppMessages.checkoutCash(
-                  payment.method,
-                  payment.change,
-                  checkedOutCount,
-                )
-              : AppMessages.checkoutOther(payment.method, checkedOutCount),
-        ),
+        content: Text('結帳完成！總金額 $unifiedTotal ，(${payment.method})'),
         duration: Duration(seconds: 3),
       ),
     );

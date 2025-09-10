@@ -82,7 +82,7 @@ class ShoppingCartWidget extends StatelessWidget {
                   borderRadius: BorderRadius.circular(6),
                 ),
                 child: Text(
-                  '結帳完成！總金額 $postCheckoutTotal ，使用 ${lastCheckoutPaymentMethod ?? '未知方式'}',
+                  '結帳完成！總金額 $postCheckoutTotal ，(${lastCheckoutPaymentMethod ?? '未知方式'})',
                   style: TextStyle(
                     fontSize: 12,
                     color: Colors.green[800],
