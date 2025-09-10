@@ -31,6 +31,7 @@ import '../services/report_service.dart';
 import '../services/sales_export_service.dart';
 import '../widgets/search_filter_bar.dart';
 import '../services/product_update_service.dart';
+import '../services/barcode_scan_helper.dart';
 
 class PosMainScreen extends StatefulWidget {
   const PosMainScreen({super.key});
@@ -143,18 +144,21 @@ class _PosMainScreenState extends State<PosMainScreen> {
   }
 
   void _onBarcodeScanned(String barcode) async {
-    final product = await LocalDatabaseService.instance.getProductByBarcode(
-      barcode,
-    );
+    final decision = await BarcodeScanHelper.decideFromDatabase(barcode);
     if (!mounted) return;
-    if (product != null) {
-      _addToCart(product);
-      setState(() {
-        lastScannedBarcode = barcode;
-      });
-    } else {
-      // 統一改用 DialogManager 提示
-      DialogManager.showProductNotFound(context, barcode);
+    switch (decision.result) {
+      case ScanAddResult.foundNormal:
+        _addToCart(decision.product!);
+        setState(() => lastScannedBarcode = barcode);
+        break;
+      case ScanAddResult.foundSpecialNeedsPrice:
+        // 需要輸入價格再加入
+        _addToCart(decision.product!);
+        setState(() => lastScannedBarcode = barcode);
+        break;
+      case ScanAddResult.notFound:
+        DialogManager.showProductNotFound(context, barcode);
+        break;
     }
   }
 
