@@ -39,9 +39,9 @@ class ShoppingCartWidget extends StatelessWidget {
     final bool showingPostCheckout =
         (lastCheckedOutCart != null && lastCheckedOutCart!.isNotEmpty);
     final displayItems = showingPostCheckout ? lastCheckedOutCart! : cartItems;
-  final int postCheckoutTotal = showingPostCheckout
-    ? lastCheckedOutCart!.fold(0, (sum, item) => sum + item.subtotal)
-    : 0;
+    final int postCheckoutTotal = showingPostCheckout
+        ? lastCheckedOutCart!.fold(0, (sum, item) => sum + item.subtotal)
+        : 0;
 
     return GestureDetector(
       // 任何點擊都視為互動

@@ -3,34 +3,35 @@
 import '../utils/money_formatter.dart';
 
 class AppMessages {
+  // 私有工具：將完整路徑轉成檔名（跨平台）
+  static String _basename(String path) {
+    final norm = path.replaceAll('\\', '/');
+    final i = norm.lastIndexOf('/');
+    return i >= 0 ? norm.substring(i + 1) : norm;
+  }
+  static List<String> _basenames(Iterable<String> paths) =>
+      paths.map(_basename).toList(growable: false);
   // 匯出相關
   static const String autoExportRevenueSuccess = '啟動自動匯出營收完成';
   static const String autoExportRevenueFailure = '啟動自動匯出營收失敗';
   static String exportRevenueSuccess(String paths) {
-    // paths 可能是單一路徑或以換行分隔的多個路徑；統一轉為檔名顯示
-    final lines = paths
-        .split('\n')
-        .where((e) => e.trim().isNotEmpty)
-        .map((p) {
-      final norm = p.replaceAll('\\', '/');
-      final i = norm.lastIndexOf('/');
-      return i >= 0 ? norm.substring(i + 1) : norm;
-    }).toList();
-    final payload = lines.isEmpty ? paths : lines.join('\n');
+    final lines = paths.split('\n').where((e) => e.trim().isNotEmpty);
+    final names = _basenames(lines);
+    final payload = names.isEmpty ? paths : names.join('\n');
     return '已匯出闆娘心情指數\n$payload';
   }
+
   static String exportRevenueFailure(Object e) => '匯出營收圖失敗: $e';
   static String popularityExportSuccess(String path) {
-    final norm = path.replaceAll('\\', '/');
-    final i = norm.lastIndexOf('/');
-    final name = i >= 0 ? norm.substring(i + 1) : norm;
-    return '已匯出寶寶人氣指數：$name';
+    return '已匯出寶寶人氣指數：${_basename(path)}';
   }
+
   static const String popularityExportFailure = '匯出失敗';
   static String popularityExportError(Object e) => '人氣指數匯出錯誤：$e';
 
   // 零用金
-  static String pettyCashSet(int amount) => '零用金已設定為 ${MoneyFormatter.symbol(amount)}';
+  static String pettyCashSet(int amount) =>
+      '零用金已設定為 ${MoneyFormatter.symbol(amount)}';
 
   // 購物車 / 結帳
   static String removedItem(String name) => '已移除 $name';
@@ -45,18 +46,14 @@ class AppMessages {
   // 收據
   static const String clearedReceipts = '已清空收據清單';
 
-    // 銷售資料匯出
-    static const String salesExportNoData = '沒有可匯出的銷售資料';
-    static String salesExportSuccess(List<String> paths) {
-      // 僅顯示檔名（去除資料夾路徑）
-      final names = paths.map((p) {
-        final norm = p.replaceAll('\\', '/');
-        final i = norm.lastIndexOf('/');
-        return i >= 0 ? norm.substring(i + 1) : norm;
-      }).toList();
-      return '已匯出銷售資料\n${names.join('\n')}';
-    }
-    static String salesExportFailure(Object e) => '匯出銷售資料失敗: $e';
+  // 銷售資料匯出
+  static const String salesExportNoData = '沒有可匯出的銷售資料';
+  static String salesExportSuccess(List<String> paths) {
+    final names = _basenames(paths);
+    return '已匯出銷售資料\n${names.join('\n')}';
+  }
+
+  static String salesExportFailure(Object e) => '匯出銷售資料失敗: $e';
 
   // 價格 / 折扣輸入驗證
   static const String invalidNumber = '請輸入有效的數字';

@@ -1211,7 +1211,6 @@ class _PosMainScreenState extends State<PosMainScreen> {
     }
   }
 
-  // TODO: 實作銷售資料匯出（今日 / 全部 / 日期區間）
   Future<void> _exportSalesData() async {
     if (!mounted) return;
     try {
@@ -1298,7 +1297,7 @@ class _PosMainScreenState extends State<PosMainScreen> {
 
     // 在清空購物車前拍下快照，用於建立收據
     final itemsSnapshot = List<CartItem>.from(cartItems);
-  // 記錄購物車商品數量（已不另行顯示數量，保留 snapshot 用於收據）
+    // 記錄購物車商品數量（已不另行顯示數量，保留 snapshot 用於收據）
     await _processCheckout();
     if (!mounted) return;
 
@@ -1322,7 +1321,10 @@ class _PosMainScreenState extends State<PosMainScreen> {
     if (!mounted) return;
 
     // 顯示結帳完成（統一格式：結帳完成！總金額 N ，(付款方式)）
-    final unifiedTotal = itemsSnapshot.fold<int>(0, (sum, i) => sum + i.subtotal);
+    final unifiedTotal = itemsSnapshot.fold<int>(
+      0,
+      (sum, i) => sum + i.subtotal,
+    );
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text('結帳完成！總金額 $unifiedTotal ，(${payment.method})'),
@@ -1331,11 +1333,11 @@ class _PosMainScreenState extends State<PosMainScreen> {
     );
     setState(() {
       _lastCheckoutPaymentMethod = payment.method;
-  // 結帳完成後：清除搜尋關鍵字與篩選，讓商品排序恢復預設
-  _searchQuery = '';
-  _selectedFilters.clear();
-  _searchResults = [];
-  _currentPageIndex = 0; // 回到銷售頁
+      // 結帳完成後：清除搜尋關鍵字與篩選，讓商品排序恢復預設
+      _searchQuery = '';
+      _selectedFilters.clear();
+      _searchResults = [];
+      _currentPageIndex = 0; // 回到銷售頁
     });
   }
 

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/product.dart';
 import '../widgets/price_display.dart';
+import '../utils/product_sorter.dart';
 import '../config/style_config.dart';
 
 class ProductListWidget extends StatefulWidget {
@@ -87,36 +88,8 @@ class _ProductListWidgetState extends State<ProductListWidget> {
 
   @override
   Widget build(BuildContext context) {
-    // 對產品進行排序：特殊商品在最前面，然後按結帳時間排序
-    final sortedProducts = [...widget.products];
-    sortedProducts.sort((a, b) {
-      // 預約商品排第一
-      if (a.isPreOrderProduct && !b.isPreOrderProduct) return -1;
-      if (!a.isPreOrderProduct && b.isPreOrderProduct) return 1;
-
-      // 折扣商品排第二
-      if (a.isDiscountProduct && !b.isDiscountProduct) return -1;
-      if (!a.isDiscountProduct && b.isDiscountProduct) return 1;
-
-      // 兩個都是特殊商品時，預約商品優先
-      if (a.isSpecialProduct && b.isSpecialProduct) {
-        if (a.isPreOrderProduct && b.isDiscountProduct) return -1;
-        if (a.isDiscountProduct && b.isPreOrderProduct) return 1;
-        return 0;
-      }
-
-      // 兩個都是普通商品時，按最後結帳時間排序
-      if (a.lastCheckoutTime != null && b.lastCheckoutTime != null) {
-        return b.lastCheckoutTime!.compareTo(a.lastCheckoutTime!);
-      } else if (a.lastCheckoutTime != null) {
-        return -1; // 有結帳記錄的在前
-      } else if (b.lastCheckoutTime != null) {
-        return 1; // 有結帳記錄的在前
-      }
-
-      // 其他商品按名稱排序
-      return a.name.compareTo(b.name);
-    });
+  // 使用集中排序工具，維持與首頁一致的「每日排序」規則
+  final sortedProducts = ProductSorter.sortDaily(widget.products);
 
     return Container(
       padding: EdgeInsets.all(16),
