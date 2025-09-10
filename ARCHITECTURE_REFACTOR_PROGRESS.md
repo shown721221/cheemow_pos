@@ -1,14 +1,14 @@
 # 架構重構進度報告 📋
 
 ## 🎯 專案概況
-- **專案名稱**: cheemow_pos (POS 收銀系統)
+- **專案名稱**: cheemeow_pos (POS 收銀系統)
 - **當前分支**: main
 - **最新提交**: 1864fdf - 架構重構：創建模組化管理器系統
 - **優化日期**: 2025年9月7日
 
 ## 🆕 2025-09-09 進度摘要
-- 匯出位置統一（Android 公用 Downloads/cheemow_pos 根目錄）：
-	- 收據 CSV 匯出改用 MediaStore 寫入公用 Downloads/cheemow_pos（不建日期子資料夾）。
+- 匯出位置統一（Android 公用 Downloads/cheemeow_pos 根目錄）：
+	- 收據 CSV 匯出改用 MediaStore 寫入公用 Downloads/cheemeow_pos（不建日期子資料夾）。
 	- 與「匯出今日營收（圖檔）」相同路徑策略；移除 App 內部備份檔。
 	- 桌面（Windows/macOS/Linux）維持寫入系統 Downloads；iOS 寫入 App 文件夾。
 - CSV 規則維持：主檔排除預購/折扣與已退貨品項；另存「特殊明細」CSV；加入 BOM；以 ="..." 保留前導 0。
