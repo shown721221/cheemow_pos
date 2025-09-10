@@ -63,7 +63,7 @@ class ShoppingCartWidget extends StatelessWidget {
                       style: TextStyle(fontSize: 22, color: Colors.grey[600]),
                     ),
                     onPressed: onClearCart,
-                    tooltip: '清空購物車',
+                    tooltip: AppMessages.clearCartTooltip,
                     color: Colors.grey[600],
                   ),
               ],
@@ -82,7 +82,11 @@ class ShoppingCartWidget extends StatelessWidget {
                   borderRadius: BorderRadius.circular(6),
                 ),
                 child: Text(
-                  '結帳完成！總金額 $postCheckoutTotal ，(${lastCheckoutPaymentMethod ?? '未知方式'})',
+                  AppMessages.checkoutDone(
+                    postCheckoutTotal,
+                    lastCheckoutPaymentMethod ??
+                        AppMessages.unknownPaymentMethod,
+                  ),
                   style: TextStyle(
                     fontSize: 12,
                     color: Colors.green[800],
@@ -116,7 +120,7 @@ class ShoppingCartWidget extends StatelessWidget {
                               ),
                               SizedBox(width: 10),
                               Text(
-                                '帶寶寶回家吧',
+                                AppMessages.cartEmptyTitle,
                                 style: TextStyle(
                                   color: Colors.grey[600],
                                   fontSize: 26,
@@ -211,7 +215,7 @@ class ShoppingCartWidget extends StatelessWidget {
                                       mainAxisSize: MainAxisSize.min,
                                       children: [
                                         Text(
-                                          '數量',
+                                          AppMessages.qtyLabel,
                                           style: TextStyle(
                                             fontSize: 10,
                                             color: Colors.grey[600],
@@ -228,7 +232,7 @@ class ShoppingCartWidget extends StatelessWidget {
                                         SizedBox(height: 4),
                                         // 使用簡單的 Text 來避免溢出問題
                                         Text(
-                                          '小計: ${item.subtotal}',
+                                          '${AppMessages.subtotalLabel}: ${item.subtotal}',
                                           style: TextStyle(
                                             fontSize: 10,
                                             fontWeight: FontWeight.bold,
@@ -258,7 +262,10 @@ class ShoppingCartWidget extends StatelessWidget {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text('商品數量:', style: TextStyle(fontSize: 16)),
+                        Text(
+                          AppMessages.cartItemsCountLabel,
+                          style: TextStyle(fontSize: 16),
+                        ),
                         Text(
                           '$totalQuantity 件',
                           style: TextStyle(
@@ -273,7 +280,7 @@ class ShoppingCartWidget extends StatelessWidget {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(
-                          '總金額:',
+                          AppMessages.totalAmountLabel,
                           style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
@@ -289,7 +296,10 @@ class ShoppingCartWidget extends StatelessWidget {
                       child: ElevatedButton.icon(
                         onPressed: onCheckout,
                         icon: Icon(Icons.shopping_bag_outlined, size: 22),
-                        label: Text('結帳', style: TextStyle(fontSize: 18)),
+                        label: Text(
+                          AppMessages.checkoutLabel,
+                          style: TextStyle(fontSize: 18),
+                        ),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.green,
                           foregroundColor: Colors.white,

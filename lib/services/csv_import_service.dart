@@ -5,6 +5,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
 import '../models/product.dart';
 import 'local_database_service.dart';
+import '../config/app_messages.dart';
 
 class CsvImportService {
   /// 選擇並匯入CSV檔案
@@ -40,14 +41,14 @@ class CsvImportService {
       }
 
       if (fileBytes == null) {
-        return CsvImportResult.error('無法讀取檔案內容，請確認檔案格式正確');
+        return CsvImportResult.error(AppMessages.csvReadFailed);
       }
 
       // 解析CSV
       return await _parseAndImportCsv(fileBytes, file.name);
     } catch (e) {
       debugPrint('檔案選擇失敗: $e');
-      return CsvImportResult.error('檔案選擇失敗: ${e.toString()}');
+      return CsvImportResult.error(AppMessages.filePickFailed(e));
     }
   }
 
@@ -72,7 +73,7 @@ class CsvImportService {
       ).convert(csvString);
 
       if (csvData.isEmpty) {
-        return CsvImportResult.error('CSV檔案是空的');
+        return CsvImportResult.error(AppMessages.csvEmpty);
       }
 
       // 檢查標頭
@@ -89,16 +90,19 @@ class CsvImportService {
         'stock',
       ];
 
-  debugPrint('期望欄位: $expectedFields');
-  debugPrint('實際欄位: $headers');
-  debugPrint('欄位數量 - 期望: ${expectedFields.length}, 實際: ${headers.length}');
-  debugPrint('使用的分隔符: ${delimiter == '\t' ? 'Tab' : '逗號'}');
+      debugPrint('期望欄位: $expectedFields');
+      debugPrint('實際欄位: $headers');
+      debugPrint('欄位數量 - 期望: ${expectedFields.length}, 實際: ${headers.length}');
+      debugPrint('使用的分隔符: ${delimiter == '\t' ? 'Tab' : '逗號'}');
 
       if (headers.length != expectedFields.length) {
         return CsvImportResult.error(
-          'CSV欄位數量錯誤\n'
-          '期望 ${expectedFields.length} 個欄位: ${expectedFields.join(', ')}\n'
-          '實際 ${headers.length} 個欄位: ${headers.join(', ')}',
+          AppMessages.csvHeaderCountError(
+            expectedFields.length,
+            expectedFields,
+            headers.length,
+            headers,
+          ),
         );
       }
 
@@ -106,9 +110,7 @@ class CsvImportService {
       for (int i = 0; i < expectedFields.length; i++) {
         if (headers[i] != expectedFields[i]) {
           return CsvImportResult.error(
-            'CSV欄位名稱錯誤\n'
-            '第 ${i + 1} 個欄位期望: ${expectedFields[i]}\n'
-            '第 ${i + 1} 個欄位實際: ${headers[i]}',
+            AppMessages.csvHeaderNameError(i, expectedFields[i], headers[i]),
           );
         }
       }
@@ -121,7 +123,7 @@ class CsvImportService {
         try {
           List<dynamic> row = csvData[i];
           if (row.length < 6) {
-            errors.add('第${i + 1}行：欄位數量不足');
+            errors.add(AppMessages.csvRowFieldCountInsufficient(i + 1));
             continue;
           }
 
@@ -134,21 +136,21 @@ class CsvImportService {
 
           // 驗證必填欄位（ID保持原始格式，包含前導0）
           if (id.isEmpty || barcode.isEmpty || name.isEmpty) {
-            errors.add('第${i + 1}行：ID、條碼或商品名稱不能為空');
+            errors.add(AppMessages.csvRowRequiredEmpty(i + 1));
             continue;
           }
 
           // 解析價格
           int? price = int.tryParse(priceStr);
           if (price == null) {
-            errors.add('第${i + 1}行：價格格式錯誤 ($priceStr)');
+            errors.add(AppMessages.csvRowPriceInvalid(i + 1, priceStr));
             continue;
           }
 
           // 解析庫存
           int? stock = int.tryParse(stockStr);
           if (stock == null) {
-            errors.add('第${i + 1}行：庫存格式錯誤 ($stockStr)');
+            errors.add(AppMessages.csvRowStockInvalid(i + 1, stockStr));
             continue;
           }
 
@@ -164,12 +166,12 @@ class CsvImportService {
             ),
           );
         } catch (e) {
-          errors.add('第${i + 1}行：解析錯誤 - ${e.toString()}');
+          errors.add(AppMessages.csvRowParseError(i + 1, e));
         }
       }
 
       if (products.isEmpty) {
-        return CsvImportResult.error('沒有有效的商品資料');
+        return CsvImportResult.error(AppMessages.csvNoValidProducts);
       }
 
       // 檢查重複的ID和條碼
@@ -181,13 +183,13 @@ class CsvImportService {
         Product product = products[i];
 
         if (ids.contains(product.id)) {
-          duplicateErrors.add('ID重複: ${product.id}');
+          duplicateErrors.add(AppMessages.csvDuplicateId(product.id));
         } else {
           ids.add(product.id);
         }
 
         if (barcodes.contains(product.barcode)) {
-          duplicateErrors.add('條碼重複: ${product.barcode}');
+          duplicateErrors.add(AppMessages.csvDuplicateBarcode(product.barcode));
         } else {
           barcodes.add(product.barcode);
         }
@@ -197,8 +199,8 @@ class CsvImportService {
         errors.addAll(duplicateErrors);
       }
 
-  // 儲存商品資料（取代模式）
-  await LocalDatabaseService.instance.replaceProducts(products);
+      // 儲存商品資料（取代模式）
+      await LocalDatabaseService.instance.replaceProducts(products);
 
       return CsvImportResult.success(
         importedCount: products.length,
@@ -207,7 +209,7 @@ class CsvImportService {
         fileName: fileName,
       );
     } catch (e) {
-      return CsvImportResult.error('CSV解析失敗: ${e.toString()}');
+      return CsvImportResult.error(AppMessages.csvParseFailed(e));
     }
   }
 
@@ -277,12 +279,12 @@ class CsvImportResult {
   bool get hasErrors => errors.isNotEmpty;
 
   String get statusMessage {
-    if (cancelled) return '匯入已取消';
-    if (!success) return errorMessage ?? '匯入失敗';
+    if (cancelled) return AppMessages.importCancelled;
+    if (!success) return errorMessage ?? AppMessages.importFailed;
 
-    String result = '成功匯入 $importedCount/$totalRows 筆商品';
+    String result = AppMessages.importStatusSummary(importedCount, totalRows);
     if (hasErrors) {
-      result += '\n發現 ${errors.length} 個問題';
+      result += '\n${AppMessages.importStatusProblems(errors.length)}';
     }
     return result;
   }

@@ -10,8 +10,8 @@ class DialogManager {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-  title: Text(AppMessages.productNotFoundTitle),
-  content: Text(AppMessages.productNotFoundMessage(barcode)),
+        title: Text(AppMessages.productNotFoundTitle),
+        content: Text(AppMessages.productNotFoundMessage(barcode)),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
@@ -44,25 +44,38 @@ class DialogManager {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text(result.success ? '匯入成功' : '匯入失敗'),
+        title: Text(
+          result.success
+              ? AppMessages.importSuccessTitle
+              : AppMessages.importFailed,
+        ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             if (result.cancelled) ...[
-              Text('匯入已取消'),
+              Text(AppMessages.importCancelled),
             ] else if (result.success) ...[
-              Text('成功匯入 ${result.importedCount} / ${result.totalRows} 個商品'),
-              if (result.hasErrors) Text('${result.errors.length} 個商品匯入時發生問題'),
+              Text(
+                AppMessages.importSuccessSummary(
+                  result.importedCount,
+                  result.totalRows,
+                ),
+              ),
+              if (result.hasErrors)
+                Text(AppMessages.importHasErrors(result.errors.length)),
             ] else ...[
-              Text(result.errorMessage ?? '未知錯誤'),
+              Text(result.errorMessage ?? AppMessages.unknownError),
             ],
             if (result.errors.isNotEmpty) ...[
               SizedBox(height: 16),
-              Text('錯誤詳情：', style: TextStyle(fontWeight: FontWeight.bold)),
+              Text(
+                AppMessages.errorDetails,
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
               ...result.errors.take(5).map((error) => Text('• $error')),
               if (result.errors.length > 5)
-                Text('... 還有 ${result.errors.length - 5} 個錯誤'),
+                Text(AppMessages.moreErrors(result.errors.length - 5)),
             ],
           ],
         ),
@@ -81,15 +94,15 @@ class DialogManager {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('CSV 檔案格式說明'),
+        title: Text(AppMessages.csvHelpTitle),
         content: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('CSV 檔案必須包含以下欄位（第一行為標題）：'),
+              Text(AppMessages.csvHelpMustContain),
               SizedBox(height: 8),
-              Text('必要欄位：'),
+              Text(AppMessages.csvHelpRequiredFields),
               Text('   • id: 商品唯一識別碼'),
               Text('   • name: 商品名稱'),
               Text('   • barcode: 商品條碼'),
@@ -97,7 +110,10 @@ class DialogManager {
               Text('   • category: 商品分類'),
               Text('   • stock: 庫存數量（整數）'),
               SizedBox(height: 16),
-              Text('範例：', style: TextStyle(fontWeight: FontWeight.bold)),
+              Text(
+                AppMessages.csvHelpSample,
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
               Container(
                 padding: EdgeInsets.all(8),
                 decoration: BoxDecoration(
@@ -123,21 +139,21 @@ class DialogManager {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      '🧸 特殊商品免匯入',
+                      AppMessages.csvHelpSpecialTitle,
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
                         color: Colors.pink,
                       ),
                     ),
                     SizedBox(height: 6),
-                    Text('系統內建「預購」與「折扣」兩個特殊商品，會自動存在且不受匯入檔影響。'),
-                    Text('請不要把它們放進 CSV；匯入時也不會覆蓋這兩個項目。'),
+                    Text(AppMessages.csvHelpSpecialLine1),
+                    Text(AppMessages.csvHelpSpecialLine2),
                   ],
                 ),
               ),
               SizedBox(height: 16),
               Text(
-                '注意：檔案編碼請使用 UTF-8',
+                AppMessages.csvHelpEncoding,
                 style: TextStyle(
                   color: Colors.orange[700],
                   fontWeight: FontWeight.bold,
@@ -149,7 +165,7 @@ class DialogManager {
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: Text('瞭解'),
+            child: Text(AppMessages.ok),
           ),
         ],
       ),
@@ -178,8 +194,8 @@ class DialogManager {
     BuildContext context,
     String title,
     String message, {
-  String confirmText = AppMessages.confirm,
-  String cancelText = AppMessages.cancel,
+    String confirmText = AppMessages.confirm,
+    String cancelText = AppMessages.cancel,
   }) async {
     final result = await showDialog<bool>(
       context: context,
@@ -212,7 +228,7 @@ class DialogManager {
           children: [
             CircularProgressIndicator(),
             SizedBox(width: 20),
-            Text(message ?? '處理中...'),
+            Text(message ?? AppMessages.processing),
           ],
         ),
       ),

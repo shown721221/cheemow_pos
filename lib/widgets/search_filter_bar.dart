@@ -1,12 +1,10 @@
 import 'package:flutter/material.dart';
 import '../managers/search_filter_manager.dart';
+import '../config/app_messages.dart';
 
 /// 以固定佈局呈現搜尋篩選按鈕列（不含狀態，樣式與行為交由呼叫方提供）
 class SearchFilterBar extends StatelessWidget {
-  const SearchFilterBar({
-    super.key,
-    required this.buildFilterButton,
-  });
+  const SearchFilterBar({super.key, required this.buildFilterButton});
 
   /// 由外部提供，負責建構單一按鈕（可含選取樣式與 onTap）
   final Widget Function(String label, {bool isSpecial}) buildFilterButton;
@@ -56,9 +54,9 @@ class SearchFilterBar extends StatelessWidget {
         const SizedBox(height: 4),
         // 其他功能
         _row([
-          buildFilterButton('有庫存'),
-          buildFilterButton('重選', isSpecial: true),
-          buildFilterButton('確認', isSpecial: true),
+          buildFilterButton(AppMessages.filterHasStock),
+          buildFilterButton(AppMessages.reset, isSpecial: true),
+          buildFilterButton(AppMessages.confirm, isSpecial: true),
         ]),
       ],
     );

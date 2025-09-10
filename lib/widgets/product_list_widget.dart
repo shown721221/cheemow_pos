@@ -3,6 +3,7 @@ import '../models/product.dart';
 import '../widgets/price_display.dart';
 import '../utils/product_sorter.dart';
 import '../config/style_config.dart';
+import '../config/app_messages.dart';
 
 class ProductListWidget extends StatefulWidget {
   final List<Product> products;
@@ -76,20 +77,12 @@ class _ProductListWidgetState extends State<ProductListWidget> {
   }
 
   // 根據庫存數量回傳顯示文字
-  String _getStockText(int stock) {
-    if (stock > 0) {
-      return '庫存: $stock';
-    } else if (stock == 0) {
-      return '庫存: $stock';
-    } else {
-      return '庫存: $stock'; // 負數也顯示實際數字
-    }
-  }
+  String _getStockText(int stock) => AppMessages.stockLabel(stock);
 
   @override
   Widget build(BuildContext context) {
-  // 使用集中排序工具，維持與首頁一致的「每日排序」規則
-  final sortedProducts = ProductSorter.sortDaily(widget.products);
+    // 使用集中排序工具，維持與首頁一致的「每日排序」規則
+    final sortedProducts = ProductSorter.sortDaily(widget.products);
 
     return Container(
       padding: EdgeInsets.all(16),
@@ -104,10 +97,13 @@ class _ProductListWidgetState extends State<ProductListWidget> {
                       children: [
                         Icon(Icons.inventory_2, size: 64, color: Colors.grey),
                         SizedBox(height: 16),
-                        Text('暫無商品資料', style: TextStyle(color: Colors.grey)),
+                        Text(
+                          AppMessages.productListEmptyTitle,
+                          style: TextStyle(color: Colors.grey),
+                        ),
                         SizedBox(height: 8),
                         Text(
-                          '請匯入CSV檔案',
+                          AppMessages.productListEmptyHint,
                           style: TextStyle(color: Colors.grey, fontSize: 12),
                         ),
                       ],

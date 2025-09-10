@@ -132,8 +132,8 @@ class PosDialogManager {
                 children: [
                   Text('總數量: $totalQuantity 件'),
                   const SizedBox(height: 8),
-                    Text(
-                      '總金額: ${MoneyFormatter.symbol(totalAmount)}',
+                  Text(
+                    '總金額: ${MoneyFormatter.symbol(totalAmount)}',
                     style: const TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
@@ -193,8 +193,8 @@ class PosDialogManager {
               const SizedBox(height: 8),
               Text('總數量: ${receipt.totalQuantity} 件'),
               const SizedBox(height: 8),
-                Text(
-                  '總金額: ${MoneyFormatter.symbol(receipt.totalAmount)}',
+              Text(
+                '總金額: ${MoneyFormatter.symbol(receipt.totalAmount)}',
                 style: const TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
@@ -227,7 +227,7 @@ class PosDialogManager {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-      title: Row(
+          title: Row(
             children: [
               const Icon(Icons.error, color: Colors.red, size: 28),
               const SizedBox(width: 8),
@@ -240,7 +240,7 @@ class PosDialogManager {
               onPressed: () {
                 Navigator.of(context).pop();
               },
-        child: const Text(AppMessages.confirm),
+              child: const Text(AppMessages.confirm),
             ),
           ],
         );
@@ -258,7 +258,7 @@ class PosDialogManager {
             children: [
               Icon(Icons.search_off, color: Colors.orange, size: 28),
               SizedBox(width: 8),
-        Text(AppMessages.productNotFoundTitle),
+              Text(AppMessages.productNotFoundTitle),
             ],
           ),
           content: Text(AppMessages.productNotFoundMessage(barcode)),

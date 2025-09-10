@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import '../models/product.dart';
+import '../config/app_messages.dart';
 
 /// 商品顯示樣式工具
 class ProductStyleUtils {
   // 閾值設定（可集中管理與後續調整）
   static const int stockLowThreshold = 10;
-  
+
   /// 根據商品類型取得商品名稱的顏色
   static Color getProductNameColor(Product product) {
     if (product.isPreOrderProduct) {
@@ -40,17 +41,14 @@ class ProductStyleUtils {
 
   /// 根據庫存數量回傳顯示文字
   static String getStockText(int stock) {
-    return '庫存: $stock';
+    return AppMessages.stockLabel(stock);
   }
 
   /// 取得商品卡片的邊框樣式
   static BorderSide? getCardBorderSide(Product product) {
     final borderColor = getCardBorderColor(product);
     if (borderColor != null) {
-      return BorderSide(
-        color: borderColor,
-        width: 2,
-      );
+      return BorderSide(color: borderColor, width: 2);
     }
     return null;
   }
@@ -74,14 +72,14 @@ class ProductStyleUtils {
 
   /// 取得庫存狀態描述
   static String getStockStatusDescription(int stock) {
-  if (stock > stockLowThreshold) {
-      return '充足';
+    if (stock > stockLowThreshold) {
+      return AppMessages.stockOk;
     } else if (stock > 0) {
-      return '偏低';
+      return AppMessages.stockLow;
     } else if (stock == 0) {
-      return '缺貨';
+      return AppMessages.stockOut;
     } else {
-      return '負庫存';
+      return AppMessages.stockNegative;
     }
   }
 
@@ -112,7 +110,9 @@ class ProductStyleUtils {
     return BoxDecoration(
       color: Colors.white,
       borderRadius: BorderRadius.circular(12),
-      border: borderColor != null ? Border.all(color: borderColor, width: 2) : null,
+      border: borderColor != null
+          ? Border.all(color: borderColor, width: 2)
+          : null,
       boxShadow: const [
         BoxShadow(
           color: Color(0x14000000), // 適度陰影（8% 不透明度）
@@ -132,25 +132,30 @@ class ProductStyleUtils {
 
   /// 回傳商品型態徽章標籤
   static String? getTypeBadgeLabel(Product product) {
-    if (product.isPreOrderProduct) return '預購';
-    if (product.isDiscountProduct) return '折扣';
+    if (product.isPreOrderProduct) return AppMessages.chipPreorder;
+    if (product.isDiscountProduct) return AppMessages.chipDiscount;
     return null;
   }
 
   /// 建立商品型態 Chip（預設不顯示一般商品）
   static Widget buildTypeChip(Product product, {bool showNormal = false}) {
-    final label = getTypeBadgeLabel(product) ?? (showNormal ? '一般' : null);
+    final label =
+        getTypeBadgeLabel(product) ??
+        (showNormal ? AppMessages.typeNormal : null);
     if (label == null) return const SizedBox.shrink();
 
     final color = getTypeBadgeColor(product) ?? Colors.grey[200]!;
     final textColor = product.isPreOrderProduct
         ? Colors.purple[800]
         : product.isDiscountProduct
-            ? Colors.orange[800]
-            : Colors.grey[800];
+        ? Colors.orange[800]
+        : Colors.grey[800];
 
     return Chip(
-      label: Text(label, style: TextStyle(color: textColor, fontWeight: FontWeight.w600)),
+      label: Text(
+        label,
+        style: TextStyle(color: textColor, fontWeight: FontWeight.w600),
+      ),
       backgroundColor: color,
       visualDensity: VisualDensity.compact,
       materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
@@ -160,14 +165,17 @@ class ProductStyleUtils {
 
   /// 建立庫存狀態 Chip（充足/偏低/缺貨/負庫存）
   static Widget buildStockChip(int stock) {
-  final baseColor = getStockColor(stock);
-  // 避免 withOpacity 的棄用警告，改為 withValues 近似 12% 透明度
-  final bg = baseColor.withValues(alpha: 0.12);
+    final baseColor = getStockColor(stock);
+    // 避免 withOpacity 的棄用警告，改為 withValues 近似 12% 透明度
+    final bg = baseColor.withValues(alpha: 0.12);
     final icon = getStockStatusEmoji(stock);
     final text = getStockStatusDescription(stock);
     return Chip(
       avatar: Text(icon, style: const TextStyle(fontSize: 14)),
-      label: Text(text, style: TextStyle(color: baseColor, fontWeight: FontWeight.w600)),
+      label: Text(
+        text,
+        style: TextStyle(color: baseColor, fontWeight: FontWeight.w600),
+      ),
       backgroundColor: bg,
       visualDensity: VisualDensity.compact,
       materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,

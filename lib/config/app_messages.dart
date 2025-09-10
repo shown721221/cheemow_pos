@@ -9,6 +9,7 @@ class AppMessages {
     final i = norm.lastIndexOf('/');
     return i >= 0 ? norm.substring(i + 1) : norm;
   }
+
   static List<String> _basenames(Iterable<String> paths) =>
       paths.map(_basename).toList(growable: false);
   // 匯出相關
@@ -39,6 +40,8 @@ class AppMessages {
       '結帳完成（$method）。找零 ${MoneyFormatter.symbol(change)}，已更新 $updated 個商品排序';
   static String checkoutOther(String method, int updated) =>
       '結帳完成（$method），已更新 $updated 個商品排序';
+  static String checkoutDone(Object total, String method) =>
+      '結帳完成！總金額 $total ，($method)';
 
   // 搜尋 / 篩選
   static String searchResultCount(int count) => '找到 $count 項商品';
@@ -83,4 +86,142 @@ class AppMessages {
   // 常用按鈕文字
   static const String confirm = '確認';
   static const String cancel = '取消';
+  static const String ok = '瞭解';
+  static const String clear = '清除';
+  static const String reset = '重選';
+
+  // 共同 UI
+  static const String menuTooltip = '功能選單';
+  static const String menuImport = '上架寶貝們';
+  static const String menuSalesExport = '匯出小幫手表格';
+  static const String menuReceipts = '收據清單';
+  static const String menuRevenue = '闆娘心情指數';
+  static const String menuPopularity = '寶寶人氣指數';
+  static const String menuPettyCash = '設定零用金';
+  static const String clearCartTooltip = '清空購物車';
+  static const String cartEmptyTitle = '帶寶寶回家吧';
+  static const String appTitle = 'Cheemow POS';
+  static const String salesTabLabel = '銷售';
+
+  // 商品列表（空狀態 / 庫存）
+  static const String productListEmptyTitle = '暫無商品資料';
+  static const String productListEmptyHint = '請匯入CSV檔案';
+  static String stockLabel(int stock) => '庫存: $stock';
+  static const String stockOk = '充足';
+  static const String stockLow = '偏低';
+  static const String stockOut = '缺貨';
+  static const String stockNegative = '負庫存';
+  static const String typeNormal = '一般';
+
+  // 搜尋
+  static const String searchLabel = '搜尋';
+  static const String searchProductsHint = '搜尋奇妙寶貝';
+  static const String filterResultPrefix = '篩選結果';
+  static const String filterHasStock = '有庫存';
+  static String filterResultLabel(List<String> filters) =>
+      '$filterResultPrefix (${filters.join(', ')})';
+
+  // 收據清單
+  static const String receiptListTitle = '🧾 收據清單';
+  static const String clearReceiptsTooltip = '清空收據';
+  static const String warningClearReceipts = '⚠️ 這會清空所有收據';
+  static String onlyTodayLabel(int total) => '僅顯示今日 ($total)';
+  static String allReceiptsLabel(int total) => '全部收據 ($total)';
+  static const String noReceipts = '沒有符合條件的收據';
+  static const String receiptSearchHint = '搜尋收據 ID / 付款方式 / 商品名稱';
+  static const String chipDiscount = '折扣';
+  static const String chipPreorder = '預購商品';
+  static const String chipRefund = '退貨';
+  static const String refundDialogTitle = '是否要退貨';
+  static String refundDialogMessage(String name, int qty) =>
+      '要退貨「$name」嗎？（數量：$qty）';
+  static const String refundTooltip = '退貨';
+  static const String totalQuantityLabel = '合計件數';
+  static const String confirmDeleteTitle = '確認刪除';
+  static const String confirmDeleteMessage = '此動作無法復原，確定要永久刪除所有收據嗎？';
+  static const String confirmDelete = '確認刪除';
+
+  // 付款方式顯示
+  static const String cashLabel = '💵 現金';
+  static const String transferLabel = '🔁 轉帳';
+  static const String linePayLabel = '📲 LinePay';
+
+  // 報表指標標籤
+  static const String totalRevenueLabel = '總營收';
+  static const String metricCash = '現金';
+  static const String metricTransfer = '轉帳';
+  static const String metricTotalQty = '總件數';
+  static const String metricNormalQty = '一般件數';
+  static const String metricLinePay = 'LinePay';
+  static const String metricPreorderSubtotal = '預購小計';
+  static const String metricDiscountSubtotal = '折扣小計';
+  static const String metricPreorderQty = '預購件數';
+  static const String metricDiscountQty = '折扣件數';
+  static const String qtyLabel = '數量';
+  static const String subtotalLabel = '小計';
+  static const String cartItemsCountLabel = '商品數量';
+  static const String totalAmountLabel = '總金額';
+  static const String checkoutLabel = '結帳';
+
+  // 零用金
+  static const String setPettyCash = '💰 設定零用金';
+  static String pettyCashCurrent(int amount) => '目前零用金：💲$amount';
+  static const String unknownPaymentMethod = '未知方式';
+
+  // PIN 對話框
+  static const String pinTitleMagic = '✨ 請輸入奇妙數字 ✨';
+  static const String changePaymentPinWarning = '🔒 變更付款方式需要管理密碼';
+  static const String pinWrong = '密碼錯誤，請再試一次';
+
+  // 匯入
+  static const String importing = '匯入中...';
+  static const String processing = '處理中...';
+  static const String importFailed = '匯入失敗';
+  static const String unknownError = '未知錯誤';
+  static const String importSuccessTitle = '匯入成功';
+  static const String importCancelled = '匯入已取消';
+  static String importSuccessSummary(int imported, int total) =>
+      '成功匯入 $imported / $total 個商品';
+  static String importHasErrors(int n) => '$n 個商品匯入時發生問題';
+  static const String errorDetails = '錯誤詳情：';
+  static String moreErrors(int n) => '... 還有 $n 個錯誤';
+  static const String csvHelpTitle = 'CSV 檔案格式說明';
+  static const String csvHelpMustContain = 'CSV 檔案必須包含以下欄位（第一行為標題）：';
+  static const String csvHelpRequiredFields = '必要欄位：';
+  static const String csvHelpSample = '範例：';
+  static const String csvHelpSpecialTitle = '🧸 特殊商品免匯入';
+  static const String csvHelpSpecialLine1 =
+      '系統內建「預購」與「折扣」兩個特殊商品，會自動存在且不受匯入檔影響。';
+  static const String csvHelpSpecialLine2 = '請不要把它們放進 CSV；匯入時也不會覆蓋這兩個項目。';
+  static const String csvHelpEncoding = '注意：檔案編碼請使用 UTF-8';
+
+  // CSV 匯入／驗證訊息集中
+  static const String csvReadFailed = '無法讀取檔案內容，請確認檔案格式正確';
+  static String filePickFailed(Object e) => '檔案選擇失敗: $e';
+  static const String csvEmpty = 'CSV檔案是空的';
+  static String csvHeaderCountError(
+    int expectedCount,
+    List<String> expected,
+    int actualCount,
+    List<String> actual,
+  ) =>
+      'CSV欄位數量錯誤\n期望 $expectedCount 個欄位: ${expected.join(', ')}\n實際 $actualCount 個欄位: ${actual.join(', ')}';
+  static String csvHeaderNameError(int index, String expected, String actual) =>
+      'CSV欄位名稱錯誤\n第 ${index + 1} 個欄位期望: $expected\n第 ${index + 1} 個欄位實際: $actual';
+  static String csvRowFieldCountInsufficient(int row) => '第$row 行：欄位數量不足';
+  static String csvRowRequiredEmpty(int row) => '第$row 行：ID、條碼或商品名稱不能為空';
+  static String csvRowPriceInvalid(int row, String value) =>
+      '第$row 行：價格格式錯誤 ($value)';
+  static String csvRowStockInvalid(int row, String value) =>
+      '第$row 行：庫存格式錯誤 ($value)';
+  static String csvRowParseError(int row, Object e) => '第$row 行：解析錯誤 - $e';
+  static const String csvNoValidProducts = '沒有有效的商品資料';
+  static String csvDuplicateId(String id) => 'ID重複: $id';
+  static String csvDuplicateBarcode(String barcode) => '條碼重複: $barcode';
+  static String csvParseFailed(Object e) => 'CSV解析失敗: $e';
+  static String csvFoundErrors(int n) => '發現 $n 個錯誤:';
+  static String csvFoundWarnings(int n) => '發現 $n 個警告:';
+  static String importStatusSummary(int imported, int total) =>
+      '成功匯入 $imported/$total 筆商品';
+  static String importStatusProblems(int n) => '發現 $n 個問題';
 }

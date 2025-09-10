@@ -69,10 +69,10 @@ class PriceInputDialogManager {
 
                     NumericKeypad(
                       keys: const [
-                        ['1','2','3'],
-                        ['4','5','6'],
-                        ['7','8','9'],
-                        ['🧹','0','✅'],
+                        ['1', '2', '3'],
+                        ['4', '5', '6'],
+                        ['7', '8', '9'],
+                        ['🧹', '0', '✅'],
                       ],
                       onKeyTap: (k) {
                         if (k == '🧹') {
@@ -85,7 +85,11 @@ class PriceInputDialogManager {
                           if (price == null || price <= 0) return;
                           if (product.isDiscountProduct) {
                             if (price > currentCartTotal) {
-                              _showDiscountError(context, price, currentCartTotal);
+                              _showDiscountError(
+                                context,
+                                price,
+                                currentCartTotal,
+                              );
                               return;
                             }
                             Navigator.of(context).pop(-price);

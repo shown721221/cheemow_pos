@@ -40,15 +40,15 @@ class _ReceiptListScreenState extends State<ReceiptListScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('🧾 收據清單'),
+        title: const Text(AppMessages.receiptListTitle),
         actions: [
           IconButton(
-            tooltip: '清空收據',
+            tooltip: AppMessages.clearReceiptsTooltip,
             icon: const Icon(Icons.delete_outline),
             onPressed: () async {
               final ok = await _confirmWithPin(
-                warningText: '⚠️ 這會清空所有收據',
-                promptText: '✨ 請輸入奇妙數字 ✨',
+                warningText: AppMessages.warningClearReceipts,
+                promptText: AppMessages.pinTitleMagic,
               );
               if (!ok) return;
               final irreversible = await _confirmIrreversibleDeletion();
@@ -74,7 +74,9 @@ class _ReceiptListScreenState extends State<ReceiptListScreen> {
             future: _future,
             builder: (ctx, snap) {
               final total = snap.data?.length ?? 0;
-              final label = _onlyToday ? '僅顯示今日 ($total)' : '全部收據 ($total)';
+              final label = _onlyToday
+                  ? AppMessages.onlyTodayLabel(total)
+                  : AppMessages.allReceiptsLabel(total);
               return Padding(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 12,
@@ -110,7 +112,7 @@ class _ReceiptListScreenState extends State<ReceiptListScreen> {
                 final receipts = snapshot.data ?? [];
                 final filtered = _applyFilters(receipts);
                 if (filtered.isEmpty) {
-                  return const Center(child: Text('沒有符合條件的收據'));
+                  return const Center(child: Text(AppMessages.noReceipts));
                 }
                 return ListView.separated(
                   itemCount: filtered.length,
@@ -205,7 +207,7 @@ class _ReceiptListScreenState extends State<ReceiptListScreen> {
     child: TextField(
       decoration: const InputDecoration(
         prefixIcon: Icon(Icons.search),
-        hintText: '搜尋收據 ID / 付款方式 / 商品名稱',
+        hintText: AppMessages.receiptSearchHint,
         border: OutlineInputBorder(),
         isDense: true,
       ),
@@ -230,26 +232,26 @@ class _ReceiptListScreenState extends State<ReceiptListScreen> {
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
       child: Row(
         children: [
-          payChip('💵 現金', PaymentMethods.cash),
+          payChip(AppMessages.cashLabel, PaymentMethods.cash),
           const SizedBox(width: 8),
-          payChip('🔁 轉帳', '轉帳'),
+          payChip(AppMessages.transferLabel, '轉帳'),
           const SizedBox(width: 8),
-          payChip('📲 LinePay', 'LinePay'),
+          payChip(AppMessages.linePayLabel, 'LinePay'),
           const SizedBox(width: 12),
           FilterChip(
-            label: const Text('折扣'),
+            label: const Text(AppMessages.chipDiscount),
             selected: _withDiscount,
             onSelected: (s) => setState(() => _withDiscount = s),
           ),
           const SizedBox(width: 8),
           FilterChip(
-            label: const Text('預購商品'),
+            label: const Text(AppMessages.chipPreorder),
             selected: _withPreorder,
             onSelected: (s) => setState(() => _withPreorder = s),
           ),
           const SizedBox(width: 8),
           FilterChip(
-            label: const Text('退貨'),
+            label: const Text(AppMessages.chipRefund),
             selected: _withRefund,
             onSelected: (s) => setState(() => _withRefund = s),
           ),
@@ -305,20 +307,23 @@ class _ReceiptListScreenState extends State<ReceiptListScreen> {
                   children: const [
                     Icon(Icons.warning_amber_rounded, color: Colors.orange),
                     SizedBox(width: 8),
-                    Text('是否要退貨'),
+                    Text(AppMessages.refundDialogTitle),
                   ],
                 ),
                 content: Text(
-                  '要退貨「${item.product.name}」嗎？（數量：${item.quantity}）',
+                  AppMessages.refundDialogMessage(
+                    item.product.name,
+                    item.quantity,
+                  ),
                 ),
                 actions: [
                   TextButton(
                     onPressed: () => Navigator.pop(c2, false),
-                    child: const Text('取消'),
+                    child: const Text(AppMessages.cancel),
                   ),
                   FilledButton(
                     onPressed: () => Navigator.pop(c2, true),
-                    child: const Text('確認'),
+                    child: const Text(AppMessages.confirm),
                   ),
                 ],
               ),
@@ -383,19 +388,22 @@ class _ReceiptListScreenState extends State<ReceiptListScreen> {
                   items: const [
                     DropdownMenuItem(
                       value: PaymentMethods.cash,
-                      child: Text('💵 現金'),
+                      child: Text(AppMessages.cashLabel),
                     ),
-                    DropdownMenuItem(value: '轉帳', child: Text('🔁 轉帳')),
+                    DropdownMenuItem(
+                      value: '轉帳',
+                      child: Text(AppMessages.transferLabel),
+                    ),
                     DropdownMenuItem(
                       value: 'LinePay',
-                      child: Text('📲 LinePay'),
+                      child: Text(AppMessages.linePayLabel),
                     ),
                   ],
                   onChanged: (v) async {
                     if (v == null || v == payment) return;
                     final okPin = await _confirmWithPin(
-                      warningText: '🔒 變更付款方式需要管理密碼',
-                      promptText: '✨ 請輸入奇妙數字 ✨',
+                      warningText: AppMessages.changePaymentPinWarning,
+                      promptText: AppMessages.pinTitleMagic,
                     );
                     if (!okPin) return;
                     final updated = current.copyWith(paymentMethod: v);
@@ -478,7 +486,7 @@ class _ReceiptListScreenState extends State<ReceiptListScreen> {
                                       Icons.assignment_return,
                                       color: Colors.teal,
                                     ),
-                                    tooltip: '退貨',
+                                    tooltip: AppMessages.refundTooltip,
                                     onPressed: () => refundItem(it),
                                   ),
                           );
@@ -489,7 +497,7 @@ class _ReceiptListScreenState extends State<ReceiptListScreen> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        const Text('合計件數'),
+                        const Text(AppMessages.totalQuantityLabel),
                         Text(
                           '${current.items.where((i) => !current.refundedProductIds.contains(i.product.id)).fold<int>(0, (s, it) => s + it.quantity)}',
                         ),
@@ -539,12 +547,12 @@ class _ReceiptListScreenState extends State<ReceiptListScreen> {
       context: context,
       barrierDismissible: true,
       builder: (ctx) => AlertDialog(
-        title: const Text('確認刪除'),
-        content: const Text('此動作無法復原，確定要永久刪除所有收據嗎？'),
+        title: const Text(AppMessages.confirmDeleteTitle),
+        content: const Text(AppMessages.confirmDeleteMessage),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text('取消'),
+            child: const Text(AppMessages.cancel),
           ),
           FilledButton(
             onPressed: () {
@@ -552,7 +560,7 @@ class _ReceiptListScreenState extends State<ReceiptListScreen> {
               Navigator.of(ctx).pop();
             },
             style: FilledButton.styleFrom(backgroundColor: Colors.red),
-            child: const Text('確認刪除'),
+            child: const Text(AppMessages.confirmDelete),
           ),
         ],
       ),

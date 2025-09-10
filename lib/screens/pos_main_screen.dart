@@ -55,6 +55,7 @@ class _PosMainScreenState extends State<PosMainScreen> {
   List<Product> _searchResults = [];
   final List<String> _selectedFilters = []; // 選中的篩選條件
   final SearchFilterManager _searchFilterManager = SearchFilterManager();
+  StreamSubscription<String>? _barcodeSub;
 
   @override
   void initState() {
@@ -91,6 +92,7 @@ class _PosMainScreenState extends State<PosMainScreen> {
 
   @override
   void dispose() {
+    _barcodeSub?.cancel();
     // 移除鍵盤掃描管理器監聽
     if (_kbScanner != null) {
       ServicesBinding.instance.keyboard.removeHandler(
@@ -141,12 +143,23 @@ class _PosMainScreenState extends State<PosMainScreen> {
   // 已抽離至 ProductSorter.sortDaily
 
   void _listenToBarcodeScanner() {
-    BluetoothScannerService.instance.barcodeStream.listen((barcode) {
-      _onBarcodeScanned(barcode);
-    });
+    _barcodeSub = BluetoothScannerService.instance.barcodeStream.listen(
+      (barcode) => _onBarcodeScanned(barcode),
+    );
   }
 
   void _onBarcodeScanned(String barcode) async {
+    // 掃描時若仍在顯示「結帳後預覽」，先切回購物車使用狀態
+    if (!mounted) return;
+    if (_lastCheckedOutCart.isNotEmpty || _currentPageIndex != 0) {
+      setState(() {
+        if (_lastCheckedOutCart.isNotEmpty) {
+          _lastCheckedOutCart.clear();
+          _lastCheckoutPaymentMethod = null;
+        }
+        _currentPageIndex = 0; // 切回銷售頁（購物車右側持續顯示）
+      });
+    }
     final decision = await BarcodeScanHelper.decideFromDatabase(barcode);
     if (!mounted) return;
     switch (decision.result) {
@@ -222,7 +235,7 @@ class _PosMainScreenState extends State<PosMainScreen> {
 
     // 顯示 loading
     if (!mounted) return;
-    DialogManager.showLoading(context, message: '匯入中...');
+    DialogManager.showLoading(context, message: AppMessages.importing);
     try {
       final result = await CsvImportService.importFromFile();
 
@@ -243,13 +256,17 @@ class _PosMainScreenState extends State<PosMainScreen> {
         DialogManager.showImportResult(context, result);
       } else {
         // 顯示錯誤訊息
-        DialogManager.showError(context, '匯入失敗', result.errorMessage ?? '未知錯誤');
+        DialogManager.showError(
+          context,
+          AppMessages.importFailed,
+          result.errorMessage ?? AppMessages.unknownError,
+        );
       }
     } catch (e) {
       // 關閉 loading
       if (!mounted) return;
       DialogManager.hideLoading(context);
-      DialogManager.showError(context, '匯入失敗', e.toString());
+      DialogManager.showError(context, AppMessages.importFailed, e.toString());
     }
   }
 
@@ -274,13 +291,13 @@ class _PosMainScreenState extends State<PosMainScreen> {
       resizeToAvoidBottomInset: false, // 防止鍵盤影響佈局
       backgroundColor: Colors.white,
       appBar: AppBar(
-        title: Text('Cheemow POS'),
+        title: const Text(AppMessages.appTitle),
         backgroundColor: Colors.blue[800],
         foregroundColor: Colors.white,
         actions: [
           PopupMenuButton<String>(
             icon: Icon(Icons.more_vert),
-            tooltip: '功能選單',
+            tooltip: AppMessages.menuTooltip,
             onSelected: (String value) async {
               if (_lastCheckedOutCart.isNotEmpty) _clearPostCheckoutPreview();
               switch (value) {
@@ -316,7 +333,7 @@ class _PosMainScreenState extends State<PosMainScreen> {
                   children: const [
                     Text('🧸', style: TextStyle(fontSize: 18)),
                     SizedBox(width: 8),
-                    Text('上架寶貝們'),
+                    Text(AppMessages.menuImport),
                   ],
                 ),
               ),
@@ -326,7 +343,7 @@ class _PosMainScreenState extends State<PosMainScreen> {
                   children: const [
                     Text('📊', style: TextStyle(fontSize: 18)),
                     SizedBox(width: 8),
-                    Text('匯出小幫手表格'),
+                    Text(AppMessages.menuSalesExport),
                   ],
                 ),
               ),
@@ -336,7 +353,7 @@ class _PosMainScreenState extends State<PosMainScreen> {
                   children: const [
                     Text('🧾', style: TextStyle(fontSize: 18)),
                     SizedBox(width: 8),
-                    Text('收據清單'),
+                    Text(AppMessages.menuReceipts),
                   ],
                 ),
               ),
@@ -346,7 +363,7 @@ class _PosMainScreenState extends State<PosMainScreen> {
                   children: const [
                     Text('🌤️', style: TextStyle(fontSize: 18)),
                     SizedBox(width: 8),
-                    Text('闆娘心情指數'),
+                    Text(AppMessages.menuRevenue),
                   ],
                 ),
               ),
@@ -356,7 +373,7 @@ class _PosMainScreenState extends State<PosMainScreen> {
                   children: const [
                     Text('📈', style: TextStyle(fontSize: 18)),
                     SizedBox(width: 8),
-                    Text('寶寶人氣指數'),
+                    Text(AppMessages.menuPopularity),
                   ],
                 ),
               ),
@@ -366,7 +383,7 @@ class _PosMainScreenState extends State<PosMainScreen> {
                   children: const [
                     Text('💰', style: TextStyle(fontSize: 18)),
                     SizedBox(width: 8),
-                    Text('設定零用金'),
+                    Text(AppMessages.menuPettyCash),
                   ],
                 ),
               ),
@@ -431,7 +448,7 @@ class _PosMainScreenState extends State<PosMainScreen> {
                                     ),
                                     SizedBox(width: 4),
                                     Text(
-                                      '銷售',
+                                      AppMessages.salesTabLabel,
                                       style: TextStyle(
                                         fontSize: 16,
                                         fontWeight: _currentPageIndex == 0
@@ -485,7 +502,7 @@ class _PosMainScreenState extends State<PosMainScreen> {
                                     ),
                                     SizedBox(width: 4),
                                     Text(
-                                      '搜尋',
+                                      AppMessages.searchLabel,
                                       style: TextStyle(
                                         fontSize: 16,
                                         fontWeight: _currentPageIndex == 1
@@ -515,6 +532,7 @@ class _PosMainScreenState extends State<PosMainScreen> {
                             onProductTap: (p) {
                               if (_lastCheckedOutCart.isNotEmpty) {
                                 _clearPostCheckoutPreview();
+                                setState(() => _currentPageIndex = 0);
                               }
                               _addToCart(p);
                             },
@@ -714,7 +732,10 @@ class _PosMainScreenState extends State<PosMainScreen> {
                         size: 32,
                       ),
                       const SizedBox(width: 12),
-                      Text('總營收', style: tsSectionLabel),
+                      Text(
+                        AppMessages.totalRevenueLabel,
+                        style: tsSectionLabel,
+                      ),
                       const Spacer(),
                       Text(
                         mask(summary.total),
@@ -729,7 +750,7 @@ class _PosMainScreenState extends State<PosMainScreen> {
                     Expanded(
                       child: metricCard(
                         icon: '💵',
-                        title: '現金',
+                        title: AppMessages.metricCash,
                         value: mask(summary.cash),
                         bg: bg3,
                       ),
@@ -738,7 +759,7 @@ class _PosMainScreenState extends State<PosMainScreen> {
                     Expanded(
                       child: metricCard(
                         icon: '🔁',
-                        title: '轉帳',
+                        title: AppMessages.metricTransfer,
                         value: mask(summary.transfer),
                         bg: bg4,
                       ),
@@ -747,7 +768,7 @@ class _PosMainScreenState extends State<PosMainScreen> {
                     Expanded(
                       child: metricCard(
                         icon: '📲',
-                        title: 'LinePay',
+                        title: AppMessages.metricLinePay,
                         value: mask(summary.linepay),
                         bg: bg2,
                       ),
@@ -760,7 +781,7 @@ class _PosMainScreenState extends State<PosMainScreen> {
                     Expanded(
                       child: metricCard(
                         icon: '🧸',
-                        title: '預購小計',
+                        title: AppMessages.metricPreorderSubtotal,
                         value: mask(summary.preorder),
                         bg: bg1,
                       ),
@@ -769,7 +790,7 @@ class _PosMainScreenState extends State<PosMainScreen> {
                     Expanded(
                       child: metricCard(
                         icon: '✨',
-                        title: '折扣小計',
+                        title: AppMessages.metricDiscountSubtotal,
                         value: mask(summary.discount),
                         bg: const Color(0xFFFFEEF0),
                         valueColor: Colors.pink,
@@ -870,7 +891,7 @@ class _PosMainScreenState extends State<PosMainScreen> {
       final ok = await PinDialog.show(
         context: context,
         pin: pin,
-        subtitle: '目前零用金：💲${AppConfig.pettyCash}',
+        subtitle: AppMessages.pettyCashCurrent(AppConfig.pettyCash),
       );
       if (!ok) return;
     }
@@ -963,7 +984,7 @@ class _PosMainScreenState extends State<PosMainScreen> {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   const Text(
-                    '💰 設定零用金',
+                    AppMessages.setPettyCash,
                     style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 12),
@@ -1128,10 +1149,26 @@ class _PosMainScreenState extends State<PosMainScreen> {
                 runSpacing: 14,
                 children: [
                   _metricChip('交易筆數', pop.receiptCount, Colors.indigo[600]!),
-                  _metricChip('總件數', pop.totalQty, Colors.teal[700]!),
-                  _metricChip('一般件數', pop.normalQty, Colors.blue[600]!),
-                  _metricChip('預購件數', pop.preorderQty, Colors.purple[600]!),
-                  _metricChip('折扣件數', pop.discountQty, Colors.orange[700]!),
+                  _metricChip(
+                    AppMessages.metricTotalQty,
+                    pop.totalQty,
+                    Colors.teal[700]!,
+                  ),
+                  _metricChip(
+                    AppMessages.metricNormalQty,
+                    pop.normalQty,
+                    Colors.blue[600]!,
+                  ),
+                  _metricChip(
+                    AppMessages.metricPreorderQty,
+                    pop.preorderQty,
+                    Colors.purple[600]!,
+                  ),
+                  _metricChip(
+                    AppMessages.metricDiscountQty,
+                    pop.discountQty,
+                    Colors.orange[700]!,
+                  ),
                 ],
               ),
               const SizedBox(height: 18), // 移除表頭後保留適度空隙
@@ -1276,12 +1313,17 @@ class _PosMainScreenState extends State<PosMainScreen> {
       await showDialog(
         context: context,
         builder: (ctx) => AlertDialog(
-      title: const Text(AppMessages.discountOverLimitTitle),
-      content: Text(AppMessages.discountOverLimitBody(discountAbsTotal, nonDiscountTotal)),
+          title: const Text(AppMessages.discountOverLimitTitle),
+          content: Text(
+            AppMessages.discountOverLimitBody(
+              discountAbsTotal,
+              nonDiscountTotal,
+            ),
+          ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(ctx),
-        child: const Text(AppMessages.confirm),
+              child: const Text(AppMessages.confirm),
             ),
           ],
         ),
@@ -1325,7 +1367,7 @@ class _PosMainScreenState extends State<PosMainScreen> {
     );
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('結帳完成！總金額 $unifiedTotal ，(${payment.method})'),
+        content: Text(AppMessages.checkoutDone(unifiedTotal, payment.method)),
         duration: Duration(seconds: 3),
       ),
     );
@@ -1392,7 +1434,7 @@ class _PosMainScreenState extends State<PosMainScreen> {
           padding: EdgeInsets.all(16),
           child: TextField(
             decoration: InputDecoration(
-              hintText: '搜尋奇妙寶貝',
+              hintText: AppMessages.searchProductsHint,
               prefixIcon: Icon(Icons.search),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(8),
@@ -1480,12 +1522,12 @@ class _PosMainScreenState extends State<PosMainScreen> {
   /// 處理篩選按鈕點擊
   void _onFilterButtonTap(String label) {
     setState(() {
-      if (label == '重選') {
+      if (label == AppMessages.reset) {
         _selectedFilters.clear();
         _searchQuery = '';
         _searchResults = [];
-      } else if (label == '確認') {
-        if (_searchQuery.startsWith('篩選結果')) {
+      } else if (label == AppMessages.confirm) {
+        if (_searchQuery.startsWith(AppMessages.filterResultPrefix)) {
           _searchQuery = '';
         }
         _applyFiltersWithTextSearch();
@@ -1514,7 +1556,7 @@ class _PosMainScreenState extends State<PosMainScreen> {
     );
     setState(() {
       _searchResults = filtered;
-      _searchQuery = '篩選結果 (${_selectedFilters.join(', ')})';
+      _searchQuery = AppMessages.filterResultLabel(_selectedFilters);
     });
 
     if (!mounted) return;

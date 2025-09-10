@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../config/app_messages.dart';
 
 /// 通用 PIN 輸入對話框（4 位數字）。
 /// 返回 true 代表驗證成功；false 或關閉視窗代表失敗 / 取消。
@@ -6,7 +7,7 @@ class PinDialog {
   static Future<bool> show({
     required BuildContext context,
     required String pin,
-    String title = '✨ 請輸入奇妙數字 ✨',
+    String title = AppMessages.pinTitleMagic,
     String? subtitle,
     bool barrierDismissible = true,
   }) async {
@@ -19,36 +20,39 @@ class PinDialog {
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setS) {
           Widget numKey(String d) => SizedBox(
-                width: 70,
-                height: 56,
-                child: ElevatedButton(
-                  onPressed: input.length < 4
-                      ? () => setS(() {
-                            input += d;
-                            if (input.length == 4) {
-                              if (input == pin) {
-                                ok = true;
-                                Navigator.of(ctx).pop();
-                              } else {
-                                // 重置重新輸入
-                                input = '';
-                              }
-                            }
-                          })
-                      : null,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.blue[50],
-                    foregroundColor: Colors.blue[700],
-                  ),
-                  child: Text(
-                    d,
-                    style: const TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
+            width: 70,
+            height: 56,
+            child: ElevatedButton(
+              onPressed: input.length < 4
+                  ? () => setS(() {
+                      input += d;
+                      if (input.length == 4) {
+                        if (input == pin) {
+                          ok = true;
+                          Navigator.of(ctx).pop();
+                        } else {
+                          // 重置重新輸入
+                          input = '';
+                          ScaffoldMessenger.of(ctx).showSnackBar(
+                            SnackBar(content: Text(AppMessages.pinWrong)),
+                          );
+                        }
+                      }
+                    })
+                  : null,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.blue[50],
+                foregroundColor: Colors.blue[700],
+              ),
+              child: Text(
+                d,
+                style: const TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
                 ),
-              );
+              ),
+            ),
+          );
 
           return AlertDialog(
             content: SizedBox(
@@ -122,7 +126,7 @@ class PinDialog {
                             backgroundColor: Colors.orange[50],
                             foregroundColor: Colors.orange[700],
                           ),
-                          child: const Text('清除'),
+                          child: const Text(AppMessages.clear),
                         ),
                       ),
                       numKey('0'),
@@ -135,7 +139,7 @@ class PinDialog {
                             backgroundColor: Colors.grey[200],
                             foregroundColor: Colors.grey[700],
                           ),
-                          child: const Text('取消'),
+                          child: const Text(AppMessages.cancel),
                         ),
                       ),
                     ],
