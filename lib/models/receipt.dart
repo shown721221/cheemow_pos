@@ -1,4 +1,5 @@
 import 'cart_item.dart';
+import '../config/constants.dart';
 
 /// 收據模型 - 記錄每筆交易的完整資訊
 class Receipt {
@@ -17,7 +18,7 @@ class Receipt {
     required this.items,
     required this.totalAmount,
     required this.totalQuantity,
-    this.paymentMethod = '現金',
+  this.paymentMethod = PaymentMethods.cash,
     List<String>? refundedProductIds,
   }) : refundedProductIds = refundedProductIds ?? const [];
 
@@ -36,7 +37,7 @@ class Receipt {
           .toList(),
       totalAmount: json['totalAmount'],
       totalQuantity: json['totalQuantity'],
-      paymentMethod: json['paymentMethod'] ?? '現金',
+  paymentMethod: json['paymentMethod'] ?? PaymentMethods.cash,
       refundedProductIds: refundedIds,
     );
   }
@@ -86,7 +87,7 @@ class Receipt {
       items: List.from(cartItems), // 建立副本避免引用問題
       totalAmount: totalAmount,
       totalQuantity: totalQuantity,
-      paymentMethod: '現金',
+  paymentMethod: PaymentMethods.cash,
       refundedProductIds: const [],
     );
   }

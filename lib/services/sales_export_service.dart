@@ -1,4 +1,5 @@
 import '../models/receipt.dart';
+import '../config/constants.dart';
 
 class SalesCsvBundle {
   final String salesCsv;
@@ -43,9 +44,9 @@ class SalesExportService {
       '總價',
     ].join(','));
 
-    String methodCode(String method) {
+  String methodCode(String method) {
       switch (method) {
-        case '現金':
+    case PaymentMethods.cash:
           return '1';
         case '轉帳':
           return '2';
