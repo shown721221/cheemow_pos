@@ -1,5 +1,7 @@
 // 集中管理全域 SnackBar 與提示文字
 // 後續若要做多語系或客製，只需調整此處
+import '../utils/money_formatter.dart';
+
 class AppMessages {
   // 匯出相關
   static const String autoExportRevenueSuccess = '啟動自動匯出營收完成';
@@ -11,12 +13,12 @@ class AppMessages {
   static String popularityExportError(Object e) => '人氣指數匯出錯誤：$e';
 
   // 零用金
-  static String pettyCashSet(int amount) => '零用金已設定為 💲$amount';
+  static String pettyCashSet(int amount) => '零用金已設定為 ${MoneyFormatter.symbol(amount)}';
 
   // 購物車 / 結帳
   static String removedItem(String name) => '已移除 $name';
   static String checkoutCash(String method, int change, int updated) =>
-      '結帳完成（$method）。找零 💲$change，已更新 $updated 個商品排序';
+      '結帳完成（$method）。找零 ${MoneyFormatter.symbol(change)}，已更新 $updated 個商品排序';
   static String checkoutOther(String method, int updated) =>
       '結帳完成（$method），已更新 $updated 個商品排序';
 
