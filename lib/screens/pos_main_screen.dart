@@ -26,6 +26,7 @@ import '../utils/product_sorter.dart';
 import '../services/export_service.dart';
 import '../utils/capture_util.dart';
 import '../dialogs/pin_dialog.dart';
+import '../services/report_service.dart';
 
 class PosMainScreen extends StatefulWidget {
   const PosMainScreen({super.key});
@@ -547,41 +548,10 @@ class _PosMainScreenState extends State<PosMainScreen> {
   // 匯出今日營收圖（含：總營收、預購小計、折扣小計、三種付款方式小計）
   Future<bool> _exportTodayRevenueImage() async {
     try {
-      final receipts = await ReceiptService.instance.getTodayReceipts();
-      // 彙總金額
-      int total = 0;
-      int preorder = 0;
-      int discount = 0;
-      int cash = 0;
-      int transfer = 0;
-      int linepay = 0;
-
-      for (final r in receipts) {
-        total += r.totalAmount; // 已排除退貨
-        switch (r.paymentMethod) {
-          case '現金':
-            cash += r.totalAmount;
-            break;
-          case '轉帳':
-            transfer += r.totalAmount;
-            break;
-          case 'LinePay':
-            linepay += r.totalAmount;
-            break;
-        }
-        final refunded = r.refundedProductIds.toSet();
-        for (final it in r.items) {
-          if (refunded.contains(it.product.id)) continue;
-          if (it.product.isPreOrderProduct) {
-            preorder += it.subtotal;
-          } else if (it.product.isDiscountProduct) {
-            discount += it.subtotal;
-          }
-        }
-      }
+  final summary = await ReportService.computeTodayRevenueSummary();
 
       // 建立可愛繽紛的圖像 Widget（統一卡片樣式）
-      final now = DateTime.now();
+  final now = TimeService.now();
       final y = now.year.toString().padLeft(4, '0');
       final m = now.month.toString().padLeft(2, '0');
       final d = now.day.toString().padLeft(2, '0');
@@ -737,7 +707,7 @@ class _PosMainScreenState extends State<PosMainScreen> {
                       Text('總營收', style: tsSectionLabel),
                       const Spacer(),
                       Text(
-                        mask(total),
+                        mask(summary.total),
                         style: tsHeadline.copyWith(color: Colors.teal),
                       ),
                     ],
@@ -750,7 +720,7 @@ class _PosMainScreenState extends State<PosMainScreen> {
                       child: metricCard(
                         icon: '💵',
                         title: '現金',
-                        value: mask(cash),
+                        value: mask(summary.cash),
                         bg: bg3,
                       ),
                     ),
@@ -759,7 +729,7 @@ class _PosMainScreenState extends State<PosMainScreen> {
                       child: metricCard(
                         icon: '🔁',
                         title: '轉帳',
-                        value: mask(transfer),
+                        value: mask(summary.transfer),
                         bg: bg4,
                       ),
                     ),
@@ -768,7 +738,7 @@ class _PosMainScreenState extends State<PosMainScreen> {
                       child: metricCard(
                         icon: '📲',
                         title: 'LinePay',
-                        value: mask(linepay),
+                        value: mask(summary.linepay),
                         bg: bg2,
                       ),
                     ),
@@ -781,7 +751,7 @@ class _PosMainScreenState extends State<PosMainScreen> {
                       child: metricCard(
                         icon: '🧸',
                         title: '預購小計',
-                        value: mask(preorder),
+                        value: mask(summary.preorder),
                         bg: bg1,
                       ),
                     ),
@@ -790,7 +760,7 @@ class _PosMainScreenState extends State<PosMainScreen> {
                       child: metricCard(
                         icon: '✨',
                         title: '折扣小計',
-                        value: mask(discount),
+                        value: mask(summary.discount),
                         bg: const Color(0xFFFFEEF0),
                         valueColor: Colors.pink,
                       ),
@@ -1031,28 +1001,7 @@ class _PosMainScreenState extends State<PosMainScreen> {
   // 新增：寶寶人氣指數匯出（與營收匯出相同的穩定預覽 + 隱藏擷取流程）
   Future<void> _exportTodayPopularityImage() async {
     try {
-      final receipts = await ReceiptService.instance.getTodayReceipts();
-      final Map<String, int> categoryCount = {};
-      int preorderQty = 0, discountQty = 0, normalQty = 0;
-      for (final r in receipts) {
-        final refunded = r.refundedProductIds.toSet();
-        for (final it in r.items) {
-          if (refunded.contains(it.product.id)) continue;
-          final p = it.product;
-          if (p.isPreOrderProduct)
-            preorderQty += it.quantity;
-          else if (p.isDiscountProduct)
-            discountQty += it.quantity;
-          else
-            normalQty += it.quantity;
-          final cat = p.category.isEmpty ? '未分類' : p.category;
-          categoryCount.update(
-            cat,
-            (v) => v + it.quantity,
-            ifAbsent: () => it.quantity,
-          );
-        }
-      }
+  final pop = await ReportService.computeTodayPopularityStats();
       final fixedCats = [
         'Duffy',
         'ShellieMay',
@@ -1064,16 +1013,17 @@ class _PosMainScreenState extends State<PosMainScreen> {
       ];
       final Map<String, int> baseMap = {for (final c in fixedCats) c: 0};
       int others = 0;
-      categoryCount.forEach((k, v) {
-        if (baseMap.containsKey(k))
+      pop.categoryCount.forEach((String k, int v) {
+        if (baseMap.containsKey(k)) {
           baseMap[k] = baseMap[k]! + v;
-        else
+        } else {
           others += v;
+        }
       });
-      final totalAll = normalQty + preorderQty + discountQty;
-      String pct(int v) => totalAll == 0
+      final totalAll = pop.totalQty;
+      String pct(int v) => pop.totalQty == 0
           ? '0%'
-          : ((v * 1000 / (totalAll == 0 ? 1 : totalAll)).round() / 10)
+          : ((v * 1000 / (pop.totalQty == 0 ? 1 : pop.totalQty)).round() / 10)
                     .toStringAsFixed(1) +
                 '%';
       final sortable = [
@@ -1114,7 +1064,7 @@ class _PosMainScreenState extends State<PosMainScreen> {
         'LinaBell': Colors.pink[200]!,
         '其他角色': Colors.blueGrey[300]!,
       };
-      final now = DateTime.now();
+  final now = TimeService.now();
       final dateStr =
           '${now.year.toString().padLeft(4, '0')}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
   // captureKey 已由 CaptureUtil 內部自行建立
@@ -1160,15 +1110,15 @@ class _PosMainScreenState extends State<PosMainScreen> {
                 ],
               ),
               const SizedBox(height: 22),
-              Wrap(
+        Wrap(
                 spacing: 14,
                 runSpacing: 14,
                 children: [
-                  _metricChip('交易筆數', receipts.length, Colors.indigo[600]!),
-                  _metricChip('總件數', totalAll, Colors.teal[700]!),
-                  _metricChip('一般件數', normalQty, Colors.blue[600]!),
-                  _metricChip('預購件數', preorderQty, Colors.purple[600]!),
-                  _metricChip('折扣件數', discountQty, Colors.orange[700]!),
+          _metricChip('交易筆數', pop.receiptCount, Colors.indigo[600]!),
+          _metricChip('總件數', pop.totalQty, Colors.teal[700]!),
+          _metricChip('一般件數', pop.normalQty, Colors.blue[600]!),
+          _metricChip('預購件數', pop.preorderQty, Colors.purple[600]!),
+          _metricChip('折扣件數', pop.discountQty, Colors.orange[700]!),
                 ],
               ),
               const SizedBox(height: 18), // 移除表頭後保留適度空隙
