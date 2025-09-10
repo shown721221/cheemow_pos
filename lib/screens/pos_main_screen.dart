@@ -32,6 +32,7 @@ import '../services/sales_export_service.dart';
 import '../widgets/search_filter_bar.dart';
 import '../services/product_update_service.dart';
 import '../services/barcode_scan_helper.dart';
+import '../config/constants.dart';
 
 class PosMainScreen extends StatefulWidget {
   const PosMainScreen({super.key});
@@ -1317,7 +1318,7 @@ class _PosMainScreenState extends State<PosMainScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
-          payment.method == '現金'
+          payment.method == PaymentMethods.cash
               ? AppMessages.checkoutCash(
                   payment.method,
                   payment.change,

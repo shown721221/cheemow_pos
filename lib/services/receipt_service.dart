@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'dart:convert';
 import '../models/receipt.dart';
 import 'time_service.dart';
+import '../config/constants.dart';
 
 /// 收據資料服務 - 負責收據的儲存和讀取
 class ReceiptService {
@@ -141,7 +142,7 @@ class ReceiptService {
 
   String _methodCode(String method) {
     switch (method) {
-      case '現金':
+  case PaymentMethods.cash:
         return '1';
       case '轉帳':
         return '2';

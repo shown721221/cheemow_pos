@@ -1,3 +1,5 @@
+import '../config/constants.dart';
+
 /// 商品模型類別
 class Product {
   final String id;
@@ -23,13 +25,13 @@ class Product {
   // 檢查是否為特殊商品（預約商品或折扣商品）
   // 為了容忍僅持久化最小欄位（未保存 category），這裡同時以條碼判斷
   bool get isSpecialProduct =>
-      isPreOrderProduct || isDiscountProduct || category == '特殊商品';
+      isPreOrderProduct || isDiscountProduct || category == AppConstants.specialCategory;
 
   // 檢查是否為預約商品
-  bool get isPreOrderProduct => barcode == '19920203';
+  bool get isPreOrderProduct => barcode == AppConstants.barcodePreOrder;
 
   // 檢查是否為折扣商品 - 修正商品名稱為 "祝您有奇妙的一天"
-  bool get isDiscountProduct => barcode == '88888888';
+  bool get isDiscountProduct => barcode == AppConstants.barcodeDiscount;
 
   // 格式化價格顯示（純文字版本，用於列印等場合）
   String get formattedPrice => 'NT\$ $price';

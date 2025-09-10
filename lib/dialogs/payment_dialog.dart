@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../config/constants.dart';
 import '../widgets/price_display.dart';
 import '../utils/money_formatter.dart';
 import '../widgets/numeric_keypad.dart';
@@ -20,7 +21,7 @@ class PaymentDialog {
     BuildContext context, {
     required int totalAmount,
   }) async {
-    String method = '現金';
+  String method = PaymentMethods.cash;
     final TextEditingController cashController = TextEditingController();
 
     return showDialog<PaymentResult>(
@@ -31,13 +32,13 @@ class PaymentDialog {
           builder: (context, setState) {
             final String raw = cashController.text.trim();
             final int paidRaw = int.tryParse(raw) ?? 0;
-            final int effectivePaid = (method == '現金' && raw.isEmpty)
+            final int effectivePaid = (method == PaymentMethods.cash && raw.isEmpty)
                 ? totalAmount
                 : paidRaw;
-            final int change = method == '現金'
+            final int change = method == PaymentMethods.cash
                 ? (effectivePaid - totalAmount)
                 : 0;
-            final bool canConfirm = method == '現金'
+            final bool canConfirm = method == PaymentMethods.cash
                 ? (raw.isEmpty || paidRaw >= totalAmount)
                 : true;
 
@@ -76,8 +77,8 @@ class PaymentDialog {
                               Expanded(
                                 child: _PayOptionButton(
                                   label: '💵 現金',
-                                  selected: method == '現金',
-                                  onTap: () => setState(() => method = '現金'),
+                                  selected: method == PaymentMethods.cash,
+                                  onTap: () => setState(() => method = PaymentMethods.cash),
                                 ),
                               ),
                               const SizedBox(width: 8),
@@ -100,7 +101,7 @@ class PaymentDialog {
                             ],
                           ),
                           const SizedBox(height: 12),
-                          if (method == '現金') ...[
+                          if (method == PaymentMethods.cash) ...[
                             TextField(
                               controller: cashController,
                               keyboardType: TextInputType.number,
@@ -207,8 +208,8 @@ class PaymentDialog {
                             ctx,
                             PaymentResult(
                               method: method,
-                              paidCash: method == '現金' ? effectivePaid : 0,
-                              change: method == '現金' ? change : 0,
+                              paidCash: method == PaymentMethods.cash ? effectivePaid : 0,
+                              change: method == PaymentMethods.cash ? change : 0,
                             ),
                           );
                         }

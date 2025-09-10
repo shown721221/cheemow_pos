@@ -1,6 +1,7 @@
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import '../models/product.dart';
+import '../config/constants.dart';
 
 /// 本地資料庫服務（使用 SharedPreferences）
 class LocalDatabaseService {
@@ -28,18 +29,18 @@ class LocalDatabaseService {
     final sampleProducts = [
       Product(
         id: '1',
-        barcode: '19920203',
+  barcode: AppConstants.barcodePreOrder,
         name: '🎁 預約奇妙',
         price: 0,
-        category: '特殊商品',
+  category: AppConstants.specialCategory,
         stock: 99,
       ),
       Product(
         id: '2',
-        barcode: '88888888',
+  barcode: AppConstants.barcodeDiscount,
         name: '💸 祝您有奇妙的一天',
         price: 0,
-        category: '特殊商品',
+  category: AppConstants.specialCategory,
         stock: 99,
       ),
     ];
@@ -54,14 +55,14 @@ class LocalDatabaseService {
     bool needsUpdate = false;
 
     // 檢查預約商品是否存在
-    final hasPreOrder = products.any((p) => p.barcode == '19920203');
+  final hasPreOrder = products.any((p) => p.barcode == AppConstants.barcodePreOrder);
     if (!hasPreOrder) {
       final preOrderProduct = Product(
         id: 'special_001',
-        barcode: '19920203',
+  barcode: AppConstants.barcodePreOrder,
         name: '🎁 預約奇妙',
         price: 0,
-        category: '特殊商品',
+  category: AppConstants.specialCategory,
         stock: 99,
       );
       updatedProducts.add(preOrderProduct);
@@ -69,14 +70,14 @@ class LocalDatabaseService {
     }
 
     // 檢查折扣商品是否存在
-    final hasDiscount = products.any((p) => p.barcode == '88888888');
+  final hasDiscount = products.any((p) => p.barcode == AppConstants.barcodeDiscount);
     if (!hasDiscount) {
       final discountProduct = Product(
         id: 'special_002',
-        barcode: '88888888',
+  barcode: AppConstants.barcodeDiscount,
         name: '💸 祝您有奇妙的一天',
         price: 0,
-        category: '特殊商品',
+  category: AppConstants.specialCategory,
         stock: 99,
       );
       updatedProducts.add(discountProduct);
@@ -101,9 +102,9 @@ class LocalDatabaseService {
       final product = updatedProducts[i];
 
       // 更新預約商品名稱
-      if (product.barcode == '19920203') {
+  if (product.barcode == AppConstants.barcodePreOrder) {
         final shouldFixName = !product.name.startsWith('🎁');
-        final shouldFixCategory = product.category != '特殊商品';
+  final shouldFixCategory = product.category != AppConstants.specialCategory;
         final shouldFixPrice = product.price != 0;
         final shouldFixStock = product.stock != 99;
         if (shouldFixName ||
@@ -115,7 +116,7 @@ class LocalDatabaseService {
             barcode: product.barcode,
             name: '🎁 預約奇妙',
             price: 0,
-            category: '特殊商品',
+            category: AppConstants.specialCategory,
             stock: 99,
             isActive: product.isActive,
             lastCheckoutTime: product.lastCheckoutTime,
@@ -125,9 +126,9 @@ class LocalDatabaseService {
       }
 
       // 更新折扣商品名稱
-      if (product.barcode == '88888888') {
+  if (product.barcode == AppConstants.barcodeDiscount) {
         final shouldFixName = !product.name.startsWith('💸');
-        final shouldFixCategory = product.category != '特殊商品';
+  final shouldFixCategory = product.category != AppConstants.specialCategory;
         final shouldFixPrice = product.price != 0;
         final shouldFixStock = product.stock != 99;
         if (shouldFixName ||
@@ -139,7 +140,7 @@ class LocalDatabaseService {
             barcode: product.barcode,
             name: '💸 祝您有奇妙的一天',
             price: 0,
-            category: '特殊商品',
+            category: AppConstants.specialCategory,
             stock: 99,
             isActive: product.isActive,
             lastCheckoutTime: product.lastCheckoutTime,
@@ -186,8 +187,8 @@ class LocalDatabaseService {
   /// 注意：會覆蓋既有資料，之後會自動確保特殊商品存在與名稱一致
   Future<void> replaceProducts(List<Product> newProducts) async {
     // 過濾掉兩個特殊商品，避免被匯入資料覆蓋
-    final filtered = newProducts
-        .where((p) => p.barcode != '19920203' && p.barcode != '88888888')
+  final filtered = newProducts
+    .where((p) => p.barcode != AppConstants.barcodePreOrder && p.barcode != AppConstants.barcodeDiscount)
         .toList();
 
     // 直接覆蓋目前的商品清單（已排除特殊商品）

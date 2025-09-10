@@ -6,6 +6,7 @@ import '../config/app_messages.dart';
 import '../models/receipt.dart';
 import '../services/local_database_service.dart';
 import '../services/receipt_service.dart';
+import '../config/constants.dart';
 
 class ReceiptListScreen extends StatefulWidget {
   const ReceiptListScreen({super.key});
@@ -228,7 +229,7 @@ class _ReceiptListScreenState extends State<ReceiptListScreen> {
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
       child: Row(
         children: [
-          payChip('💵 現金', '現金'),
+          payChip('💵 現金', PaymentMethods.cash),
           const SizedBox(width: 8),
           payChip('🔁 轉帳', '轉帳'),
           const SizedBox(width: 8),
@@ -377,7 +378,7 @@ class _ReceiptListScreenState extends State<ReceiptListScreen> {
                   value: payment,
                   underline: const SizedBox.shrink(),
                   items: const [
-                    DropdownMenuItem(value: '現金', child: Text('💵 現金')),
+                    DropdownMenuItem(value: PaymentMethods.cash, child: Text('💵 現金')),
                     DropdownMenuItem(value: '轉帳', child: Text('🔁 轉帳')),
                     DropdownMenuItem(
                       value: 'LinePay',

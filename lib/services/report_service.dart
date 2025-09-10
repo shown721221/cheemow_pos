@@ -1,4 +1,5 @@
 import 'receipt_service.dart';
+import '../config/constants.dart';
 
 class RevenueSummary {
   final int total;
@@ -54,7 +55,7 @@ class ReportService {
     for (final r in receipts) {
       total += r.totalAmount; // 已排除退貨
       switch (r.paymentMethod) {
-        case '現金':
+        case PaymentMethods.cash:
           cash += r.totalAmount;
           break;
         case '轉帳':
