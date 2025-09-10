@@ -39,6 +39,9 @@ class ShoppingCartWidget extends StatelessWidget {
     final bool showingPostCheckout =
         (lastCheckedOutCart != null && lastCheckedOutCart!.isNotEmpty);
     final displayItems = showingPostCheckout ? lastCheckedOutCart! : cartItems;
+  final int postCheckoutTotal = showingPostCheckout
+    ? lastCheckedOutCart!.fold(0, (sum, item) => sum + item.subtotal)
+    : 0;
 
     return GestureDetector(
       // 任何點擊都視為互動
@@ -79,7 +82,7 @@ class ShoppingCartWidget extends StatelessWidget {
                   borderRadius: BorderRadius.circular(6),
                 ),
                 child: Text(
-                  '已結帳完成，使用 ${lastCheckoutPaymentMethod ?? '未知方式'} 付款，可繼續銷售。',
+                  '結帳完成！總金額 $postCheckoutTotal ，使用 ${lastCheckoutPaymentMethod ?? '未知方式'}',
                   style: TextStyle(
                     fontSize: 12,
                     color: Colors.green[800],

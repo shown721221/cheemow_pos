@@ -168,7 +168,7 @@ class _ReceiptListScreenState extends State<ReceiptListScreen> {
     addSeg('$hh:$mm');
     addSeg(r.paymentMethod);
     // 總金額（已是扣除退貨後的淨額）
-  addSeg(MoneyFormatter.symbol(r.totalAmount));
+    addSeg(MoneyFormatter.symbol(r.totalAmount));
     addSeg('售出 $nonSpecialQty 件');
     // 使用與商品清單一致的顏色：預購=紫色、折扣=橘色（取自 ProductStyleUtils 規則）
     if (preorderQty > 0) {
@@ -381,7 +381,10 @@ class _ReceiptListScreenState extends State<ReceiptListScreen> {
                   value: payment,
                   underline: const SizedBox.shrink(),
                   items: const [
-                    DropdownMenuItem(value: PaymentMethods.cash, child: Text('💵 現金')),
+                    DropdownMenuItem(
+                      value: PaymentMethods.cash,
+                      child: Text('💵 現金'),
+                    ),
                     DropdownMenuItem(value: '轉帳', child: Text('🔁 轉帳')),
                     DropdownMenuItem(
                       value: 'LinePay',
@@ -501,9 +504,15 @@ class _ReceiptListScreenState extends State<ReceiptListScreen> {
                           style: TextStyle(fontWeight: FontWeight.bold),
                         ),
                         Text(
-              MoneyFormatter.symbol(current.items
-                .where((i) => !current.refundedProductIds.contains(i.product.id))
-                .fold<int>(0, (s, it) => s + it.subtotal)),
+                          MoneyFormatter.symbol(
+                            current.items
+                                .where(
+                                  (i) => !current.refundedProductIds.contains(
+                                    i.product.id,
+                                  ),
+                                )
+                                .fold<int>(0, (s, it) => s + it.subtotal),
+                          ),
                           style: const TextStyle(fontWeight: FontWeight.bold),
                         ),
                       ],

@@ -99,8 +99,8 @@ class _PosMainScreenState extends State<PosMainScreen> {
       );
       _kbScanner!.dispose();
     }
-  _midnightTimer?.cancel();
-  super.dispose();
+    _midnightTimer?.cancel();
+    super.dispose();
   }
 
   void _maybeAutoExportRevenueOnStart() {
@@ -127,7 +127,10 @@ class _PosMainScreenState extends State<PosMainScreen> {
     await LocalDatabaseService.instance.ensureSpecialProducts();
 
     final loadedProducts = await LocalDatabaseService.instance.getProducts();
-  final sorted = ProductSorter.sortDaily(loadedProducts, now: TimeService.now());
+    final sorted = ProductSorter.sortDaily(
+      loadedProducts,
+      now: TimeService.now(),
+    );
     setState(() {
       products = sorted;
     });
@@ -561,17 +564,17 @@ class _PosMainScreenState extends State<PosMainScreen> {
   // 匯出今日營收圖（含：總營收、預購小計、折扣小計、三種付款方式小計）
   Future<bool> _exportTodayRevenueImage() async {
     try {
-  final summary = await ReportService.computeTodayRevenueSummary();
+      final summary = await ReportService.computeTodayRevenueSummary();
 
       // 建立可愛繽紛的圖像 Widget（統一卡片樣式）
-  final now = TimeService.now();
+      final now = TimeService.now();
       final y = now.year.toString().padLeft(4, '0');
       final m = now.month.toString().padLeft(2, '0');
       final d = now.day.toString().padLeft(2, '0');
       final dateStr = '$y-$m-$d';
 
       // captureKey 用於不可見的「未遮蔽」版本擷取；預覽不使用 key
-  // captureKey 已由 CaptureUtil 內部自行建立
+      // captureKey 已由 CaptureUtil 內部自行建立
 
       final tsHeadline = const TextStyle(
         fontSize: 28,
@@ -627,7 +630,7 @@ class _PosMainScreenState extends State<PosMainScreen> {
       }
 
       Widget revenueWidget({required bool showNumbers, Key? key}) {
-  String money(int v) => MoneyFormatter.thousands(v);
+        String money(int v) => MoneyFormatter.thousands(v);
 
         Color bg1 = const Color(0xFFFFF0F6); // 粉
         Color bg2 = const Color(0xFFE8F5FF); // 淡藍
@@ -834,20 +837,23 @@ class _PosMainScreenState extends State<PosMainScreen> {
 
       final yy = (now.year % 100).toString().padLeft(2, '0');
       final fileName = '營收_$yy$m$d.png';
-  final res = await ExportService.instance.savePng(fileName: fileName, bytes: bytes);
-  if (!mounted) return res.success;
+      final res = await ExportService.instance.savePng(
+        fileName: fileName,
+        bytes: bytes,
+      );
+      if (!mounted) return res.success;
       ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              res.success
-                  ? AppMessages.exportRevenueSuccess(res.paths.join('\n'))
-                  : AppMessages.exportRevenueFailure(res.error ?? '未知錯誤'),
-            ),
+        SnackBar(
+          content: Text(
+            res.success
+                ? AppMessages.exportRevenueSuccess(res.paths.join('\n'))
+                : AppMessages.exportRevenueFailure(res.error ?? '未知錯誤'),
           ),
-        );
+        ),
+      );
       return res.success;
     } catch (e) {
-  if (!mounted) return false;
+      if (!mounted) return false;
       try {
         if (Navigator.canPop(context)) Navigator.pop(context);
       } catch (_) {}
@@ -870,7 +876,7 @@ class _PosMainScreenState extends State<PosMainScreen> {
       if (!ok) return;
     }
     int tempValue = AppConfig.pettyCash;
-  if (!mounted) return;
+    if (!mounted) return;
     await showDialog<int>(
       context: context,
       barrierDismissible: true,
@@ -1011,7 +1017,7 @@ class _PosMainScreenState extends State<PosMainScreen> {
   // 新增：寶寶人氣指數匯出（與營收匯出相同的穩定預覽 + 隱藏擷取流程）
   Future<void> _exportTodayPopularityImage() async {
     try {
-  final pop = await ReportService.computeTodayPopularityStats();
+      final pop = await ReportService.computeTodayPopularityStats();
       final fixedCats = [
         'Duffy',
         'ShellieMay',
@@ -1033,8 +1039,7 @@ class _PosMainScreenState extends State<PosMainScreen> {
       final totalAll = pop.totalQty;
       String pct(int v) => pop.totalQty == 0
           ? '0%'
-          : '${((v * 1000 / (pop.totalQty == 0 ? 1 : pop.totalQty)).round() / 10)
-                    .toStringAsFixed(1)}%';
+          : '${((v * 1000 / (pop.totalQty == 0 ? 1 : pop.totalQty)).round() / 10).toStringAsFixed(1)}%';
       final sortable = [
         ...baseMap.entries.map((e) => MapEntry(e.key, e.value)),
         MapEntry('其他角色', others),
@@ -1073,10 +1078,10 @@ class _PosMainScreenState extends State<PosMainScreen> {
         'LinaBell': Colors.pink[200]!,
         '其他角色': Colors.blueGrey[300]!,
       };
-  final now = TimeService.now();
+      final now = TimeService.now();
       final dateStr =
           '${now.year.toString().padLeft(4, '0')}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
-  // captureKey 已由 CaptureUtil 內部自行建立
+      // captureKey 已由 CaptureUtil 內部自行建立
       Widget popularityWidget({Key? key}) => RepaintBoundary(
         key: key,
         child: Container(
@@ -1119,15 +1124,15 @@ class _PosMainScreenState extends State<PosMainScreen> {
                 ],
               ),
               const SizedBox(height: 22),
-        Wrap(
+              Wrap(
                 spacing: 14,
                 runSpacing: 14,
                 children: [
-          _metricChip('交易筆數', pop.receiptCount, Colors.indigo[600]!),
-          _metricChip('總件數', pop.totalQty, Colors.teal[700]!),
-          _metricChip('一般件數', pop.normalQty, Colors.blue[600]!),
-          _metricChip('預購件數', pop.preorderQty, Colors.purple[600]!),
-          _metricChip('折扣件數', pop.discountQty, Colors.orange[700]!),
+                  _metricChip('交易筆數', pop.receiptCount, Colors.indigo[600]!),
+                  _metricChip('總件數', pop.totalQty, Colors.teal[700]!),
+                  _metricChip('一般件數', pop.normalQty, Colors.blue[600]!),
+                  _metricChip('預購件數', pop.preorderQty, Colors.purple[600]!),
+                  _metricChip('折扣件數', pop.discountQty, Colors.orange[700]!),
                 ],
               ),
               const SizedBox(height: 18), // 移除表頭後保留適度空隙
@@ -1185,7 +1190,10 @@ class _PosMainScreenState extends State<PosMainScreen> {
       );
 
       final fileName = '人氣指數_$dateStr.png';
-      final res = await ExportService.instance.savePng(fileName: fileName, bytes: bytes);
+      final res = await ExportService.instance.savePng(
+        fileName: fileName,
+        bytes: bytes,
+      );
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -1221,14 +1229,14 @@ class _PosMainScreenState extends State<PosMainScreen> {
 
       // 建立日期（資料夾 yyyy-MM-dd，同現有圖片匯出）與檔名日期後綴（yyMMdd）
       final now = DateTime.now();
-  // dateFolder 由 ExportService 處理，不再在此使用
+      // dateFolder 由 ExportService 處理，不再在此使用
       final dateSuffix =
           '${(now.year % 100).toString().padLeft(2, '0')}${now.month.toString().padLeft(2, '0')}${now.day.toString().padLeft(2, '0')}';
 
       // 與營收 / 人氣匯出保持一致：Downloads/cheemow_pos/<date>
-  // 由 ExportService 處理平台差異
+      // 由 ExportService 處理平台差異
 
-  // 付款方式代碼對應已內建於 SalesExportService 中
+      // 付款方式代碼對應已內建於 SalesExportService 中
 
       final bundle = SalesExportService.instance.buildCsvsForReceipts(receipts);
       final salesFileName = '銷售_$dateSuffix.csv';
@@ -1247,7 +1255,9 @@ class _PosMainScreenState extends State<PosMainScreen> {
         );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(AppMessages.salesExportFailure(res.error ?? '未知錯誤'))),
+          SnackBar(
+            content: Text(AppMessages.salesExportFailure(res.error ?? '未知錯誤')),
+          ),
         );
       }
     } catch (e) {
@@ -1261,8 +1271,8 @@ class _PosMainScreenState extends State<PosMainScreen> {
   void _checkout() async {
     // 直接進入付款方式（極簡流程）
     // 結帳前最終把關：折扣不可大於非折扣商品總額
-  final int nonDiscountTotal = _cartController.nonDiscountTotal;
-  final int discountAbsTotal = _cartController.discountAbsTotal;
+    final int nonDiscountTotal = _cartController.nonDiscountTotal;
+    final int discountAbsTotal = _cartController.discountAbsTotal;
 
     if (discountAbsTotal > nonDiscountTotal) {
       await showDialog(
@@ -1295,7 +1305,7 @@ class _PosMainScreenState extends State<PosMainScreen> {
     if (!mounted) return;
 
     // 建立並儲存收據：自訂編號（每日序號），時間精度到分鐘
-  final now = TimeService.now();
+    final now = TimeService.now();
     final id = await ReceiptService.instance.generateReceiptId(
       payment.method,
       now: now,
@@ -1330,6 +1340,11 @@ class _PosMainScreenState extends State<PosMainScreen> {
     );
     setState(() {
       _lastCheckoutPaymentMethod = payment.method;
+  // 結帳完成後：清除搜尋關鍵字與篩選，讓商品排序恢復預設
+  _searchQuery = '';
+  _selectedFilters.clear();
+  _searchResults = [];
+  _currentPageIndex = 0; // 回到銷售頁
     });
   }
 
@@ -1347,7 +1362,7 @@ class _PosMainScreenState extends State<PosMainScreen> {
       // 暫存結帳前的購物車內容供結帳完成後顯示
       _lastCheckedOutCart = List<CartItem>.from(cartItems);
       cartItems.clear();
-  products = outcome.resortedProducts;
+      products = outcome.resortedProducts;
 
       // 若目前左側使用的是搜尋/篩選結果，將其以條碼對映為最新的商品資料，以避免顯示舊庫存
       if (_searchResults.isNotEmpty) {
@@ -1372,7 +1387,9 @@ class _PosMainScreenState extends State<PosMainScreen> {
     // 保存更新後的商品資料到本地存儲
     await _saveProductsToStorage();
 
-  debugPrint('結帳完成，商品列表已更新，實際更新: ${outcome.updatedCount} 個商品 (daily sort applied)');
+    debugPrint(
+      '結帳完成，商品列表已更新，實際更新: ${outcome.updatedCount} 個商品 (daily sort applied)',
+    );
   }
 
   /// 建構搜尋頁面
@@ -1483,8 +1500,10 @@ class _PosMainScreenState extends State<PosMainScreen> {
         _applyFiltersWithTextSearch();
         _currentPageIndex = 0; // 切到銷售頁
       } else {
-        final updated =
-            _searchFilterManager.toggleFilter(_selectedFilters, label);
+        final updated = _searchFilterManager.toggleFilter(
+          _selectedFilters,
+          label,
+        );
         _selectedFilters
           ..clear()
           ..addAll(updated);
@@ -1493,7 +1512,6 @@ class _PosMainScreenState extends State<PosMainScreen> {
   }
 
   /// 處理互斥群組的邏輯
-  
 
   /// 應用篩選條件
   /// 應用篩選條件並結合文字搜尋
@@ -1533,9 +1551,9 @@ class _PosMainScreenState extends State<PosMainScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 14),
       decoration: BoxDecoration(
-  color: color.withValues(alpha: 0.08),
+        color: color.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(12),
-  border: Border.all(color: color.withValues(alpha: 0.4), width: 1),
+        border: Border.all(color: color.withValues(alpha: 0.4), width: 1),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -1619,7 +1637,10 @@ class _PosMainScreenState extends State<PosMainScreen> {
                         height: 18,
                         decoration: BoxDecoration(
                           gradient: LinearGradient(
-                            colors: [barColor.withValues(alpha: 0.85), barColor],
+                            colors: [
+                              barColor.withValues(alpha: 0.85),
+                              barColor,
+                            ],
                           ),
                         ),
                       ),
