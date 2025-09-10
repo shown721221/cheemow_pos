@@ -30,6 +30,7 @@ import '../managers/search_filter_manager.dart';
 import '../services/report_service.dart';
 import '../services/sales_export_service.dart';
 import '../widgets/search_filter_bar.dart';
+import '../services/product_update_service.dart';
 
 class PosMainScreen extends StatefulWidget {
   const PosMainScreen({super.key});
@@ -1290,7 +1291,7 @@ class _PosMainScreenState extends State<PosMainScreen> {
     if (!mounted) return;
 
     // 建立並儲存收據：自訂編號（每日序號），時間精度到分鐘
-    final now = DateTime.now();
+  final now = TimeService.now();
     final id = await ReceiptService.instance.generateReceiptId(
       payment.method,
       now: now,
@@ -1329,70 +1330,25 @@ class _PosMainScreenState extends State<PosMainScreen> {
   }
 
   Future<void> _processCheckout() async {
-    final checkoutTime = DateTime.now();
+    final outcome = await ProductUpdateService.instance.applyCheckout(
+      products: products,
+      cartItems: cartItems,
+      now: TimeService.now(),
+    );
 
-    // 記錄結帳品項數量（以條碼統計）
-    final Map<String, int> quantityByBarcode = {};
-    for (final item in cartItems) {
-      quantityByBarcode.update(
-        item.product.barcode,
-        (prev) => prev + item.quantity,
-        ifAbsent: () => item.quantity,
-      );
-    }
-
-    debugPrint('結帳數量統計: $quantityByBarcode');
-
-    // 創建新的商品列表，更新結帳時間
-    final updatedProducts = <Product>[];
-    int updatedCount = 0;
-
-    for (final product in products) {
-      final qty = quantityByBarcode[product.barcode] ?? 0;
-      if (qty > 0) {
-        // 結帳過的商品：更新結帳時間與庫存（特殊商品不扣庫存）
-        final newStock = product.isSpecialProduct
-            ? product.stock
-            : (product.stock - qty);
-        final updatedProduct = Product(
-          id: product.id,
-          barcode: product.barcode,
-          name: product.name,
-          price: product.price,
-          category: product.category,
-          stock: newStock,
-          isActive: product.isActive,
-          lastCheckoutTime: checkoutTime,
-        );
-        updatedProducts.add(updatedProduct);
-        updatedCount++;
-        debugPrint(
-          '更新商品: ${product.name} (${product.barcode}) -> 結帳時間: $checkoutTime, 庫存: ${product.stock} -> $newStock (扣 $qty)',
-        );
-      } else {
-        // 其他商品保持原狀
-        updatedProducts.add(product);
-      }
-    }
-
-    debugPrint('實際更新了 $updatedCount 個商品');
-
-    // 重新排序商品（依當日銷售規則）
-  final resorted = ProductSorter.sortDaily(updatedProducts);
-
-    // 儲存更新後商品
-    await LocalDatabaseService.instance.saveProducts(updatedProducts);
+    debugPrint('結帳數量統計: ${outcome.quantityByBarcode}');
+    debugPrint('實際更新了 ${outcome.updatedCount} 個商品');
 
     setState(() {
       // 暫存結帳前的購物車內容供結帳完成後顯示
       _lastCheckedOutCart = List<CartItem>.from(cartItems);
       cartItems.clear();
-      products = resorted;
+  products = outcome.resortedProducts;
 
       // 若目前左側使用的是搜尋/篩選結果，將其以條碼對映為最新的商品資料，以避免顯示舊庫存
       if (_searchResults.isNotEmpty) {
         final Map<String, Product> latestByBarcode = {
-          for (final p in updatedProducts) p.barcode: p,
+          for (final p in outcome.updatedProducts) p.barcode: p,
         };
         _searchResults = _searchResults
             .map((old) => latestByBarcode[old.barcode] ?? old)
@@ -1412,7 +1368,7 @@ class _PosMainScreenState extends State<PosMainScreen> {
     // 保存更新後的商品資料到本地存儲
     await _saveProductsToStorage();
 
-    debugPrint('結帳完成，商品列表已更新，實際更新: $updatedCount 個商品 (daily sort applied)');
+  debugPrint('結帳完成，商品列表已更新，實際更新: ${outcome.updatedCount} 個商品 (daily sort applied)');
   }
 
   /// 建構搜尋頁面
