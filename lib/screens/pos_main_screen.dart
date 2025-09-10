@@ -29,6 +29,7 @@ import '../dialogs/pin_dialog.dart';
 import '../managers/search_filter_manager.dart';
 import '../services/report_service.dart';
 import '../services/sales_export_service.dart';
+import '../widgets/search_filter_bar.dart';
 
 class PosMainScreen extends StatefulWidget {
   const PosMainScreen({super.key});
@@ -1434,96 +1435,13 @@ class _PosMainScreenState extends State<PosMainScreen> {
             onChanged: _performSearch,
           ),
         ),
-        // 快速篩選按鈕區域
+        // 快速篩選按鈕區域（以可重用元件呈現）
         Expanded(
           child: Container(
             padding: EdgeInsets.symmetric(horizontal: 12),
-            child: Column(
-              children: [
-                SizedBox(height: 4), // 減少頂部間距
-                // 第一排：地區
-                Flexible(
-                  child: Row(
-                    children: [
-                      Expanded(child: _buildFilterButton('東京')),
-                      SizedBox(width: 8),
-                      Expanded(child: _buildFilterButton('上海')),
-                      SizedBox(width: 8),
-                      Expanded(child: _buildFilterButton('香港')),
-                    ],
-                  ),
-                ),
-                SizedBox(height: 4), // 減少間距
-                // 第二排：角色1
-                Flexible(
-                  child: Row(
-                    children: [
-                      Expanded(child: _buildFilterButton('Duffy')),
-                      SizedBox(width: 8),
-                      Expanded(child: _buildFilterButton('Gelatoni')),
-                      SizedBox(width: 8),
-                      Expanded(child: _buildFilterButton('OluMel')),
-                    ],
-                  ),
-                ),
-                SizedBox(height: 4),
-                // 第三排：角色2
-                Flexible(
-                  child: Row(
-                    children: [
-                      Expanded(child: _buildFilterButton('ShellieMay')),
-                      SizedBox(width: 8),
-                      Expanded(child: _buildFilterButton('StellaLou')),
-                      SizedBox(width: 8),
-                      Expanded(child: _buildFilterButton('CookieAnn')),
-                    ],
-                  ),
-                ),
-                SizedBox(height: 4),
-                // 第四排：角色3與類型
-                Flexible(
-                  child: Row(
-                    children: [
-                      Expanded(child: _buildFilterButton('LinaBell')),
-                      SizedBox(width: 8),
-                      Expanded(child: _buildFilterButton('其他角色')),
-                      SizedBox(width: 8),
-                      Expanded(child: _buildFilterButton('娃娃')),
-                    ],
-                  ),
-                ),
-                SizedBox(height: 4),
-                // 第五排：姿勢
-                Flexible(
-                  child: Row(
-                    children: [
-                      Expanded(child: _buildFilterButton('站姿')),
-                      SizedBox(width: 8),
-                      Expanded(child: _buildFilterButton('坐姿')),
-                      SizedBox(width: 8),
-                      Expanded(child: _buildFilterButton('其他吊飾')),
-                    ],
-                  ),
-                ),
-                SizedBox(height: 4),
-                // 第六排：特殊功能
-                Flexible(
-                  child: Row(
-                    children: [
-                      Expanded(child: _buildFilterButton('有庫存')),
-                      SizedBox(width: 8),
-                      Expanded(
-                        child: _buildFilterButton('重選', isSpecial: true),
-                      ),
-                      SizedBox(width: 8),
-                      Expanded(
-                        child: _buildFilterButton('確認', isSpecial: true),
-                      ),
-                    ],
-                  ),
-                ),
-                SizedBox(height: 4), // 底部小間距
-              ],
+            child: SearchFilterBar(
+              buildFilterButton: (label, {bool isSpecial = false}) =>
+                  _buildFilterButton(label, isSpecial: isSpecial),
             ),
           ),
         ),
