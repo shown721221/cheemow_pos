@@ -27,6 +27,7 @@ import '../services/export_service.dart';
 import '../utils/capture_util.dart';
 import '../dialogs/pin_dialog.dart';
 import '../services/report_service.dart';
+import '../services/sales_export_service.dart';
 
 class PosMainScreen extends StatefulWidget {
   const PosMainScreen({super.key});
@@ -1219,126 +1220,15 @@ class _PosMainScreenState extends State<PosMainScreen> {
       // 與營收 / 人氣匯出保持一致：Downloads/cheemow_pos/<date>
   // 由 ExportService 處理平台差異
 
-      // 付款方式代碼對應（與 ReceiptService._methodCode 一致）
-      String methodCode(String method) {
-        switch (method) {
-          case '現金':
-            return '1';
-          case '轉帳':
-            return '2';
-          case 'LinePay':
-            return '3';
-          default:
-            return '9';
-        }
-      }
+  // 付款方式代碼對應已內建於 SalesExportService 中
 
-      // 準備銷售 CSV（排除特殊商品：預購 / 折扣 / 特殊商品類別）
-      final salesBuffer = StringBuffer();
-      // Header：關鍵欄位置前 + 其餘資訊
-      salesBuffer.writeln(
-        [
-          '商品代碼', // product.id
-          '商品名稱',
-          '條碼',
-          '售出數量',
-          '收據單號',
-          '日期時間',
-          '付款方式',
-          '付款方式代號',
-          '單價',
-          '總價',
-          '類別',
-        ].join(','),
-      );
-
-      // 準備特殊商品 CSV（僅預購/折扣或標記為特殊商品）
-      final specialBuffer = StringBuffer();
-      specialBuffer.writeln(
-        [
-          '收據單號',
-          '日期時間',
-          '付款方式',
-          '付款方式代號',
-          '商品名稱',
-          '銷售數量',
-          '單價',
-          '總價',
-        ].join(','),
-      );
-
-      // 逐收據展開
-      for (final r in receipts) {
-        final refunded = r.refundedProductIds.toSet();
-        for (final it in r.items) {
-          final p = it.product;
-          if (refunded.contains(p.id)) continue; // 排除已退貨項目
-          final qty = it.quantity;
-          final unitPrice = p.price; // 折扣品可能為負
-          final lineTotal = unitPrice * qty;
-          // 已排除特殊商品，不需要是否特殊欄位
-          // 日期時間格式：yyyy/MM/dd HH:mm:ss 更精確
-          final ts = r.timestamp;
-          final dateTimeStr =
-              '${ts.year.toString().padLeft(4, '0')}/${ts.month.toString().padLeft(2, '0')}/${ts.day.toString().padLeft(2, '0')} ${ts.hour.toString().padLeft(2, '0')}:${ts.minute.toString().padLeft(2, '0')}:${ts.second.toString().padLeft(2, '0')}';
-
-          // 依序寫入（基本不含逗號，仍做最小轉義）
-          String esc(String v) {
-            if (v.contains(',') || v.contains('"') || v.contains('\n')) {
-              final escaped = v.replaceAll('"', '""');
-              return '"$escaped"';
-            }
-            return v;
-          }
-
-          if (!p.isSpecialProduct) {
-            // 保留前導 0：若為純數字且以 0 開頭，加上一個前置單引號讓 Excel 視為文字（顯示時不會出現單引號）。
-            String preserveLeadingZeros(String v) {
-              if (RegExp(r'^0\d+$').hasMatch(v)) {
-                return "'" + v; // Excel 解析後仍顯示原字串
-              }
-              return v;
-            }
-            salesBuffer.writeln(
-              [
-                esc(preserveLeadingZeros(p.id)),
-                esc(p.name),
-                esc(preserveLeadingZeros(p.barcode)),
-                qty.toString(),
-                esc(r.id),
-                esc(dateTimeStr),
-                esc(r.paymentMethod),
-                methodCode(r.paymentMethod),
-                unitPrice.toString(),
-                lineTotal.toString(),
-                esc(p.category.isEmpty ? '未分類' : p.category),
-              ].join(','),
-            );
-          }
-
-          if (p.isSpecialProduct) {
-            specialBuffer.writeln(
-              [
-                esc(r.id),
-                esc(dateTimeStr),
-                esc(r.paymentMethod),
-                methodCode(r.paymentMethod),
-                esc(p.name),
-                qty.toString(),
-                unitPrice.toString(),
-                lineTotal.toString(),
-              ].join(','),
-            );
-          }
-        }
-      }
-
+      final bundle = SalesExportService.instance.buildCsvsForReceipts(receipts);
       final salesFileName = '銷售_${dateSuffix}.csv';
       final specialFileName = '特殊商品_${dateSuffix}.csv';
       final res = await ExportService.instance.saveCsvFiles(
         files: {
-          salesFileName: salesBuffer.toString(),
-          specialFileName: specialBuffer.toString(),
+          salesFileName: bundle.salesCsv,
+          specialFileName: bundle.specialCsv,
         },
         addBom: true,
       );
