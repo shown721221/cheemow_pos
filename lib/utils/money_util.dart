@@ -28,18 +28,39 @@ class MoneyUtil {
       return [1000, 1500, 2000];
     }
 
-    // >= 1000：以 500 / 1000 為主的刻度建議，並持續以 1000 的倍數補足到三筆。
-    final suggestions = <int>{};
-    suggestions.add(strictCeilTo(500));
-    suggestions.add(strictCeilTo(1000));
-
-    var base1000 = strictCeilTo(1000);
-    while (suggestions.length < 3) {
-      base1000 += 1000;
-      suggestions.add(base1000);
+    // 1000 <= total < 1500：偏好 500/1000 的整數級距，避免 1100/1200/1300 這類過細的級距。
+    if (total < 1500) {
+      final c500 = strictCeilTo(500);   // >= 1000 時最小也會是 1500
+      final c1000 = strictCeilTo(1000); // 會是 2000
+      return [c500, c1000, c1000 + 1000];
     }
 
-    final sorted = suggestions.where((v) => v > total).toList()..sort();
+    // >= 1500：以 [ceil100, ceil500, ceil1000] 為基礎，不足三筆再以 500/1000 遞增補足。
+    final set = <int>{
+      strictCeilTo(100),
+      strictCeilTo(500),
+      strictCeilTo(1000),
+    };
+
+    var next500 = strictCeilTo(500);
+    var next1000 = strictCeilTo(1000);
+    List<int> over() => set.where((v) => v > total).toList()..sort();
+
+    // 若已包含千位整數，視為最後一個快速按鈕，直接回傳（不再補更多）。
+    final initial = over();
+    if (initial.any((v) => v % 1000 == 0)) {
+      return initial.take(3).toList();
+    }
+
+    while (over().length < 3) {
+      next500 += 500;
+      set.add(next500);
+      if (over().length >= 3) break;
+      next1000 += 1000;
+      set.add(next1000);
+    }
+
+    final sorted = over();
     return sorted.take(3).toList();
   }
 }

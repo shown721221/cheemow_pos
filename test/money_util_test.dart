@@ -16,5 +16,15 @@ void main() {
       expect(list.length, 3);
       expect(list, [1500, 2000, 3000]);
     });
+
+    test('gives 3200, 3500, 4000 when total=3160', () {
+      expect(MoneyUtil.suggestCashOptions(3160), [3200, 3500, 4000]);
+    });
+
+    test('stops at thousand step and returns only two when total=2690', () {
+      final list = MoneyUtil.suggestCashOptions(2690);
+      expect(list, [2700, 3000]);
+      expect(list.length, 2);
+    });
   });
 }
