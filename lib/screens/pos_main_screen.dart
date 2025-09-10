@@ -26,6 +26,7 @@ import '../utils/product_sorter.dart';
 import '../services/export_service.dart';
 import '../utils/capture_util.dart';
 import '../dialogs/pin_dialog.dart';
+import '../managers/search_filter_manager.dart';
 import '../services/report_service.dart';
 import '../services/sales_export_service.dart';
 
@@ -50,6 +51,7 @@ class _PosMainScreenState extends State<PosMainScreen> {
   String _searchQuery = '';
   List<Product> _searchResults = [];
   final List<String> _selectedFilters = []; // 選中的篩選條件
+  final SearchFilterManager _searchFilterManager = SearchFilterManager();
 
   @override
   void initState() {
@@ -1533,36 +1535,7 @@ class _PosMainScreenState extends State<PosMainScreen> {
   void _performSearch(String query) {
     setState(() {
       _searchQuery = query.trim();
-      if (_searchQuery.isEmpty) {
-        _searchResults = [];
-        return;
-      }
-
-      // 搜尋商品名稱或條碼
-      _searchResults = products.where((product) {
-        final name = product.name.toLowerCase();
-        final barcode = product.barcode.toLowerCase();
-        final searchLower = _searchQuery.toLowerCase();
-
-        return name.contains(searchLower) || barcode.contains(searchLower);
-      }).toList();
-
-      // 搜尋結果排序：特殊商品優先，然後按相關性
-      _searchResults.sort((a, b) {
-        // 特殊商品始終在最前面
-        if (a.isSpecialProduct && !b.isSpecialProduct) return -1;
-        if (b.isSpecialProduct && !a.isSpecialProduct) return 1;
-
-        // 兩個都是特殊商品時，預約商品排在折扣商品前面
-        if (a.isSpecialProduct && b.isSpecialProduct) {
-          if (a.isPreOrderProduct && b.isDiscountProduct) return -1;
-          if (a.isDiscountProduct && b.isPreOrderProduct) return 1;
-          return 0;
-        }
-
-        // 普通商品按名稱排序
-        return a.name.compareTo(b.name);
-      });
+      _searchResults = _searchFilterManager.search(products, _searchQuery);
     });
   }
 
@@ -1622,247 +1595,45 @@ class _PosMainScreenState extends State<PosMainScreen> {
   void _onFilterButtonTap(String label) {
     setState(() {
       if (label == '重選') {
-        // 清除所有篩選條件
         _selectedFilters.clear();
         _searchQuery = '';
         _searchResults = [];
       } else if (label == '確認') {
-        // 如果是篩選結果描述，清除搜尋文字以進行純篩選
         if (_searchQuery.startsWith('篩選結果')) {
           _searchQuery = '';
         }
-
-        // 執行篩選並切換到銷售頁面
         _applyFiltersWithTextSearch();
-        _currentPageIndex = 0; // 切換到銷售頁面
+        _currentPageIndex = 0; // 切到銷售頁
       } else {
-        // 定義互斥群組
-        const locationGroup = ['東京', '上海', '香港'];
-        const characterGroup = [
-          'Duffy',
-          'Gelatoni',
-          'OluMel',
-          'ShellieMay',
-          'StellaLou',
-          'CookieAnn',
-          'LinaBell',
-          '其他角色',
-        ];
-        const typeGroup = ['娃娃', '站姿', '坐姿', '其他吊飾'];
-
-        // 處理互斥邏輯
-        if (locationGroup.contains(label)) {
-          _handleMutualExclusiveGroup(locationGroup, label);
-        } else if (characterGroup.contains(label)) {
-          _handleMutualExclusiveGroup(characterGroup, label);
-        } else if (typeGroup.contains(label)) {
-          _handleMutualExclusiveGroup(typeGroup, label);
-        } else {
-          // 其他按鈕（如有庫存）的正常切換邏輯
-          if (_selectedFilters.contains(label)) {
-            _selectedFilters.remove(label);
-          } else {
-            _selectedFilters.add(label);
-          }
-        }
+        final updated =
+            _searchFilterManager.toggleFilter(_selectedFilters, label);
+        _selectedFilters
+          ..clear()
+          ..addAll(updated);
       }
     });
   }
 
   /// 處理互斥群組的邏輯
-  void _handleMutualExclusiveGroup(List<String> group, String label) {
-    // 移除同群組的其他選項
-    _selectedFilters.removeWhere(
-      (filter) => group.contains(filter) && filter != label,
-    );
-
-    // 切換當前選項
-    if (_selectedFilters.contains(label)) {
-      _selectedFilters.remove(label);
-    } else {
-      _selectedFilters.add(label);
-    }
-  }
+  
 
   /// 應用篩選條件
   /// 應用篩選條件並結合文字搜尋
   void _applyFiltersWithTextSearch() {
-    List<Product> filteredProducts = products.where((product) {
-      final name = product.name.toLowerCase();
-
-      // 如果有文字搜尋，先進行文字過濾
-      if (_searchQuery.isNotEmpty) {
-        final searchTerms = _searchQuery
-            .toLowerCase()
-            .split(' ')
-            .where((term) => term.isNotEmpty);
-        bool matchesSearch = false;
-        for (String term in searchTerms) {
-          if (name.contains(term) || product.barcode.contains(term)) {
-            matchesSearch = true;
-            break;
-          }
-        }
-        if (!matchesSearch) return false;
-      }
-
-      // 然後應用篩選條件
-      for (String filter in _selectedFilters) {
-        switch (filter) {
-          case '東京':
-            if (!name.contains('東京disney限定') &&
-                !name.contains('東京迪士尼限定') &&
-                !name.contains('東京disney') &&
-                !name.contains('東京迪士尼') &&
-                !name.contains('tokyo')) {
-              return false;
-            }
-            break;
-          case '上海':
-            if (!name.contains('上海disney限定') &&
-                !name.contains('上海迪士尼限定') &&
-                !name.contains('上海disney') &&
-                !name.contains('上海迪士尼') &&
-                !name.contains('shanghai')) {
-              return false;
-            }
-            break;
-          case '香港':
-            bool matchesHongKong =
-                name.contains('香港disney限定') ||
-                name.contains('香港迪士尼限定') ||
-                name.contains('香港disney') ||
-                name.contains('香港迪士尼') ||
-                name.contains('hongkong') ||
-                name.contains('hk');
-            if (!matchesHongKong) {
-              return false;
-            }
-            break;
-          case 'Duffy':
-            if (!name.contains('duffy') && !name.contains('達菲')) {
-              return false;
-            }
-            break;
-          case 'Gelatoni':
-            if (!name.contains('gelatoni') && !name.contains('傑拉托尼')) {
-              return false;
-            }
-            break;
-          case 'OluMel':
-            if (!name.contains('olumel') && !name.contains('歐嚕')) {
-              return false;
-            }
-            break;
-          case 'ShellieMay':
-            if (!name.contains('shelliemay') && !name.contains('雪莉玫')) {
-              return false;
-            }
-            break;
-          case 'StellaLou':
-            if (!name.contains('stellalou') &&
-                !name.contains('星黛露') &&
-                !name.contains('史黛拉露')) {
-              return false;
-            }
-            break;
-          case 'CookieAnn':
-            if (!name.contains('cookieann') &&
-                !name.contains('可琦安') &&
-                !name.contains('cookie')) {
-              return false;
-            }
-            break;
-          case 'LinaBell':
-            if (!name.contains('linabell') &&
-                !name.contains('玲娜貝兒') &&
-                !name.contains('貝兒')) {
-              return false;
-            }
-            break;
-          case '其他角色':
-            // 如果包含任何已知角色名稱，則不是其他角色
-            if (name.contains('duffy') ||
-                name.contains('達菲') ||
-                name.contains('gelatoni') ||
-                name.contains('傑拉托尼') ||
-                name.contains('olumel') ||
-                name.contains('歐嚕') ||
-                name.contains('shelliemay') ||
-                name.contains('雪莉玫') ||
-                name.contains('stellalou') ||
-                name.contains('星黛露') ||
-                name.contains('史黛拉露') ||
-                name.contains('cookieann') ||
-                name.contains('可琦安') ||
-                name.contains('cookie') ||
-                name.contains('linabell') ||
-                name.contains('玲娜貝兒') ||
-                name.contains('貝兒')) {
-              return false;
-            }
-            break;
-          case '娃娃':
-            if (!name.contains('娃娃')) {
-              return false;
-            }
-            break;
-          case '站姿':
-            if (!name.contains('站姿')) {
-              return false;
-            }
-            break;
-          case '坐姿':
-            if (!name.contains('坐姿')) {
-              return false;
-            }
-            break;
-          case '其他吊飾':
-            // 必須包含"吊飾"關鍵字，但不能包含"站姿"、"坐姿"
-            if (!name.contains('吊飾')) {
-              return false;
-            }
-            if (name.contains('站姿') || name.contains('坐姿')) {
-              return false;
-            }
-            break;
-          case '有庫存':
-            if (product.stock <= 0) {
-              return false;
-            }
-            break;
-        }
-      }
-      return true;
-    }).toList();
-
-    // 排序篩選結果
-    filteredProducts.sort((a, b) {
-      // 特殊商品始終在最前面
-      if (a.isSpecialProduct && !b.isSpecialProduct) return -1;
-      if (b.isSpecialProduct && !a.isSpecialProduct) return 1;
-
-      // 兩個都是特殊商品時，預約商品排在折扣商品前面
-      if (a.isSpecialProduct && b.isSpecialProduct) {
-        if (a.isPreOrderProduct && b.isDiscountProduct) return -1;
-        if (a.isDiscountProduct && b.isPreOrderProduct) return 1;
-        return 0;
-      }
-
-      // 普通商品按名稱排序
-      return a.name.compareTo(b.name);
-    });
-
+    final filtered = _searchFilterManager.filter(
+      products,
+      _selectedFilters,
+      searchQuery: _searchQuery,
+    );
     setState(() {
-      _searchResults = filteredProducts;
+      _searchResults = filtered;
       _searchQuery = '篩選結果 (${_selectedFilters.join(', ')})';
     });
 
-    // 顯示搜尋結果通知
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(AppMessages.searchResultCount(filteredProducts.length)),
+        content: Text(AppMessages.searchResultCount(filtered.length)),
         duration: Duration(seconds: 2),
       ),
     );

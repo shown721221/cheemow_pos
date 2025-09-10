@@ -1,185 +1,209 @@
 import '../models/product.dart';
 
-/// 搜尋和篩選管理器
-/// 負責處理商品搜尋、篩選邏輯
+/// 集中管理商品搜尋與篩選邏輯，讓 UI 更輕量、易於測試
 class SearchFilterManager {
-  // 篩選分組定義
-  static const List<String> _locationFilters = ['東京', '上海', '香港'];
-  static const List<String> _characterFilters = [
-    'Duffy', 'Gelatoni', 'OluMel', 'ShellieMay', 
-    'StellaLou', 'CookieAnn', 'LinaBell', '其他角色'
+  static const List<String> locationGroup = ['東京', '上海', '香港'];
+  static const List<String> characterGroup = [
+    'Duffy',
+    'Gelatoni',
+    'OluMel',
+    'ShellieMay',
+    'StellaLou',
+    'CookieAnn',
+    'LinaBell',
+    '其他角色',
   ];
-  static const List<String> _productTypeFilters = ['娃娃', '站姿', '坐姿', '其他吊飾'];
-  
-  // 角色中英文對照
-  static const Map<String, List<String>> _characterKeywords = {
-    'Duffy': ['Duffy', '達菲', '達飛'],
-    'Gelatoni': ['Gelatoni', '畫家貓', '傑拉托尼'],
-    'OluMel': ['OluMel', '奧樂美'],
-    'ShellieMay': ['ShellieMay', '雪莉梅', '雪莉美'],
-    'StellaLou': ['StellaLou', '史黛拉', '史黛拉兔'],
-    'CookieAnn': ['CookieAnn', '曲奇安', '餅乾狗'],
-    'LinaBell': ['LinaBell', '玲娜貝兒', '狐狸'],
-    '其他角色': ['其他', 'other'],
-  };
+  static const List<String> typeGroup = ['娃娃', '站姿', '坐姿', '其他吊飾'];
 
-  final List<String> _selectedFilters = [];
-  String _currentSearchQuery = '';
-
-  // Getters
-  List<String> get selectedFilters => List.unmodifiable(_selectedFilters);
-  String get currentSearchQuery => _currentSearchQuery;
-  bool get hasActiveFilters => _selectedFilters.isNotEmpty || _currentSearchQuery.isNotEmpty;
-
-  /// 設置搜尋查詢
-  void setSearchQuery(String query) {
-    _currentSearchQuery = query.trim();
-  }
-
-  /// 切換篩選條件
-  void toggleFilter(String filter) {
-    if (_selectedFilters.contains(filter)) {
-      _selectedFilters.remove(filter);
-    } else {
-      // 處理互斥邏輯
-      _handleMutualExclusiveSelection(filter);
-      _selectedFilters.add(filter);
-    }
-  }
-
-  /// 處理互斥群組選擇
-  void _handleMutualExclusiveSelection(String selectedFilter) {
-    // 檢查是否屬於互斥群組，如果是則移除同群組的其他選項
-    if (_locationFilters.contains(selectedFilter)) {
-      _selectedFilters.removeWhere((filter) => _locationFilters.contains(filter));
-    } else if (_characterFilters.contains(selectedFilter)) {
-      _selectedFilters.removeWhere((filter) => _characterFilters.contains(filter));
-    } else if (_productTypeFilters.contains(selectedFilter)) {
-      _selectedFilters.removeWhere((filter) => _productTypeFilters.contains(filter));
-    }
-  }
-
-  /// 清除所有篩選條件
-  void clearAllFilters() {
-    _selectedFilters.clear();
-    _currentSearchQuery = '';
-  }
-
-  /// 執行搜尋和篩選
-  List<Product> searchAndFilter(List<Product> allProducts) {
-    List<Product> results = List.from(allProducts);
-
-    // 先執行文字搜尋
-    if (_currentSearchQuery.isNotEmpty) {
-      results = _performTextSearch(results, _currentSearchQuery);
-    }
-
-    // 再執行篩選
-    if (_selectedFilters.isNotEmpty) {
-      results = _applyFilters(results, _selectedFilters);
-    }
-
-    return results;
-  }
-
-  /// 執行文字搜尋
-  List<Product> _performTextSearch(List<Product> products, String query) {
-    final queryLower = query.toLowerCase();
-    
-    return products.where((product) {
-      final nameLower = product.name.toLowerCase();
-      final barcodeLower = product.barcode.toLowerCase();
-      
-      return nameLower.contains(queryLower) || 
-             barcodeLower.contains(queryLower);
-    }).toList();
-  }
-
-  /// 應用篩選條件
-  List<Product> _applyFilters(List<Product> products, List<String> filters) {
-    return products.where((product) {
-      return filters.every((filter) => _matchesFilter(product, filter));
-    }).toList();
-  }
-
-  /// 檢查商品是否符合篩選條件
-  bool _matchesFilter(Product product, String filter) {
-    final productName = product.name.toLowerCase();
-
-    switch (filter) {
-      // 地區篩選
-      case '東京':
-        return productName.contains('東京') || productName.contains('tokyo');
-      case '上海':
-        return productName.contains('上海') || productName.contains('shanghai');
-      case '香港':
-        return productName.contains('香港') || productName.contains('hong kong');
-
-      // 角色篩選
-      case 'Duffy':
-      case 'Gelatoni':
-      case 'OluMel':
-      case 'ShellieMay':
-      case 'StellaLou':
-      case 'CookieAnn':
-      case 'LinaBell':
-      case '其他角色':
-        return _matchesCharacter(productName, filter);
-
-      // 商品類型篩選
-      case '娃娃':
-        return productName.contains('娃娃') || productName.contains('doll');
-      case '站姿':
-        return productName.contains('站姿') || productName.contains('standing');
-      case '坐姿':
-        return productName.contains('坐姿') || productName.contains('sitting');
-      case '其他吊飾':
-        return productName.contains('吊飾') && 
-               !productName.contains('站姿') && 
-               !productName.contains('坐姿');
-
-      // 特殊篩選
-      case '有庫存':
-        return product.stock > 0;
-
-      default:
-        return true;
-    }
-  }
-
-  /// 檢查角色篩選匹配
-  bool _matchesCharacter(String productName, String characterFilter) {
-    final keywords = _characterKeywords[characterFilter] ?? [characterFilter];
-    
-    return keywords.any((keyword) => 
-      productName.contains(keyword.toLowerCase())
-    );
-  }
-
-  /// 獲取所有可用的篩選選項
-  static Map<String, List<String>> getAllFilterOptions() {
-    return {
-      '地區': _locationFilters,
-      '角色': _characterFilters,
-      '類型': _productTypeFilters,
-      '其他': ['有庫存'],
-    };
-  }
-
-  /// 獲取篩選結果統計
-  Map<String, int> getFilterStats(List<Product> allProducts) {
-    final stats = <String, int>{};
-    
-    // 計算各篩選條件的商品數量
-    for (final category in getAllFilterOptions().entries) {
-      for (final filter in category.value) {
-        final count = allProducts.where((product) => 
-          _matchesFilter(product, filter)
-        ).length;
-        stats[filter] = count;
+  /// 切換篩選標籤，並處理互斥群組
+  List<String> toggleFilter(List<String> selected, String label) {
+    final result = List<String>.from(selected);
+    void toggleInGroup(List<String> group, String label) {
+      result.removeWhere((f) => group.contains(f) && f != label);
+      if (result.contains(label)) {
+        result.remove(label);
+      } else {
+        result.add(label);
       }
     }
-    
-    return stats;
+
+    if (locationGroup.contains(label)) {
+      toggleInGroup(locationGroup, label);
+    } else if (characterGroup.contains(label)) {
+      toggleInGroup(characterGroup, label);
+    } else if (typeGroup.contains(label)) {
+      toggleInGroup(typeGroup, label);
+    } else {
+      // 其他（如 有庫存）為單獨切換
+      if (result.contains(label)) {
+        result.remove(label);
+      } else {
+        result.add(label);
+      }
+    }
+    return result;
+  }
+
+  /// 純文字搜尋（空字串回傳空清單，與既有 UI 行為一致）
+  List<Product> search(List<Product> products, String query) {
+    final q = query.trim();
+    if (q.isEmpty) return [];
+    final lower = q.toLowerCase();
+    final matches = products.where((p) {
+      final name = p.name.toLowerCase();
+      final barcode = p.barcode.toLowerCase();
+      return name.contains(lower) || barcode.contains(lower);
+    }).toList();
+    matches.sort(compareForSearchSort);
+    return matches;
+  }
+
+  /// 套用篩選條件，可搭配文字搜尋（多關鍵字以空白切分，任一命中即通過）
+  List<Product> filter(List<Product> products, List<String> selectedFilters,
+      {String searchQuery = ''}) {
+    final terms = searchQuery
+        .toLowerCase()
+        .split(' ')
+        .where((t) => t.trim().isNotEmpty)
+        .toList();
+
+    final filtered = products.where((p) {
+      final name = p.name.toLowerCase();
+
+      // 先處理文字搜尋（任一 term 命中名稱或條碼即可）
+      if (terms.isNotEmpty) {
+        final hit = terms.any((t) => name.contains(t) || p.barcode.contains(t));
+        if (!hit) return false;
+      }
+
+      // 套用每個篩選條件（全部需滿足）
+      for (final f in selectedFilters) {
+        switch (f) {
+          case '東京':
+            if (!name.contains('東京disney限定') &&
+                !name.contains('東京迪士尼限定') &&
+                !name.contains('東京disney') &&
+                !name.contains('東京迪士尼') &&
+                !name.contains('tokyo')) {
+              return false;
+            }
+            break;
+          case '上海':
+            if (!name.contains('上海disney限定') &&
+                !name.contains('上海迪士尼限定') &&
+                !name.contains('上海disney') &&
+                !name.contains('上海迪士尼') &&
+                !name.contains('shanghai')) {
+              return false;
+            }
+            break;
+          case '香港':
+            final matchesHongKong =
+                name.contains('香港disney限定') ||
+                    name.contains('香港迪士尼限定') ||
+                    name.contains('香港disney') ||
+                    name.contains('香港迪士尼') ||
+                    name.contains('hongkong') ||
+                    name.contains('hk');
+            if (!matchesHongKong) return false;
+            break;
+          case 'Duffy':
+            if (!name.contains('duffy') && !name.contains('達菲')) return false;
+            break;
+          case 'Gelatoni':
+            if (!name.contains('gelatoni') && !name.contains('傑拉托尼')) {
+              return false;
+            }
+            break;
+          case 'OluMel':
+            if (!name.contains('olumel') && !name.contains('歐嚕')) return false;
+            break;
+          case 'ShellieMay':
+            if (!name.contains('shelliemay') && !name.contains('雪莉玫')) {
+              return false;
+            }
+            break;
+          case 'StellaLou':
+            if (!name.contains('stellalou') &&
+                !name.contains('星黛露') &&
+                !name.contains('史黛拉露')) {
+              return false;
+            }
+            break;
+          case 'CookieAnn':
+            if (!name.contains('cookieann') &&
+                !name.contains('可琦安') &&
+                !name.contains('cookie')) {
+              return false;
+            }
+            break;
+          case 'LinaBell':
+            if (!name.contains('linabell') &&
+                !name.contains('玲娜貝兒') &&
+                !name.contains('貝兒')) {
+              return false;
+            }
+            break;
+          case '其他角色':
+            final isKnown = name.contains('duffy') ||
+                name.contains('達菲') ||
+                name.contains('gelatoni') ||
+                name.contains('傑拉托尼') ||
+                name.contains('olumel') ||
+                name.contains('歐嚕') ||
+                name.contains('shelliemay') ||
+                name.contains('雪莉玫') ||
+                name.contains('stellalou') ||
+                name.contains('星黛露') ||
+                name.contains('史黛拉露') ||
+                name.contains('cookieann') ||
+                name.contains('可琦安') ||
+                name.contains('cookie') ||
+                name.contains('linabell') ||
+                name.contains('玲娜貝兒') ||
+                name.contains('貝兒');
+            if (isKnown) return false;
+            break;
+          case '娃娃':
+            if (!name.contains('娃娃')) return false;
+            break;
+          case '站姿':
+            if (!name.contains('站姿')) return false;
+            break;
+          case '坐姿':
+            if (!name.contains('坐姿')) return false;
+            break;
+          case '其他吊飾':
+            if (!name.contains('吊飾')) return false;
+            if (name.contains('站姿') || name.contains('坐姿')) return false;
+            break;
+          case '有庫存':
+            if (p.stock <= 0) return false;
+            break;
+        }
+      }
+      return true;
+    }).toList();
+
+    filtered.sort(compareForSearchSort);
+    return filtered;
+  }
+
+  /// 搜尋/篩選的共同排序規則
+  static int compareForSearchSort(Product a, Product b) {
+    // 特殊商品永遠在最前
+    if (a.isSpecialProduct && !b.isSpecialProduct) return -1;
+    if (b.isSpecialProduct && !a.isSpecialProduct) return 1;
+
+    // 兩者皆為特殊商品：預購在折扣前
+    if (a.isSpecialProduct && b.isSpecialProduct) {
+      if (a.isPreOrderProduct && b.isDiscountProduct) return -1;
+      if (a.isDiscountProduct && b.isPreOrderProduct) return 1;
+      return 0;
+    }
+
+    // 其他依名稱排序
+    return a.name.compareTo(b.name);
   }
 }
+ 
