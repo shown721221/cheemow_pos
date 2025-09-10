@@ -55,6 +55,12 @@ class AppMessages {
 
   static String salesExportFailure(Object e) => '匯出銷售資料失敗: $e';
 
+  // 對話框文案（集中管理，便於維護與測試）
+  static const String discountOverLimitTitle = '折扣超過上限';
+  static String productNotFoundTitle = '商品未找到';
+  static String productNotFoundMessage(String barcode) =>
+      '條碼: $barcode\n\n此商品尚未在系統中註冊。';
+
   // 價格 / 折扣輸入驗證
   static const String invalidNumber = '請輸入有效的數字';
   static const String enterPrice = '請輸入價格';

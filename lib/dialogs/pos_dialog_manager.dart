@@ -254,11 +254,11 @@ class PosDialogManager {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: const Row(
+          title: Row(
             children: [
               Icon(Icons.search_off, color: Colors.orange, size: 28),
               SizedBox(width: 8),
-              Text('商品未找到'),
+        Text(AppMessages.productNotFoundTitle),
             ],
           ),
           content: Column(
