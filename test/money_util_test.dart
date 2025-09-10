@@ -8,7 +8,7 @@ void main() {
       expect(MoneyUtil.suggestCashOptions(1), [50, 100, 500]);
       expect(MoneyUtil.suggestCashOptions(49), [50, 100, 500]);
       expect(MoneyUtil.suggestCashOptions(50), [100, 500, 1000]);
-      expect(MoneyUtil.suggestCashOptions(999), [1000, 1500, 2000]);
+  expect(MoneyUtil.suggestCashOptions(999), [1000]);
     });
 
     test('returns last three unique values greater than total', () {
@@ -25,6 +25,17 @@ void main() {
       final list = MoneyUtil.suggestCashOptions(2690);
       expect(list, [2700, 3000]);
       expect(list.length, 2);
+    });
+
+    test('under 1000 prefers 50/100/500 till first 1000', () {
+      expect(MoneyUtil.suggestCashOptions(920), [950, 1000]);
+      expect(MoneyUtil.suggestCashOptions(999), [1000]);
+    });
+
+    test('thousand multiples have no quick options', () {
+      expect(MoneyUtil.suggestCashOptions(1000), []);
+      expect(MoneyUtil.suggestCashOptions(2000), []);
+      expect(MoneyUtil.suggestCashOptions(3000), []);
     });
   });
 }
