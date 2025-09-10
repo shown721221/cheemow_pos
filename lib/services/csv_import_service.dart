@@ -55,11 +55,14 @@ class CsvImportService {
   /// 解析並匯入CSV資料
   static Future<CsvImportResult> _parseAndImportCsv(
     Uint8List bytes,
-    String fileName,
-  ) async {
+    String fileName, {
+    bool save = true,
+  }) async {
     try {
-      // 將bytes轉換為字串
-      String csvString = utf8.decode(bytes);
+    // 將bytes轉換為字串並正規化換行（支援 Windows/Unix）
+    String csvString = utf8.decode(bytes)
+      .replaceAll('\r\n', '\n')
+      .replaceAll('\r', '\n');
 
       // 檢測分隔符並解析CSV
       String delimiter = ',';
@@ -70,6 +73,8 @@ class CsvImportService {
 
       List<List<dynamic>> csvData = CsvToListConverter(
         fieldDelimiter: delimiter,
+        // 強制使用 \n 作為行分隔，避免在不同平台上誤判換行
+        eol: '\n',
       ).convert(csvString);
 
       if (csvData.isEmpty) {
@@ -200,7 +205,9 @@ class CsvImportService {
       }
 
       // 儲存商品資料（取代模式）
-      await LocalDatabaseService.instance.replaceProducts(products);
+      if (save) {
+        await LocalDatabaseService.instance.replaceProducts(products);
+      }
 
       return CsvImportResult.success(
         importedCount: products.length,
@@ -211,6 +218,15 @@ class CsvImportService {
     } catch (e) {
       return CsvImportResult.error(AppMessages.csvParseFailed(e));
     }
+  }
+
+  /// 測試用：直接解析 CSV 字串，不寫入資料庫
+  @visibleForTesting
+  static Future<CsvImportResult> parseForTest(String csv, {
+    String fileName = 'test.csv',
+  }) async {
+    final bytes = Uint8List.fromList(utf8.encode(csv));
+    return _parseAndImportCsv(bytes, fileName, save: false);
   }
 
   /// 產生範例CSV檔案內容

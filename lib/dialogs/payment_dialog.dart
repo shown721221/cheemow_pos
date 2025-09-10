@@ -167,8 +167,9 @@ class PaymentDialog {
                               onKeyTap: (key) {
                                 String t = cashController.text;
                                 if (key == '⌫') {
-                                  if (t.isNotEmpty)
+                                  if (t.isNotEmpty) {
                                     t = t.substring(0, t.length - 1);
+                                  }
                                 } else {
                                   t = t + key;
                                 }
