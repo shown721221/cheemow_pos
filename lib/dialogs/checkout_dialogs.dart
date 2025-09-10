@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../utils/money_formatter.dart';
 import '../models/receipt.dart';
 import '../widgets/price_display.dart';
 
@@ -105,7 +106,7 @@ class CheckoutDialogs {
               Text('總數量: ${receipt.totalQuantity} 件'),
               const SizedBox(height: 8),
               Text(
-                '總金額: \$${receipt.totalAmount}',
+                '總金額: ${MoneyFormatter.symbol(receipt.totalAmount)}',
                 style: const TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,

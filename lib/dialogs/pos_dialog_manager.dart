@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import '../models/product.dart';
 import '../models/receipt.dart';
 import '../config/app_messages.dart';
+import '../utils/money_formatter.dart';
 
 /// 對話框管理器
 /// 負責處理所有 POS 系統相關的對話框
@@ -131,8 +132,8 @@ class PosDialogManager {
                 children: [
                   Text('總數量: $totalQuantity 件'),
                   const SizedBox(height: 8),
-                  Text(
-                    '總金額: \$${totalAmount.toString()}',
+                    Text(
+                      '總金額: ${MoneyFormatter.symbol(totalAmount)}',
                     style: const TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
@@ -192,8 +193,8 @@ class PosDialogManager {
               const SizedBox(height: 8),
               Text('總數量: ${receipt.totalQuantity} 件'),
               const SizedBox(height: 8),
-              Text(
-                '總金額: \$${receipt.totalAmount}',
+                Text(
+                  '總金額: ${MoneyFormatter.symbol(receipt.totalAmount)}',
                 style: const TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,

@@ -85,17 +85,16 @@ class PaymentDialog {
                               Expanded(
                                 child: _PayOptionButton(
                                   label: '🔁 轉帳',
-                                  selected: method == '轉帳',
-                                  onTap: () => setState(() => method = '轉帳'),
+                                  selected: method == PaymentMethods.transfer,
+                                  onTap: () => setState(() => method = PaymentMethods.transfer),
                                 ),
                               ),
                               const SizedBox(width: 8),
                               Expanded(
                                 child: _PayOptionButton(
                                   label: '📲 LinePay',
-                                  selected: method == 'LinePay',
-                                  onTap: () =>
-                                      setState(() => method = 'LinePay'),
+                                  selected: method == PaymentMethods.linePay,
+                                  onTap: () => setState(() => method = PaymentMethods.linePay),
                                 ),
                               ),
                             ],
@@ -189,9 +188,9 @@ class PaymentDialog {
                                 ),
                               ],
                             ),
-                          ] else if (method == '轉帳') ...[
+                          ] else if (method == PaymentMethods.transfer) ...[
                             _PaymentPlaceholder(label: '預留：轉帳帳號圖片/資訊'),
-                          ] else if (method == 'LinePay') ...[
+                          ] else if (method == PaymentMethods.linePay) ...[
                             _PaymentPlaceholder(label: '預留：LinePay QR Code 圖片'),
                           ],
                         ],
