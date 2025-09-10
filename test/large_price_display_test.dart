@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:cheemow_pos/widgets/price_display.dart';
+import 'package:cheemeow_pos/widgets/price_display.dart';
 
 void main() {
   testWidgets('LargePriceDisplay shows thousands formatting', (tester) async {

@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:cheemow_pos/utils/money_formatter.dart';
+import 'package:cheemeow_pos/utils/money_formatter.dart';
 
 void main() {
   test('thousands formatting', () {

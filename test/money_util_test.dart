@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:cheemow_pos/utils/money_util.dart';
+import 'package:cheemeow_pos/utils/money_util.dart';
 
 void main() {
   group('MoneyUtil.suggestCashOptions', () {

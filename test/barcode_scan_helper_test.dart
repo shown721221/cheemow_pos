@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:cheemow_pos/models/product.dart';
-import 'package:cheemow_pos/services/barcode_scan_helper.dart';
+import 'package:cheemeow_pos/models/product.dart';
+import 'package:cheemeow_pos/services/barcode_scan_helper.dart';
 
 void main() {
   group('BarcodeScanHelper.decideFromProducts', () {

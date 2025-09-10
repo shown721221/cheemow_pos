@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:cheemow_pos/utils/capture_util.dart';
+import 'package:cheemeow_pos/utils/capture_util.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();

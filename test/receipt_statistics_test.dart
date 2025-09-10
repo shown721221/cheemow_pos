@@ -1,10 +1,10 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:cheemow_pos/services/receipt_service.dart';
-import 'package:cheemow_pos/services/time_service.dart';
-import 'package:cheemow_pos/models/receipt.dart';
-import 'package:cheemow_pos/models/cart_item.dart';
-import 'package:cheemow_pos/models/product.dart';
+import 'package:cheemeow_pos/services/receipt_service.dart';
+import 'package:cheemeow_pos/services/time_service.dart';
+import 'package:cheemeow_pos/models/receipt.dart';
+import 'package:cheemeow_pos/models/cart_item.dart';
+import 'package:cheemeow_pos/models/product.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();

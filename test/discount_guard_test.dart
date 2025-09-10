@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:cheemow_pos/models/product.dart';
-import 'package:cheemow_pos/controllers/pos_controller.dart';
+import 'package:cheemeow_pos/models/product.dart';
+import 'package:cheemeow_pos/controllers/pos_controller.dart';
 
 void main() {
   group('Checkout discount guard', () {

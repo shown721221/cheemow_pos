@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:cheemow_pos/controllers/pos_cart_controller.dart';
-import 'package:cheemow_pos/models/product.dart';
-import 'package:cheemow_pos/models/cart_item.dart';
+import 'package:cheemeow_pos/controllers/pos_cart_controller.dart';
+import 'package:cheemeow_pos/models/product.dart';
+import 'package:cheemeow_pos/models/cart_item.dart';
 
 void main() {
   group('PosCartController', () {

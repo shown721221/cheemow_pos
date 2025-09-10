@@ -1263,7 +1263,7 @@ class _PosMainScreenState extends State<PosMainScreen> {
       final dateSuffix =
           '${(now.year % 100).toString().padLeft(2, '0')}${now.month.toString().padLeft(2, '0')}${now.day.toString().padLeft(2, '0')}';
 
-      // 與營收 / 人氣匯出保持一致：Downloads/cheemow_pos/<date>
+      // 與營收 / 人氣匯出保持一致：Downloads/cheemeow_pos/<date>
       // 由 ExportService 處理平台差異
 
       // 付款方式代碼對應已內建於 SalesExportService 中

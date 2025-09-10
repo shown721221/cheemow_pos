@@ -10,7 +10,8 @@ class ExportResult {
   final List<String> paths;
   final String? error;
   ExportResult({required this.success, this.paths = const [], this.error});
-  factory ExportResult.failure(String msg) => ExportResult(success: false, error: msg);
+  factory ExportResult.failure(String msg) =>
+      ExportResult(success: false, error: msg);
 }
 
 class ExportService {
@@ -22,7 +23,11 @@ class ExportService {
   String _dateFolder(DateTime now) =>
       '${now.year.toString().padLeft(4, '0')}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
 
-  Future<ExportResult> savePng({required String fileName, required Uint8List bytes, DateTime? now}) async {
+  Future<ExportResult> savePng({
+    required String fileName,
+    required Uint8List bytes,
+    DateTime? now,
+  }) async {
     try {
       final n = now ?? DateTime.now();
       final folder = _dateFolder(n);
@@ -32,7 +37,7 @@ class ExportService {
         final tmp = await _writeTemp(fileName, bytes);
         try {
           await MediaStore.ensureInitialized();
-          MediaStore.appFolder = 'cheemow_pos';
+          MediaStore.appFolder = 'cheemeow_pos';
           final mediaStore = MediaStore();
           final save = await mediaStore.saveFile(
             tempFilePath: tmp.path,
@@ -45,15 +50,24 @@ class ExportService {
             final real = await mediaStore.getFilePathFromUri(uriString: path);
             if (real != null) path = real;
           }
-          return ExportResult(success: path != null, paths: path != null ? [path] : const []);
+          return ExportResult(
+            success: path != null,
+            paths: path != null ? [path] : const [],
+          );
         } finally {
-          try { await tmp.delete(); } catch (_) {}
+          try {
+            await tmp.delete();
+          } catch (_) {}
         }
       } else {
         final dir = Directory(root);
         if (!await dir.exists()) await dir.create(recursive: true);
         final file = File('${dir.path}/$fileName');
-        if (await file.exists()) { try { await file.delete(); } catch (_) {} }
+        if (await file.exists()) {
+          try {
+            await file.delete();
+          } catch (_) {}
+        }
         await file.writeAsBytes(bytes, flush: true);
         return ExportResult(success: true, paths: [file.path]);
       }
@@ -63,7 +77,11 @@ class ExportService {
     }
   }
 
-  Future<ExportResult> saveCsvFiles({required Map<String, String> files, bool addBom = true, DateTime? now}) async {
+  Future<ExportResult> saveCsvFiles({
+    required Map<String, String> files,
+    bool addBom = true,
+    DateTime? now,
+  }) async {
     if (files.isEmpty) return ExportResult.failure('無檔案內容');
     try {
       final n = now ?? DateTime.now();
@@ -73,12 +91,12 @@ class ExportService {
       final savedPaths = <String>[];
       if (Platform.isAndroid && testOverrideBaseDir == null) {
         await MediaStore.ensureInitialized();
-        MediaStore.appFolder = 'cheemow_pos';
+        MediaStore.appFolder = 'cheemeow_pos';
         final mediaStore = MediaStore();
         for (final e in files.entries) {
           final content = e.value;
-            final enc = utf8.encode(content);
-            final bytes = addBom ? [0xEF, 0xBB, 0xBF, ...enc] : enc;
+          final enc = utf8.encode(content);
+          final bytes = addBom ? [0xEF, 0xBB, 0xBF, ...enc] : enc;
           final tmp = await _writeTemp(e.key, bytes);
           try {
             final save = await mediaStore.saveFile(
@@ -93,7 +111,11 @@ class ExportService {
               if (real != null) path = real;
               savedPaths.add(path);
             }
-          } finally { try { await tmp.delete(); } catch (_) {} }
+          } finally {
+            try {
+              await tmp.delete();
+            } catch (_) {}
+          }
         }
         return ExportResult(success: savedPaths.isNotEmpty, paths: savedPaths);
       } else {
@@ -101,7 +123,11 @@ class ExportService {
         if (!await dir.exists()) await dir.create(recursive: true);
         for (final e in files.entries) {
           final file = File('${dir.path}/${e.key}');
-          if (await file.exists()) { try { await file.delete(); } catch (_) {} }
+          if (await file.exists()) {
+            try {
+              await file.delete();
+            } catch (_) {}
+          }
           final enc = utf8.encode(e.value);
           final data = addBom ? [0xEF, 0xBB, 0xBF, ...enc] : enc;
           await file.writeAsBytes(data, flush: true);
@@ -123,21 +149,25 @@ class ExportService {
   }
 
   Future<String?> _resolveBaseDirectory(String dateFolder) async {
-    if (testOverrideBaseDir != null) return '${testOverrideBaseDir!}/$dateFolder';
-    if (Platform.isAndroid) { // MediaStore 真正控制，但仍回報一個推測路徑
+    if (testOverrideBaseDir != null)
+      return '${testOverrideBaseDir!}/$dateFolder';
+    if (Platform.isAndroid) {
+      // MediaStore 真正控制，但仍回報一個推測路徑
       try {
         final downloads = await getDownloadsDirectory();
-        if (downloads != null) return '${downloads.path}/cheemow_pos/$dateFolder';
+        if (downloads != null)
+          return '${downloads.path}/cheemeow_pos/$dateFolder';
       } catch (_) {}
-      return '/storage/emulated/0/Download/cheemow_pos/$dateFolder';
+      return '/storage/emulated/0/Download/cheemeow_pos/$dateFolder';
     }
     try {
       final downloads = await getDownloadsDirectory();
-      if (downloads != null) return '${downloads.path}/cheemow_pos/$dateFolder';
+      if (downloads != null)
+        return '${downloads.path}/cheemeow_pos/$dateFolder';
     } catch (_) {}
     try {
       final docs = await getApplicationDocumentsDirectory();
-      return '${docs.path}/cheemow_pos/$dateFolder';
+      return '${docs.path}/cheemeow_pos/$dateFolder';
     } catch (_) {}
     return null;
   }

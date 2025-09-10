@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:cheemow_pos/utils/money_formatter.dart';
+import 'package:cheemeow_pos/utils/money_formatter.dart';
 
 /// 價格顯示元件，使用鈔票圖示替代 NT$ 文字
 class PriceDisplay extends StatelessWidget {

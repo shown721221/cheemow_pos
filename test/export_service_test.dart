@@ -2,7 +2,7 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:cheemow_pos/services/export_service.dart';
+import 'package:cheemeow_pos/services/export_service.dart';
 
 void main() {
   group('ExportService', () {

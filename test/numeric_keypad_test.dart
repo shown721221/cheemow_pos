@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter/material.dart';
-import 'package:cheemow_pos/widgets/numeric_keypad.dart';
+import 'package:cheemeow_pos/widgets/numeric_keypad.dart';
 
 void main() {
   testWidgets('NumericKeypad taps emit keys in order', (tester) async {

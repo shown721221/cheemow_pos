@@ -6,8 +6,8 @@
 // tree, read text, and verify that the values of widget properties are correct.
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:cheemow_pos/main.dart';
-import 'package:cheemow_pos/services/time_service.dart';
+import 'package:cheemeow_pos/main.dart';
+import 'package:cheemeow_pos/services/time_service.dart';
 
 
 void main() {

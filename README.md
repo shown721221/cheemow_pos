@@ -1,4 +1,4 @@
-# Cheemow POS 系統 🛍️💕
+# CheeMeow POS 系統 🛍️💕
 
 > 2025/09/10 狀態：核心功能已完成，進入「介面 / 文案 / 視覺一致性」優化階段。
 
@@ -10,7 +10,7 @@
    - 人氣圖片（寶寶人氣指數）
    - 銷售 CSV（排除特殊商品）
    - 特殊商品 CSV（預購 + 折扣獨立）
-   - 全部統一路徑：`Downloads/cheemow_pos/YYYY-MM-DD/`（Android MediaStore / 桌面一致）
+   - 全部統一路徑：`Downloads/cheemeow_pos/YYYY-MM-DD/`（Android MediaStore / 桌面一致）
    - 檔案覆寫策略：事前清除可能的 (1)(2)… 重複 + 直接覆寫
 4. 零用金：每日跨日自動重置、PIN 保護設定、顯示於匯出圖/主畫面
 5. 商品每日智能排序：特殊商品 > 今日售出(新→舊) > 其餘按名稱
@@ -87,7 +87,7 @@
 不要做太多的預測，隨著我的指令執行。若是有不錯的建議，等執行完我的要求再提出。
 
 ## 專案概述
-Cheemow POS 是一個專為平板設計的橫向銷售點系統，具有溫馨可愛的界面設計。
+CheeMeow POS 是一個專為平板設計的橫向銷售點系統，具有溫馨可愛的界面設計。
 
 ## 🎯 專案定位與技術方針
 
@@ -98,7 +98,7 @@ Cheemow POS 是一個專為平板設計的橫向銷售點系統，具有溫馨�
 ## 🚀 最新進度更新 (2025年9月9日)
 
 ### 本日重點增強
-1. 匯出圖片（營收 / 熱門度）統一存放於每日日期資料夾：`Downloads/cheemow_pos/YYYY-MM-DD/`
+1. 匯出圖片（營收 / 熱門度）統一存放於每日日期資料夾：`Downloads/cheemeow_pos/YYYY-MM-DD/`
 2. 收據清單新增「退貨」篩選籤（顯示為 `退貨`），並在每筆列表項目顯示該筆總金額（含預購 / 折扣計算後）。
 3. 新增「設定零用金」功能（💰）：
    - 透過功能選單操作
@@ -125,7 +125,7 @@ Cheemow POS 是一個專為平板設計的橫向銷售點系統，具有溫馨�
 | 保護 PIN | `0203` |
 
 ### 匯出路徑說明
-Android（MediaStore）：`Downloads/cheemow_pos/<YYYY-MM-DD>/`
+Android（MediaStore）：`Downloads/cheemeow_pos/<YYYY-MM-DD>/`
 Desktop / 其他：於使用者下載資料夾下建立相同結構。
 
 ### 零用金（Petty Cash）說明
@@ -282,8 +282,8 @@ lib/
 ### Mac 環境（待設置）
 ```bash
 # 1. Clone 專案
-git clone https://github.com/shown721221/cheemow_pos.git
-cd cheemow_pos
+git clone https://github.com/shown721221/cheemeow_pos.git
+cd cheemeow_pos
 
 # 2. 安裝依賴
 flutter pub get

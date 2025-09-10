@@ -34,9 +34,9 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Cheemow POS',
+      title: 'CheeMeow POS',
       theme: ThemeData(
-        primarySwatch: Colors.blue, 
+        primarySwatch: Colors.blue,
         useMaterial3: false, // 保持 Material 2 設計
       ),
       home: PosMainScreen(),

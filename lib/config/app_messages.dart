@@ -100,7 +100,7 @@ class AppMessages {
   static const String menuPettyCash = '設定零用金';
   static const String clearCartTooltip = '清空購物車';
   static const String cartEmptyTitle = '帶寶寶回家吧';
-  static const String appTitle = 'Cheemow POS';
+  static const String appTitle = 'CheeMeow POS';
   static const String salesTabLabel = '銷售';
   static const String revenueTodayTitle = '🌈 今日營收';
 

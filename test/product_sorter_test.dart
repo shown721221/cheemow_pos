@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:cheemow_pos/utils/product_sorter.dart';
-import 'package:cheemow_pos/models/product.dart';
+import 'package:cheemeow_pos/utils/product_sorter.dart';
+import 'package:cheemeow_pos/models/product.dart';
 
 void main() {
   group('ProductSorter.sortDaily', () {
