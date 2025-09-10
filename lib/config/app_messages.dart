@@ -169,11 +169,11 @@ class AppMessages {
   static const String cartItemsCountLabel = '商品數量';
   static const String totalAmountLabel = '總金額';
   static const String checkoutLabel = '結帳';
-    static const String checkoutConfirmTitle = '確認結帳';
-    static const String receiptDetailsTitle = '收據明細';
-    static const String checkoutFinishedTitle = '結帳完成';
-    static const String receiptIdLabel = '收據編號';
-    static const String dateLabel = '日期';
+  static const String checkoutConfirmTitle = '確認結帳';
+  static const String receiptDetailsTitle = '收據明細';
+  static const String checkoutFinishedTitle = '結帳完成';
+  static const String receiptIdLabel = '收據編號';
+  static const String dateLabel = '日期';
 
   // 零用金
   static const String setPettyCash = '💰 設定零用金';
@@ -207,20 +207,19 @@ class AppMessages {
   static const String csvHelpSpecialLine2 = '請不要把它們放進 CSV；匯入時也不會覆蓋這兩個項目。';
   static const String csvHelpEncoding = '注意：檔案編碼請使用 UTF-8';
 
-    // CSV 欄位說明子彈點
-    static List<String> csvHelpFieldBullets() => const [
-                '   • id: 商品唯一識別碼',
-                '   • name: 商品名稱',
-                '   • barcode: 商品條碼',
-                '   • price: 價格（整數，單位：台幣元）',
-                '   • category: 商品分類',
-                '   • stock: 庫存數量（整數）',
-            ];
+  // CSV 欄位說明子彈點
+  static List<String> csvHelpFieldBullets() => const [
+    '   • id: 商品唯一識別碼',
+    '   • name: 商品名稱',
+    '   • barcode: 商品條碼',
+    '   • price: 價格（整數，單位：台幣元）',
+    '   • category: 商品分類',
+    '   • stock: 庫存數量（整數）',
+  ];
 
-    // 即將推出
-    static const String comingSoonTitle = '即將推出';
-    static String comingSoonContent(String feature) =>
-            '$feature 功能正在開發中，敬請期待！';
+  // 即將推出
+  static const String comingSoonTitle = '即將推出';
+  static String comingSoonContent(String feature) => '$feature 功能正在開發中，敬請期待！';
 
   // CSV 匯入／驗證訊息集中
   static const String csvReadFailed = '無法讀取檔案內容，請確認檔案格式正確';

@@ -6,7 +6,6 @@ import '../config/app_messages.dart';
 
 /// 結帳相關對話框
 class CheckoutDialogs {
-  
   /// 顯示結帳確認對話框
   static Future<bool> showCheckoutConfirmDialog(
     BuildContext context,
@@ -14,69 +13,73 @@ class CheckoutDialogs {
     int totalQuantity,
   ) async {
     return await showDialog<bool>(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-      title: const Row(
-            children: [
-              Icon(Icons.payment, color: Colors.green),
-              SizedBox(width: 8),
-        Text(AppMessages.checkoutConfirmTitle),
-            ],
-          ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          context: context,
+          builder: (BuildContext context) {
+            return AlertDialog(
+              title: const Row(
                 children: [
-                  const Text(AppMessages.cartItemsCountLabel, style: TextStyle(fontSize: 16)),
-                  Text(
-                    '$totalQuantity 件',
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                    ),
+                  Icon(Icons.payment, color: Colors.green),
+                  SizedBox(width: 8),
+                  Text(AppMessages.checkoutConfirmTitle),
+                ],
+              ),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text(
+                        AppMessages.cartItemsCountLabel,
+                        style: TextStyle(fontSize: 16),
+                      ),
+                      Text(
+                        '$totalQuantity 件',
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text(
+                        AppMessages.totalAmountLabel,
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      LargePriceDisplay(amount: totalAmount),
+                    ],
                   ),
                 ],
               ),
-              const SizedBox(height: 12),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text(
-                    AppMessages.totalAmountLabel,
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    Navigator.of(context).pop(false);
+                  },
+                  child: const Text(AppMessages.cancel),
+                ),
+                ElevatedButton(
+                  onPressed: () {
+                    Navigator.of(context).pop(true);
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.green,
+                    foregroundColor: Colors.white,
                   ),
-                  LargePriceDisplay(amount: totalAmount),
-                ],
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop(false);
-              },
-              child: const Text(AppMessages.cancel),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                Navigator.of(context).pop(true);
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.green,
-                foregroundColor: Colors.white,
-              ),
-              child: const Text(AppMessages.checkoutConfirmTitle),
-            ),
-          ],
-        );
-      },
-    ) ?? false;
+                  child: const Text(AppMessages.checkoutConfirmTitle),
+                ),
+              ],
+            );
+          },
+        ) ??
+        false;
   }
 
   /// 顯示結帳成功對話框
@@ -89,11 +92,11 @@ class CheckoutDialogs {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-      title: const Row(
+          title: const Row(
             children: [
               Icon(Icons.check_circle, color: Colors.green, size: 28),
               SizedBox(width: 8),
-        Text(AppMessages.checkoutFinishedTitle),
+              Text(AppMessages.checkoutFinishedTitle),
             ],
           ),
           content: Column(

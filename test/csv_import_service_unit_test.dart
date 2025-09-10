@@ -11,7 +11,8 @@ void main() {
     });
 
     test('duplicate id and barcode are reported', () async {
-      const csv = 'id,barcode,name,price,category,stock\n'
+      const csv =
+          'id,barcode,name,price,category,stock\n'
           'A,111,n1,10,c,1\n'
           'A,111,n2,20,c,2';
       final res = await CsvImportService.parseForTest(csv);

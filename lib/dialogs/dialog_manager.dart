@@ -86,9 +86,9 @@ class DialogManager {
               onPressed: () {
                 final text = result.errors.join('\n');
                 Clipboard.setData(ClipboardData(text: text));
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('已複製錯誤明細')),
-                );
+                ScaffoldMessenger.of(
+                  context,
+                ).showSnackBar(SnackBar(content: Text('已複製錯誤明細')));
               },
               child: const Text('複製錯誤'),
             ),
@@ -127,13 +127,18 @@ class DialogManager {
                   color: Colors.grey[100],
                   borderRadius: BorderRadius.circular(4),
                 ),
-                child: Builder(builder: (ctx) {
-                  final sample = CsvImportService.generateSampleCsv();
-                  return SelectableText(
-                    sample,
-                    style: const TextStyle(fontFamily: 'monospace', fontSize: 12),
-                  );
-                }),
+                child: Builder(
+                  builder: (ctx) {
+                    final sample = CsvImportService.generateSampleCsv();
+                    return SelectableText(
+                      sample,
+                      style: const TextStyle(
+                        fontFamily: 'monospace',
+                        fontSize: 12,
+                      ),
+                    );
+                  },
+                ),
               ),
               SizedBox(height: 16),
               Container(
@@ -176,9 +181,9 @@ class DialogManager {
               final sample = CsvImportService.generateSampleCsv();
               await Clipboard.setData(ClipboardData(text: sample));
               if (context.mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('已複製範例 CSV')),
-                );
+                ScaffoldMessenger.of(
+                  context,
+                ).showSnackBar(const SnackBar(content: Text('已複製範例 CSV')));
               }
             },
             child: const Text('複製範例'),
@@ -197,8 +202,8 @@ class DialogManager {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-  title: const Text(AppMessages.comingSoonTitle),
-  content: Text(AppMessages.comingSoonContent(featureName)),
+        title: const Text(AppMessages.comingSoonTitle),
+        content: Text(AppMessages.comingSoonContent(featureName)),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),

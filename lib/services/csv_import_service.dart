@@ -59,10 +59,11 @@ class CsvImportService {
     bool save = true,
   }) async {
     try {
-    // 將bytes轉換為字串並正規化換行（支援 Windows/Unix）
-    String csvString = utf8.decode(bytes)
-      .replaceAll('\r\n', '\n')
-      .replaceAll('\r', '\n');
+      // 將bytes轉換為字串並正規化換行（支援 Windows/Unix）
+      String csvString = utf8
+          .decode(bytes)
+          .replaceAll('\r\n', '\n')
+          .replaceAll('\r', '\n');
 
       // 檢測分隔符並解析CSV
       String delimiter = ',';
@@ -222,7 +223,8 @@ class CsvImportService {
 
   /// 測試用：直接解析 CSV 字串，不寫入資料庫
   @visibleForTesting
-  static Future<CsvImportResult> parseForTest(String csv, {
+  static Future<CsvImportResult> parseForTest(
+    String csv, {
     String fileName = 'test.csv',
   }) async {
     final bytes = Uint8List.fromList(utf8.encode(csv));

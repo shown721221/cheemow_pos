@@ -3,7 +3,6 @@ import '../config/app_messages.dart';
 
 /// 系統相關對話框
 class SystemDialogs {
-  
   /// 顯示載入對話框
   static void showLoadingDialog(BuildContext context, String message) {
     showDialog(
@@ -65,20 +64,20 @@ class SystemDialogs {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-      title: const Row(
+          title: const Row(
             children: [
               Icon(Icons.info, color: Colors.blue),
               SizedBox(width: 8),
-        Text(AppMessages.comingSoonTitle),
+              Text(AppMessages.comingSoonTitle),
             ],
           ),
-      content: Text(AppMessages.comingSoonContent(feature)),
+          content: Text(AppMessages.comingSoonContent(feature)),
           actions: [
             ElevatedButton(
               onPressed: () {
                 Navigator.of(context).pop();
               },
-        child: const Text(AppMessages.confirm),
+              child: const Text(AppMessages.confirm),
             ),
           ],
         );

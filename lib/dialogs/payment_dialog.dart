@@ -258,8 +258,8 @@ class _PayOptionButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-  final ButtonStyle selectedStyle = StyleConfig.payOptionSelectedStyle;
-  final ButtonStyle unselectedStyle = StyleConfig.payOptionUnselectedStyle;
+    final ButtonStyle selectedStyle = StyleConfig.payOptionSelectedStyle;
+    final ButtonStyle unselectedStyle = StyleConfig.payOptionUnselectedStyle;
     return selected
         ? FilledButton(
             onPressed: onTap,
