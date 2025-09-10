@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../utils/money_formatter.dart';
 import '../models/receipt.dart';
 import '../widgets/price_display.dart';
+import '../config/app_messages.dart';
 
 /// 結帳相關對話框
 class CheckoutDialogs {
@@ -16,11 +17,11 @@ class CheckoutDialogs {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: const Row(
+      title: const Row(
             children: [
               Icon(Icons.payment, color: Colors.green),
               SizedBox(width: 8),
-              Text('確認結帳'),
+        Text(AppMessages.checkoutConfirmTitle),
             ],
           ),
           content: Column(
@@ -29,7 +30,7 @@ class CheckoutDialogs {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text('商品數量:', style: TextStyle(fontSize: 16)),
+                  const Text(AppMessages.cartItemsCountLabel, style: TextStyle(fontSize: 16)),
                   Text(
                     '$totalQuantity 件',
                     style: const TextStyle(
@@ -44,7 +45,7 @@ class CheckoutDialogs {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   const Text(
-                    '總金額:',
+                    AppMessages.totalAmountLabel,
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
@@ -60,7 +61,7 @@ class CheckoutDialogs {
               onPressed: () {
                 Navigator.of(context).pop(false);
               },
-              child: const Text('取消'),
+              child: const Text(AppMessages.cancel),
             ),
             ElevatedButton(
               onPressed: () {
@@ -70,7 +71,7 @@ class CheckoutDialogs {
                 backgroundColor: Colors.green,
                 foregroundColor: Colors.white,
               ),
-              child: const Text('確認結帳'),
+              child: const Text(AppMessages.checkoutConfirmTitle),
             ),
           ],
         );
@@ -88,25 +89,25 @@ class CheckoutDialogs {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: const Row(
+      title: const Row(
             children: [
               Icon(Icons.check_circle, color: Colors.green, size: 28),
               SizedBox(width: 8),
-              Text('結帳完成'),
+        Text(AppMessages.checkoutFinishedTitle),
             ],
           ),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('收據編號: ${receipt.id}'),
+              Text('${AppMessages.receiptIdLabel}: ${receipt.id}'),
               const SizedBox(height: 8),
-              Text('日期: ${receipt.formattedDateTime}'),
+              Text('${AppMessages.dateLabel}: ${receipt.formattedDateTime}'),
               const SizedBox(height: 8),
               Text('總數量: ${receipt.totalQuantity} 件'),
               const SizedBox(height: 8),
               Text(
-                '總金額: ${MoneyFormatter.symbol(receipt.totalAmount)}',
+                '${AppMessages.totalAmountLabel}: ${MoneyFormatter.symbol(receipt.totalAmount)}',
                 style: const TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
@@ -121,7 +122,7 @@ class CheckoutDialogs {
                 Navigator.of(context).pop();
                 onDismiss?.call();
               },
-              child: const Text('確認'),
+              child: const Text(AppMessages.confirm),
             ),
           ],
         );

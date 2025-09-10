@@ -378,9 +378,9 @@ class _ReceiptListScreenState extends State<ReceiptListScreen> {
           }
 
           return AlertDialog(
-            title: Row(
+      title: Row(
               children: [
-                const Text('收據明細'),
+        const Text(AppMessages.receiptDetailsTitle),
                 const Spacer(),
                 DropdownButton<String>(
                   value: payment,

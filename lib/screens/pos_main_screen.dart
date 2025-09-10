@@ -650,10 +650,10 @@ class _PosMainScreenState extends State<PosMainScreen> {
       Widget revenueWidget({required bool showNumbers, Key? key}) {
         String money(int v) => MoneyFormatter.thousands(v);
 
-  Color bg1 = StyleConfig.revenueBgPreorder; // 粉
-  Color bg2 = StyleConfig.revenueBgLinePay; // 淡藍
-  Color bg3 = StyleConfig.revenueBgCash; // 淡綠
-  Color bg4 = StyleConfig.revenueBgTransfer; // 淡黃
+        Color bg1 = StyleConfig.revenueBgPreorder; // 粉
+        Color bg2 = StyleConfig.revenueBgLinePay; // 淡藍
+        Color bg3 = StyleConfig.revenueBgCash; // 淡綠
+        Color bg4 = StyleConfig.revenueBgTransfer; // 淡黃
 
         String mask(int v) => showNumbers ? money(v) : '💰';
 

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../config/app_messages.dart';
 
 /// 系統相關對話框
 class SystemDialogs {
@@ -50,7 +51,7 @@ class SystemDialogs {
               onPressed: () {
                 Navigator.of(context).pop();
               },
-              child: const Text('確認'),
+              child: const Text(AppMessages.confirm),
             ),
           ],
         );
@@ -64,20 +65,20 @@ class SystemDialogs {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: const Row(
+      title: const Row(
             children: [
               Icon(Icons.info, color: Colors.blue),
               SizedBox(width: 8),
-              Text('即將推出'),
+        Text(AppMessages.comingSoonTitle),
             ],
           ),
-          content: Text('$feature 功能正在開發中，敬請期待！'),
+      content: Text(AppMessages.comingSoonContent(feature)),
           actions: [
             ElevatedButton(
               onPressed: () {
                 Navigator.of(context).pop();
               },
-              child: const Text('確認'),
+        child: const Text(AppMessages.confirm),
             ),
           ],
         );

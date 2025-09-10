@@ -23,7 +23,7 @@ class PaymentDialog {
     BuildContext context, {
     required int totalAmount,
   }) async {
-  String method = PaymentMethods.cash;
+    String method = PaymentMethods.cash;
     final TextEditingController cashController = TextEditingController();
 
     return showDialog<PaymentResult>(
@@ -34,7 +34,8 @@ class PaymentDialog {
           builder: (context, setState) {
             final String raw = cashController.text.trim();
             final int paidRaw = int.tryParse(raw) ?? 0;
-            final int effectivePaid = (method == PaymentMethods.cash && raw.isEmpty)
+            final int effectivePaid =
+                (method == PaymentMethods.cash && raw.isEmpty)
                 ? totalAmount
                 : paidRaw;
             final int change = method == PaymentMethods.cash
@@ -80,7 +81,9 @@ class PaymentDialog {
                                 child: _PayOptionButton(
                                   label: AppMessages.cashLabel,
                                   selected: method == PaymentMethods.cash,
-                                  onTap: () => setState(() => method = PaymentMethods.cash),
+                                  onTap: () => setState(
+                                    () => method = PaymentMethods.cash,
+                                  ),
                                 ),
                               ),
                               const SizedBox(width: 8),
@@ -88,7 +91,9 @@ class PaymentDialog {
                                 child: _PayOptionButton(
                                   label: AppMessages.transferLabel,
                                   selected: method == PaymentMethods.transfer,
-                                  onTap: () => setState(() => method = PaymentMethods.transfer),
+                                  onTap: () => setState(
+                                    () => method = PaymentMethods.transfer,
+                                  ),
                                 ),
                               ),
                               const SizedBox(width: 8),
@@ -96,7 +101,9 @@ class PaymentDialog {
                                 child: _PayOptionButton(
                                   label: AppMessages.linePayLabel,
                                   selected: method == PaymentMethods.linePay,
-                                  onTap: () => setState(() => method = PaymentMethods.linePay),
+                                  onTap: () => setState(
+                                    () => method = PaymentMethods.linePay,
+                                  ),
                                 ),
                               ),
                             ],
@@ -116,10 +123,11 @@ class PaymentDialog {
                               },
                             ),
                             const SizedBox(height: 8),
-              // 動態快速金額（後面三種）
+                            // 動態快速金額（後面三種）
                             Builder(
                               builder: (context) {
-                final suggestions = MoneyUtil.suggestCashOptions(totalAmount);
+                                final suggestions =
+                                    MoneyUtil.suggestCashOptions(totalAmount);
                                 if (suggestions.isEmpty) {
                                   return const SizedBox.shrink();
                                 }
@@ -150,15 +158,16 @@ class PaymentDialog {
                             const SizedBox(height: 8),
                             NumericKeypad(
                               keys: const [
-                                ['1','2','3'],
-                                ['4','5','6'],
-                                ['7','8','9'],
-                                ['00','0','⌫'],
+                                ['1', '2', '3'],
+                                ['4', '5', '6'],
+                                ['7', '8', '9'],
+                                ['00', '0', '⌫'],
                               ],
                               onKeyTap: (key) {
                                 String t = cashController.text;
                                 if (key == '⌫') {
-                                  if (t.isNotEmpty) t = t.substring(0, t.length - 1);
+                                  if (t.isNotEmpty)
+                                    t = t.substring(0, t.length - 1);
                                 } else {
                                   t = t + key;
                                 }
@@ -170,8 +179,10 @@ class PaymentDialog {
                             Row(
                               mainAxisAlignment: MainAxisAlignment.end,
                               children: [
-                const Text(AppMessages.changeLabel,
-                  style: TextStyle(color: Colors.black54)),
+                                const Text(
+                                  AppMessages.changeLabel,
+                                  style: TextStyle(color: Colors.black54),
+                                ),
                                 const SizedBox(width: 8),
                                 Text(
                                   change >= 0
@@ -187,9 +198,13 @@ class PaymentDialog {
                               ],
                             ),
                           ] else if (method == PaymentMethods.transfer) ...[
-                            _PaymentPlaceholder(label: AppMessages.paymentTransferPlaceholder),
+                            _PaymentPlaceholder(
+                              label: AppMessages.paymentTransferPlaceholder,
+                            ),
                           ] else if (method == PaymentMethods.linePay) ...[
-                            _PaymentPlaceholder(label: AppMessages.paymentLinePayPlaceholder),
+                            _PaymentPlaceholder(
+                              label: AppMessages.paymentLinePayPlaceholder,
+                            ),
                           ],
                         ],
                       ),
@@ -205,8 +220,12 @@ class PaymentDialog {
                             ctx,
                             PaymentResult(
                               method: method,
-                              paidCash: method == PaymentMethods.cash ? effectivePaid : 0,
-                              change: method == PaymentMethods.cash ? change : 0,
+                              paidCash: method == PaymentMethods.cash
+                                  ? effectivePaid
+                                  : 0,
+                              change: method == PaymentMethods.cash
+                                  ? change
+                                  : 0,
                             ),
                           );
                         }

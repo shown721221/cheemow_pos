@@ -103,12 +103,7 @@ class DialogManager {
               Text(AppMessages.csvHelpMustContain),
               SizedBox(height: 8),
               Text(AppMessages.csvHelpRequiredFields),
-              Text('   • id: 商品唯一識別碼'),
-              Text('   • name: 商品名稱'),
-              Text('   • barcode: 商品條碼'),
-              Text('   • price: 價格（整數，單位：台幣元）'),
-              Text('   • category: 商品分類'),
-              Text('   • stock: 庫存數量（整數）'),
+              ...AppMessages.csvHelpFieldBullets().map(Text.new),
               SizedBox(height: 16),
               Text(
                 AppMessages.csvHelpSample,
@@ -177,8 +172,8 @@ class DialogManager {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('即將推出'),
-        content: Text('$featureName 功能正在開發中，敬請期待！'),
+  title: const Text(AppMessages.comingSoonTitle),
+  content: Text(AppMessages.comingSoonContent(featureName)),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),

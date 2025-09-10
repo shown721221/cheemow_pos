@@ -102,7 +102,7 @@ class AppMessages {
   static const String cartEmptyTitle = '帶寶寶回家吧';
   static const String appTitle = 'Cheemow POS';
   static const String salesTabLabel = '銷售';
-    static const String revenueTodayTitle = '🌈 今日營收';
+  static const String revenueTodayTitle = '🌈 今日營收';
 
   // 商品列表（空狀態 / 庫存）
   static const String productListEmptyTitle = '暫無商品資料';
@@ -146,12 +146,12 @@ class AppMessages {
   static const String cashLabel = '💵 現金';
   static const String transferLabel = '🔁 轉帳';
   static const String linePayLabel = '📲 LinePay';
-    static const String enterPaidAmount = '輸入實收金額';
-    static const String changeLabel = '找零';
-    static const String insufficient = '不足';
-    static const String confirmPayment = '確認付款';
-    static const String paymentTransferPlaceholder = '預留：轉帳帳號圖片/資訊';
-    static const String paymentLinePayPlaceholder = '預留：LinePay QR Code 圖片';
+  static const String enterPaidAmount = '輸入實收金額';
+  static const String changeLabel = '找零';
+  static const String insufficient = '不足';
+  static const String confirmPayment = '確認付款';
+  static const String paymentTransferPlaceholder = '預留：轉帳帳號圖片/資訊';
+  static const String paymentLinePayPlaceholder = '預留：LinePay QR Code 圖片';
 
   // 報表指標標籤
   static const String totalRevenueLabel = '總營收';
@@ -169,6 +169,11 @@ class AppMessages {
   static const String cartItemsCountLabel = '商品數量';
   static const String totalAmountLabel = '總金額';
   static const String checkoutLabel = '結帳';
+    static const String checkoutConfirmTitle = '確認結帳';
+    static const String receiptDetailsTitle = '收據明細';
+    static const String checkoutFinishedTitle = '結帳完成';
+    static const String receiptIdLabel = '收據編號';
+    static const String dateLabel = '日期';
 
   // 零用金
   static const String setPettyCash = '💰 設定零用金';
@@ -201,6 +206,21 @@ class AppMessages {
       '系統內建「預購」與「折扣」兩個特殊商品，會自動存在且不受匯入檔影響。';
   static const String csvHelpSpecialLine2 = '請不要把它們放進 CSV；匯入時也不會覆蓋這兩個項目。';
   static const String csvHelpEncoding = '注意：檔案編碼請使用 UTF-8';
+
+    // CSV 欄位說明子彈點
+    static List<String> csvHelpFieldBullets() => const [
+                '   • id: 商品唯一識別碼',
+                '   • name: 商品名稱',
+                '   • barcode: 商品條碼',
+                '   • price: 價格（整數，單位：台幣元）',
+                '   • category: 商品分類',
+                '   • stock: 庫存數量（整數）',
+            ];
+
+    // 即將推出
+    static const String comingSoonTitle = '即將推出';
+    static String comingSoonContent(String feature) =>
+            '$feature 功能正在開發中，敬請期待！';
 
   // CSV 匯入／驗證訊息集中
   static const String csvReadFailed = '無法讀取檔案內容，請確認檔案格式正確';
