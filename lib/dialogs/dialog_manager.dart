@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../services/csv_import_service.dart';
 import '../config/app_messages.dart';
 
@@ -80,6 +81,17 @@ class DialogManager {
           ],
         ),
         actions: [
+          if (result.errors.isNotEmpty)
+            TextButton(
+              onPressed: () {
+                final text = result.errors.join('\n');
+                Clipboard.setData(ClipboardData(text: text));
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('已複製錯誤明細')),
+                );
+              },
+              child: const Text('複製錯誤'),
+            ),
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
             child: const Text(AppMessages.confirm),
@@ -115,12 +127,13 @@ class DialogManager {
                   color: Colors.grey[100],
                   borderRadius: BorderRadius.circular(4),
                 ),
-                child: Text(
-                  'id,name,barcode,price,category,stock\n'
-                  '1,達菲娃娃,1234567890,800,娃娃,10\n'
-                  '2,雪莉梅站姿,0987654321,1200,站姿,5',
-                  style: TextStyle(fontFamily: 'monospace', fontSize: 12),
-                ),
+                child: Builder(builder: (ctx) {
+                  final sample = CsvImportService.generateSampleCsv();
+                  return SelectableText(
+                    sample,
+                    style: const TextStyle(fontFamily: 'monospace', fontSize: 12),
+                  );
+                }),
               ),
               SizedBox(height: 16),
               Container(
@@ -158,6 +171,18 @@ class DialogManager {
           ),
         ),
         actions: [
+          TextButton(
+            onPressed: () async {
+              final sample = CsvImportService.generateSampleCsv();
+              await Clipboard.setData(ClipboardData(text: sample));
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('已複製範例 CSV')),
+                );
+              }
+            },
+            child: const Text('複製範例'),
+          ),
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
             child: Text(AppMessages.ok),

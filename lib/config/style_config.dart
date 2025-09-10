@@ -6,6 +6,32 @@ class StyleConfig {
   static const discountColor = Color(0xFFFB8C00); // 折扣（橘）
   static const normalTextColor = Color(0xFF37474F); // 一般字色（藍灰深）
 
+  // 常用間距（集中調整）
+  static const double gap8 = 8;
+  static const double gap12 = 12;
+  static const double gap16 = 16;
+
+  // 主動作按鈕顏色
+  static const Color primaryActionColor = Color(0xFF2E7D32); // 綠
+  static const Color primaryOnColor = Colors.white;
+
+  // 常用按鈕樣式（供 Dialog/支付對話框共用）
+  static ButtonStyle primaryButtonStyle = ElevatedButton.styleFrom(
+    minimumSize: const Size.fromHeight(44),
+    backgroundColor: primaryActionColor,
+    foregroundColor: primaryOnColor,
+  );
+
+  static ButtonStyle payOptionSelectedStyle = FilledButton.styleFrom(
+    minimumSize: const Size.fromHeight(44),
+    backgroundColor: primaryActionColor,
+    foregroundColor: primaryOnColor,
+  );
+
+  static ButtonStyle payOptionUnselectedStyle = OutlinedButton.styleFrom(
+    minimumSize: const Size.fromHeight(44),
+  );
+
   // 營收卡顏色主題（集中管理）
   static const revenueBgPreorder = Color(0xFFFFF0F6); // 粉
   static const revenueBgLinePay = Color(0xFFE8F5FF); // 淡藍

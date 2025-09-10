@@ -4,6 +4,7 @@ import '../widgets/price_display.dart';
 import '../utils/money_formatter.dart';
 import '../widgets/numeric_keypad.dart';
 import '../config/app_messages.dart';
+import '../config/style_config.dart';
 import '../utils/money_util.dart';
 
 class PaymentResult {
@@ -73,7 +74,7 @@ class PaymentDialog {
                             alignment: Alignment.centerRight,
                             child: LargePriceDisplay(amount: totalAmount),
                           ),
-                          const SizedBox(height: 12),
+                          const SizedBox(height: StyleConfig.gap12),
                           // 單行付款方式按鈕
                           Row(
                             children: [
@@ -86,7 +87,7 @@ class PaymentDialog {
                                   ),
                                 ),
                               ),
-                              const SizedBox(width: 8),
+                              const SizedBox(width: StyleConfig.gap8),
                               Expanded(
                                 child: _PayOptionButton(
                                   label: AppMessages.transferLabel,
@@ -96,7 +97,7 @@ class PaymentDialog {
                                   ),
                                 ),
                               ),
-                              const SizedBox(width: 8),
+                              const SizedBox(width: StyleConfig.gap8),
                               Expanded(
                                 child: _PayOptionButton(
                                   label: AppMessages.linePayLabel,
@@ -108,7 +109,7 @@ class PaymentDialog {
                               ),
                             ],
                           ),
-                          const SizedBox(height: 12),
+                          const SizedBox(height: StyleConfig.gap12),
                           if (method == PaymentMethods.cash) ...[
                             TextField(
                               controller: cashController,
@@ -122,7 +123,7 @@ class PaymentDialog {
                                 /* 僅顯示游標，由下方自訂鍵盤輸入 */
                               },
                             ),
-                            const SizedBox(height: 8),
+                            const SizedBox(height: StyleConfig.gap8),
                             // 動態快速金額（後面三種）
                             Builder(
                               builder: (context) {
@@ -155,7 +156,7 @@ class PaymentDialog {
                                 );
                               },
                             ),
-                            const SizedBox(height: 8),
+                            const SizedBox(height: StyleConfig.gap8),
                             NumericKeypad(
                               keys: const [
                                 ['1', '2', '3'],
@@ -175,7 +176,7 @@ class PaymentDialog {
                                 setState(() {});
                               },
                             ),
-                            const SizedBox(height: 8),
+                            const SizedBox(height: StyleConfig.gap8),
                             Row(
                               mainAxisAlignment: MainAxisAlignment.end,
                               children: [
@@ -230,11 +231,7 @@ class PaymentDialog {
                           );
                         }
                       : null,
-                  style: ElevatedButton.styleFrom(
-                    minimumSize: const Size.fromHeight(44),
-                    backgroundColor: Colors.green,
-                    foregroundColor: Colors.white,
-                  ),
+                  style: StyleConfig.primaryButtonStyle,
                   child: const Text(AppMessages.confirmPayment),
                 ),
               ],
@@ -260,14 +257,8 @@ class _PayOptionButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final ButtonStyle selectedStyle = FilledButton.styleFrom(
-      minimumSize: const Size.fromHeight(44),
-      backgroundColor: Colors.green,
-      foregroundColor: Colors.white,
-    );
-    final ButtonStyle unselectedStyle = OutlinedButton.styleFrom(
-      minimumSize: const Size.fromHeight(44),
-    );
+  final ButtonStyle selectedStyle = StyleConfig.payOptionSelectedStyle;
+  final ButtonStyle unselectedStyle = StyleConfig.payOptionUnselectedStyle;
     return selected
         ? FilledButton(
             onPressed: onTap,
