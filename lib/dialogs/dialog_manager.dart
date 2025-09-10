@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../services/csv_import_service.dart';
+import '../config/app_messages.dart';
 
 /// 統一的對話框管理器
 /// 負責管理所有對話框的顯示邏輯
@@ -9,8 +10,8 @@ class DialogManager {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('商品未找到'),
-        content: Text('條碼 "$barcode" 找不到對應的商品。'),
+  title: Text(AppMessages.productNotFoundTitle),
+  content: Text(AppMessages.productNotFoundMessage(barcode)),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),

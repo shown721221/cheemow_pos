@@ -133,8 +133,8 @@ class ProductDialogs {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: const Text('商品未找到'),
-          content: Text('條碼: $barcode\n\n此商品尚未在系統中註冊。'),
+          title: Text(AppMessages.productNotFoundTitle),
+          content: Text(AppMessages.productNotFoundMessage(barcode)),
           actions: [
             TextButton(
               onPressed: () {
