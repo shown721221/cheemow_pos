@@ -20,6 +20,26 @@
 9. 匯出銷售 CSV 保留商品代碼 / 條碼前導 0（前置單引號）
 10. 付款方式代碼（1=現金 / 2=轉帳 / 3=LinePay / 9=其他）統一於匯出
 
+## 🧱 架構與可維護性更新（近期）
+ - ProductUpdateService（`lib/services/product_update_service.dart`）
+    - 目的：集中「結帳後」對商品資料的更新（扣庫存、最後結帳時間、依規則重新排序並持久化）。
+    - 介面摘要：
+       - `compute(products, cartItems, {now}) → ProductUpdateOutcome`
+       - `applyCheckout({products, cartItems, now}) → Future<ProductUpdateOutcome>`（含持久化）
+    - 回傳 `ProductUpdateOutcome`：`updatedProducts`、`resortedProducts`、`updatedCount`、`quantityByBarcode`。
+ - BarcodeScanHelper（`lib/services/barcode_scan_helper.dart`）
+    - 目的：將條碼掃描的決策抽離 UI，回傳純結果以供主畫面採取後續行為。
+    - 結果列舉：`foundNormal`（直接加入）、`foundSpecialNeedsPrice`（需輸入價格）、`notFound`（查無）。
+    - 介面摘要：
+       - `decideFromProducts(barcode, products) → ScanAddDecision`（純函數）
+       - `decideFromDatabase(barcode) → Future<ScanAddDecision>`
+ - 常數集中（`lib/config/constants.dart`）
+    - `AppConstants`：特殊條碼（預購、折扣）、特殊分類名。
+    - `PaymentMethods`：`cash` / `transfer` / `linePay`，統一於對話框、收據、報表與匯出。
+    - 好處：移除魔術字串、降低漂移風險，並改善測試可讀性。
+
+小提醒：時間來源統一由 TimeService 提供（測試可注入固定 now），以確保排序與統計在測試與實機一致。
+
 ## 🎯 接下來的優化方向
 - 視覺統一：主題色票、字級階層、Icons / Emoji 規則
 - 匯出圖片視覺再微調（留白、對齊、字重、行距）
@@ -30,10 +50,24 @@
 - （可選）啟動補匯出：偵測「昨日缺檔」時自動補產生
 
 ## 🧪 建議後續小型技術改進
-- 抽離銷售 / 特殊銷售匯出為 service（降低主畫面長度）
+ 抽離銷售 / 特殊銷售匯出為 service（降低主畫面長度）（已完成：`SalesExportService`）
 - RepaintBoundary 匯出抽象：統一擷取 + 儲存流程 util
 - 將付款金額輸入鍵盤元件化（減少重複）
 - Receipt / Product model 加上版本或 schema tag 以便未來遷移
+
+## 🧪 測試指引（Unit Tests）
+- 執行全部測試：
+   - `flutter test`
+- 執行單一測試檔：
+   - `flutter test test/product_update_service_test.dart`
+- 重點測試範疇：
+   - ProductUpdateService：庫存扣減、`lastCheckoutTime` 設定、排序結果回傳。
+   - BarcodeScanHelper：三種掃描結果決策（一般 / 特殊需輸價 / 查無）。
+   - SearchFilterManager：關鍵字 / 篩選條件的純邏輯。
+   - 匯出服務：CSV 欄位、付款代碼、前導 0 保留。
+- 測試技巧：
+   - 盡量以純函數/服務做單元測試，避免直接觸碰平台 I/O。
+   - 與時間相關的行為，透過 TimeService 注入固定時間，讓測試具可預期性。
 
 ## 📌 低風險立即可做項目（建議先做）
 | 項目 | 說明 |
