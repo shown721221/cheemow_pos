@@ -15,7 +15,7 @@ class DialogManager {
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: Text('確定'),
+            child: const Text(AppMessages.confirm),
           ),
         ],
       ),
@@ -32,7 +32,7 @@ class DialogManager {
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: Text('確定'),
+            child: const Text(AppMessages.confirm),
           ),
         ],
       ),
@@ -69,7 +69,7 @@ class DialogManager {
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: Text('確定'),
+            child: const Text(AppMessages.confirm),
           ),
         ],
       ),
@@ -166,7 +166,7 @@ class DialogManager {
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: Text('確定'),
+            child: const Text(AppMessages.confirm),
           ),
         ],
       ),
@@ -178,8 +178,8 @@ class DialogManager {
     BuildContext context,
     String title,
     String message, {
-    String confirmText = '確定',
-    String cancelText = '取消',
+  String confirmText = AppMessages.confirm,
+  String cancelText = AppMessages.cancel,
   }) async {
     final result = await showDialog<bool>(
       context: context,

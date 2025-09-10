@@ -57,6 +57,8 @@ class AppMessages {
 
   // 對話框文案（集中管理，便於維護與測試）
   static const String discountOverLimitTitle = '折扣超過上限';
+  static String discountOverLimitBody(int discount, int currentTotal) =>
+      '折扣金額 ($discount 元) 不能大於目前購物車商品總金額 ($currentTotal 元)。\n請調整折扣或商品數量後再試。';
   static String productNotFoundTitle = '商品未找到';
   static String productNotFoundMessage(String barcode) =>
       '條碼: $barcode\n\n此商品尚未在系統中註冊。';
@@ -67,4 +69,18 @@ class AppMessages {
   static String discountExceed(int discount, int currentTotal) =>
       '折扣金額 ($discount 元) 不能大於目前購物車總金額 ($currentTotal 元)';
   static const String invalidPrice = '請輸入有效的價格';
+
+  // 價格輸入對話框與提示
+  static String priceInputTitle(String name) => '輸入 $name 的價格';
+  static const String labelPrice = '價格';
+  static const String tagPreorder = '預約商品';
+  static const String tagDiscount = '特價商品';
+  static const String preorderInputNote = '這是預購商品，請輸入實際價格';
+  static const String discountInputNote = '這是折扣商品，輸入金額會自動轉為負數';
+  static const String enterPreorderPrice = '輸入預購價格';
+  static const String enterDiscountMagic = '輸入奇妙數字';
+
+  // 常用按鈕文字
+  static const String confirm = '確認';
+  static const String cancel = '取消';
 }

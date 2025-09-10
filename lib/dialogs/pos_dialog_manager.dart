@@ -21,7 +21,7 @@ class PosDialogManager {
       barrierDismissible: false,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: Text('輸入 ${product.name} 的價格'),
+          title: Text(AppMessages.priceInputTitle(product.name)),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -34,7 +34,7 @@ class PosDialogManager {
                       Icon(Icons.schedule, color: Colors.purple, size: 20),
                       SizedBox(width: 8),
                       Text(
-                        '預約商品',
+                        AppMessages.tagPreorder,
                         style: TextStyle(
                           fontSize: 16,
                           color: Colors.purple,
@@ -53,7 +53,7 @@ class PosDialogManager {
                       Icon(Icons.percent, color: Colors.orange, size: 20),
                       SizedBox(width: 8),
                       Text(
-                        '特價商品',
+                        AppMessages.tagDiscount,
                         style: TextStyle(
                           fontSize: 16,
                           color: Colors.orange,
@@ -67,10 +67,10 @@ class PosDialogManager {
                 controller: priceController,
                 keyboardType: TextInputType.number,
                 inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                decoration: const InputDecoration(
-                  labelText: '價格',
-                  hintText: '請輸入價格',
-                  border: OutlineInputBorder(),
+                decoration: InputDecoration(
+                  labelText: AppMessages.labelPrice,
+                  hintText: AppMessages.enterPrice,
+                  border: const OutlineInputBorder(),
                 ),
                 autofocus: true,
                 onChanged: (value) {
@@ -91,7 +91,7 @@ class PosDialogManager {
               onPressed: () {
                 Navigator.of(context).pop();
               },
-              child: const Text('取消'),
+              child: const Text(AppMessages.cancel),
             ),
             ElevatedButton(
               onPressed: () {
@@ -107,7 +107,7 @@ class PosDialogManager {
                   );
                 }
               },
-              child: const Text('確認'),
+              child: const Text(AppMessages.confirm),
             ),
           ],
         );
@@ -147,7 +147,7 @@ class PosDialogManager {
                   onPressed: () {
                     Navigator.of(context).pop(false);
                   },
-                  child: const Text('取消'),
+                  child: const Text(AppMessages.cancel),
                 ),
                 ElevatedButton(
                   onPressed: () {
@@ -209,7 +209,7 @@ class PosDialogManager {
                 Navigator.of(context).pop();
                 onDismiss?.call();
               },
-              child: const Text('確認'),
+              child: const Text(AppMessages.confirm),
             ),
           ],
         );
@@ -227,7 +227,7 @@ class PosDialogManager {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: Row(
+      title: Row(
             children: [
               const Icon(Icons.error, color: Colors.red, size: 28),
               const SizedBox(width: 8),
@@ -240,7 +240,7 @@ class PosDialogManager {
               onPressed: () {
                 Navigator.of(context).pop();
               },
-              child: const Text('確認'),
+        child: const Text(AppMessages.confirm),
             ),
           ],
         );
@@ -261,21 +261,13 @@ class PosDialogManager {
         Text(AppMessages.productNotFoundTitle),
             ],
           ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('條碼: $barcode'),
-              const SizedBox(height: 8),
-              const Text('找不到對應的商品，請檢查條碼是否正確。'),
-            ],
-          ),
+          content: Text(AppMessages.productNotFoundMessage(barcode)),
           actions: [
             ElevatedButton(
               onPressed: () {
                 Navigator.of(context).pop();
               },
-              child: const Text('確認'),
+              child: const Text(AppMessages.confirm),
             ),
           ],
         );

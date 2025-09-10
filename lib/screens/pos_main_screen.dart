@@ -1276,14 +1276,12 @@ class _PosMainScreenState extends State<PosMainScreen> {
       await showDialog(
         context: context,
         builder: (ctx) => AlertDialog(
-          title: const Text('折扣超過上限'),
-          content: Text(
-            '折扣金額 ($discountAbsTotal 元) 不能大於目前購物車商品總金額 ($nonDiscountTotal 元)。\n請調整折扣或商品數量後再試。',
-          ),
+      title: const Text(AppMessages.discountOverLimitTitle),
+      content: Text(AppMessages.discountOverLimitBody(discountAbsTotal, nonDiscountTotal)),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(ctx),
-              child: const Text('確定'),
+        child: const Text(AppMessages.confirm),
             ),
           ],
         ),

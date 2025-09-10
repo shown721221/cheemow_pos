@@ -42,7 +42,7 @@ class PriceInputDialogManager {
                     // 商品類型說明
                     if (product.isPreOrderProduct)
                       Text(
-                        '這是預購商品，請輸入實際價格',
+                        AppMessages.preorderInputNote,
                         style: TextStyle(
                           color: Colors.purple[700],
                           fontSize: 12,
@@ -50,7 +50,7 @@ class PriceInputDialogManager {
                       )
                     else if (product.isDiscountProduct)
                       Text(
-                        '這是折扣商品，輸入金額會自動轉為負數',
+                        AppMessages.discountInputNote,
                         style: TextStyle(
                           color: Colors.orange[700],
                           fontSize: 12,

@@ -28,7 +28,7 @@ class ProductDialogs {
                       Icon(Icons.schedule, color: Colors.purple, size: 20),
                       SizedBox(width: 8),
                       Text(
-                        '預約商品',
+                        AppMessages.tagPreorder,
                         style: TextStyle(
                           fontSize: 16,
                           color: Colors.purple,
@@ -47,7 +47,7 @@ class ProductDialogs {
                       Icon(Icons.percent, color: Colors.orange, size: 20),
                       SizedBox(width: 8),
                       Text(
-                        '特價商品',
+                        AppMessages.tagDiscount,
                         style: TextStyle(
                           fontSize: 16,
                           color: Colors.orange,
@@ -62,12 +62,12 @@ class ProductDialogs {
                 keyboardType: TextInputType.number,
                 inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                 decoration: InputDecoration(
-                  labelText: '價格',
+                  labelText: AppMessages.labelPrice,
                   hintText: product.isPreOrderProduct
-                      ? '輸入預購價格'
+                      ? AppMessages.enterPreorderPrice
                       : product.isDiscountProduct
-                      ? '輸入奇妙數字'
-                      : '請輸入價格',
+                      ? AppMessages.enterDiscountMagic
+                      : AppMessages.enterPrice,
                   border: const OutlineInputBorder(),
                 ),
                 onSubmitted: (value) {
@@ -89,7 +89,7 @@ class ProductDialogs {
               onPressed: () {
                 Navigator.of(context).pop();
               },
-              child: const Text('取消'),
+              child: const Text(AppMessages.cancel),
             ),
             ElevatedButton(
               onPressed: () {
@@ -119,7 +119,7 @@ class ProductDialogs {
                   );
                 }
               },
-              child: const Text('確認'),
+              child: const Text(AppMessages.confirm),
             ),
           ],
         );
@@ -140,7 +140,7 @@ class ProductDialogs {
               onPressed: () {
                 Navigator.of(context).pop();
               },
-              child: const Text('確認'),
+              child: const Text(AppMessages.confirm),
             ),
           ],
         );
