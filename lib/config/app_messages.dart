@@ -30,7 +30,15 @@ class AppMessages {
 
     // 銷售資料匯出
     static const String salesExportNoData = '沒有可匯出的銷售資料';
-    static String salesExportSuccess(List<String> paths) => '已匯出銷售資料\n${paths.join('\n')}';
+    static String salesExportSuccess(List<String> paths) {
+      // 僅顯示檔名（去除資料夾路徑）
+      final names = paths.map((p) {
+        final norm = p.replaceAll('\\', '/');
+        final i = norm.lastIndexOf('/');
+        return i >= 0 ? norm.substring(i + 1) : norm;
+      }).toList();
+      return '已匯出銷售資料\n${names.join('\n')}';
+    }
     static String salesExportFailure(Object e) => '匯出銷售資料失敗: $e';
 
   // 價格 / 折扣輸入驗證
