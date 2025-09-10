@@ -6,9 +6,26 @@ class AppMessages {
   // 匯出相關
   static const String autoExportRevenueSuccess = '啟動自動匯出營收完成';
   static const String autoExportRevenueFailure = '啟動自動匯出營收失敗';
-  static String exportRevenueSuccess(String paths) => '已匯出闆娘心情指數\n$paths';
+  static String exportRevenueSuccess(String paths) {
+    // paths 可能是單一路徑或以換行分隔的多個路徑；統一轉為檔名顯示
+    final lines = paths
+        .split('\n')
+        .where((e) => e.trim().isNotEmpty)
+        .map((p) {
+      final norm = p.replaceAll('\\', '/');
+      final i = norm.lastIndexOf('/');
+      return i >= 0 ? norm.substring(i + 1) : norm;
+    }).toList();
+    final payload = lines.isEmpty ? paths : lines.join('\n');
+    return '已匯出闆娘心情指數\n$payload';
+  }
   static String exportRevenueFailure(Object e) => '匯出營收圖失敗: $e';
-  static String popularityExportSuccess(String path) => '已匯出寶寶人氣指數：$path';
+  static String popularityExportSuccess(String path) {
+    final norm = path.replaceAll('\\', '/');
+    final i = norm.lastIndexOf('/');
+    final name = i >= 0 ? norm.substring(i + 1) : norm;
+    return '已匯出寶寶人氣指數：$name';
+  }
   static const String popularityExportFailure = '匯出失敗';
   static String popularityExportError(Object e) => '人氣指數匯出錯誤：$e';
 
