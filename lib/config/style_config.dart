@@ -13,8 +13,8 @@ class StyleConfig {
       );
 
   static BoxDecoration tagBox(Color c) => BoxDecoration(
-        color: c.withOpacity(.08),
+        color: c.withValues(alpha: .08),
         borderRadius: BorderRadius.circular(6),
-        border: Border.all(color: c.withOpacity(.5)),
+        border: Border.all(color: c.withValues(alpha: .5)),
       );
 }

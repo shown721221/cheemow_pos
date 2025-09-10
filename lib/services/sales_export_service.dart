@@ -74,7 +74,7 @@ class SalesExportService {
 
     String preserveLeadingZeros(String v) {
       if (RegExp(r'^0\d+$').hasMatch(v)) {
-        return "'" + v;
+        return "'$v";
       }
       return v;
     }

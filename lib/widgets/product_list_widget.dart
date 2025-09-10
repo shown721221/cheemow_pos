@@ -58,8 +58,8 @@ class _ProductListWidgetState extends State<ProductListWidget> {
 
   // 根據商品類型取得卡片的邊框顏色
   Color? _getCardBorderColor(Product product) {
-    if (product.isPreOrderProduct) return StyleConfig.preorderColor.withOpacity(.35);
-    if (product.isDiscountProduct) return StyleConfig.discountColor.withOpacity(.35);
+  if (product.isPreOrderProduct) return StyleConfig.preorderColor.withValues(alpha: .35);
+  if (product.isDiscountProduct) return StyleConfig.discountColor.withValues(alpha: .35);
     return null;
   }
 

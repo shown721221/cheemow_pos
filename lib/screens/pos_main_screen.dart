@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
 // import 'dart:ui' as ui; // 擷取已改用 CaptureUtil，不再直接使用
 // import 'dart:convert'; // 已不直接使用
 import 'package:flutter/services.dart';
@@ -396,8 +395,9 @@ class _PosMainScreenState extends State<PosMainScreen> {
                         Expanded(
                           child: GestureDetector(
                             onTap: () {
-                              if (_lastCheckedOutCart.isNotEmpty)
+                              if (_lastCheckedOutCart.isNotEmpty) {
                                 _clearPostCheckoutPreview();
+                              }
                               setState(() => _currentPageIndex = 0);
                             },
                             child: Container(
@@ -449,8 +449,9 @@ class _PosMainScreenState extends State<PosMainScreen> {
                         Expanded(
                           child: GestureDetector(
                             onTap: () {
-                              if (_lastCheckedOutCart.isNotEmpty)
+                              if (_lastCheckedOutCart.isNotEmpty) {
                                 _clearPostCheckoutPreview();
+                              }
                               setState(() => _currentPageIndex = 1);
                             },
                             child: Container(
@@ -510,8 +511,9 @@ class _PosMainScreenState extends State<PosMainScreen> {
                                 ? _searchResults
                                 : products,
                             onProductTap: (p) {
-                              if (_lastCheckedOutCart.isNotEmpty)
+                              if (_lastCheckedOutCart.isNotEmpty) {
                                 _clearPostCheckoutPreview();
+                              }
                               _addToCart(p);
                             },
                             shouldScrollToTop: _shouldScrollToTop,
@@ -648,7 +650,7 @@ class _PosMainScreenState extends State<PosMainScreen> {
               borderRadius: BorderRadius.circular(32),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.08),
+                  color: Colors.black.withValues(alpha: 0.08),
                   blurRadius: 26,
                   offset: const Offset(0, 10),
                 ),
@@ -832,9 +834,9 @@ class _PosMainScreenState extends State<PosMainScreen> {
 
       final yy = (now.year % 100).toString().padLeft(2, '0');
       final fileName = '營收_$yy$m$d.png';
-      final res = await ExportService.instance.savePng(fileName: fileName, bytes: bytes);
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
+  final res = await ExportService.instance.savePng(fileName: fileName, bytes: bytes);
+  if (!mounted) return res.success;
+      ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
               res.success
@@ -843,13 +845,12 @@ class _PosMainScreenState extends State<PosMainScreen> {
             ),
           ),
         );
-      }
       return res.success;
     } catch (e) {
+  if (!mounted) return false;
       try {
         if (Navigator.canPop(context)) Navigator.pop(context);
       } catch (_) {}
-      if (!mounted) return false;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(AppMessages.exportRevenueFailure(e))),
       );
@@ -864,11 +865,12 @@ class _PosMainScreenState extends State<PosMainScreen> {
       final ok = await PinDialog.show(
         context: context,
         pin: pin,
-        subtitle: '目前零用金：💲' + AppConfig.pettyCash.toString(),
+        subtitle: '目前零用金：💲${AppConfig.pettyCash}',
       );
       if (!ok) return;
     }
     int tempValue = AppConfig.pettyCash;
+  if (!mounted) return;
     await showDialog<int>(
       context: context,
       barrierDismissible: true,
@@ -891,9 +893,11 @@ class _PosMainScreenState extends State<PosMainScreen> {
           void confirm() async {
             if (tempValue < 0) return; // 不接受負值
             await AppConfig.setPettyCash(tempValue);
-            if (!mounted) return;
+            if (!ctx.mounted) return;
             Navigator.of(ctx).pop(tempValue);
+            if (!mounted) return;
             setState(() {});
+            if (!mounted) return;
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(content: Text(AppMessages.pettyCashSet(tempValue))),
             );
@@ -1029,9 +1033,8 @@ class _PosMainScreenState extends State<PosMainScreen> {
       final totalAll = pop.totalQty;
       String pct(int v) => pop.totalQty == 0
           ? '0%'
-          : ((v * 1000 / (pop.totalQty == 0 ? 1 : pop.totalQty)).round() / 10)
-                    .toStringAsFixed(1) +
-                '%';
+          : '${((v * 1000 / (pop.totalQty == 0 ? 1 : pop.totalQty)).round() / 10)
+                    .toStringAsFixed(1)}%';
       final sortable = [
         ...baseMap.entries.map((e) => MapEntry(e.key, e.value)),
         MapEntry('其他角色', others),
@@ -1089,7 +1092,7 @@ class _PosMainScreenState extends State<PosMainScreen> {
             borderRadius: BorderRadius.circular(32),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.08),
+                color: Colors.black.withValues(alpha: 0.08),
                 blurRadius: 26,
                 offset: const Offset(0, 10),
               ),
@@ -1181,7 +1184,7 @@ class _PosMainScreenState extends State<PosMainScreen> {
         pixelRatio: 3.0,
       );
 
-      final fileName = '人氣指數_${dateStr}.png';
+      final fileName = '人氣指數_$dateStr.png';
       final res = await ExportService.instance.savePng(fileName: fileName, bytes: bytes);
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -1228,8 +1231,8 @@ class _PosMainScreenState extends State<PosMainScreen> {
   // 付款方式代碼對應已內建於 SalesExportService 中
 
       final bundle = SalesExportService.instance.buildCsvsForReceipts(receipts);
-      final salesFileName = '銷售_${dateSuffix}.csv';
-      final specialFileName = '特殊商品_${dateSuffix}.csv';
+      final salesFileName = '銷售_$dateSuffix.csv';
+      final specialFileName = '特殊商品_$dateSuffix.csv';
       final res = await ExportService.instance.saveCsvFiles(
         files: {
           salesFileName: bundle.salesCsv,
@@ -1530,9 +1533,9 @@ class _PosMainScreenState extends State<PosMainScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 14),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.08),
+  color: color.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withOpacity(0.4), width: 1),
+  border: Border.all(color: color.withValues(alpha: 0.4), width: 1),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -1616,7 +1619,7 @@ class _PosMainScreenState extends State<PosMainScreen> {
                         height: 18,
                         decoration: BoxDecoration(
                           gradient: LinearGradient(
-                            colors: [barColor.withOpacity(0.85), barColor],
+                            colors: [barColor.withValues(alpha: 0.85), barColor],
                           ),
                         ),
                       ),

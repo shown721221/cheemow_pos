@@ -54,12 +54,12 @@ class _ReceiptListScreenState extends State<ReceiptListScreen> {
               final irreversible = await _confirmIrreversibleDeletion();
               if (!irreversible) return;
               await ReceiptService.instance.clearAllReceipts();
-              if (!mounted) return;
+              if (!context.mounted) return;
               // 使用區塊形式避免 setState 閉包回傳 Future
               setState(() {
                 _future = _loadReceipts();
               });
-              if (!mounted) return;
+              if (!context.mounted) return;
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(content: Text(AppMessages.clearedReceipts)),
               );
@@ -335,8 +335,9 @@ class _ReceiptListScreenState extends State<ReceiptListScreen> {
               );
             }
             final newRefunded = List<String>.from(current.refundedProductIds);
-            if (!newRefunded.contains(item.product.id))
+            if (!newRefunded.contains(item.product.id)) {
               newRefunded.add(item.product.id);
+            }
             final hasNonDiscountUnrefunded = current.items.any(
               (it) =>
                   !it.product.isDiscountProduct &&
@@ -346,8 +347,9 @@ class _ReceiptListScreenState extends State<ReceiptListScreen> {
               for (final it in current.items.where(
                 (e) => e.product.isDiscountProduct,
               )) {
-                if (!newRefunded.contains(it.product.id))
+                if (!newRefunded.contains(it.product.id)) {
                   newRefunded.add(it.product.id);
+                }
               }
             }
             final effectiveItems = current.items.where(
@@ -397,11 +399,12 @@ class _ReceiptListScreenState extends State<ReceiptListScreen> {
                     final saved = await ReceiptService.instance.updateReceipt(
                       updated,
                     );
-                    if (saved)
+                    if (saved) {
                       setS(() {
                         payment = v;
                         current = updated;
                       });
+                    }
                   },
                 ),
               ],
@@ -685,8 +688,9 @@ class _ReceiptListScreenState extends State<ReceiptListScreen> {
                       actionKey(
                         '⌫',
                         () => setS(() {
-                          if (input.isNotEmpty)
+                          if (input.isNotEmpty) {
                             input = input.substring(0, input.length - 1);
+                          }
                           error = null;
                         }),
                       ),
