@@ -1,8 +1,8 @@
 # CheeMeow POS 系統 🛍️💕
 
-> 2025/09/10 狀態：核心功能已完成，進入「介面 / 文案 / 視覺一致性」優化階段。
+> 2025/09/22 狀態：核心功能穩定，僅接受零星小修；架構已凍結（不再大型重構）。Backup 功能已移除；付款方式改用 enum；新增大型排序壓力測試與 SalesExport 加強驗證；抽出 `AppStrings` 常數。
 
-## ✅ 功能完成里程碑（截至 2025/09/10）
+## ✅ 功能完成里程碑（截至 2025/09/22）
 1. 銷售 / 購物車 / 結帳（含預購商品、折扣商品、退貨標記）
 2. 收據系統：儲存、今日/關鍵字/付款方式/退貨篩選、金額顯示、更新付款方式
 3. 匯出：
@@ -18,7 +18,11 @@
 7. 條碼鍵盤掃描（系統層級事件攔截）
 8. 所有 SnackBar / 文案集中：`lib/config/app_messages.dart`
 9. 匯出銷售 CSV 保留商品代碼 / 條碼前導 0（前置單引號）
-10. 付款方式代碼（1=現金 / 2=轉帳 / 3=LinePay / 9=其他）統一於匯出
+10. 付款方式代碼（1=現金 / 2=轉帳 / 3=LinePay）統一於匯出（移除其他代碼）— 現在以 `PaymentMethod` enum 驗證
+11. 移除原先備份（BackupService）試驗性功能，保持精簡
+12. 大型資料排序測試（>200 筆）驗證特殊置頂 + 今日售出排序 + 穩定性
+13. SalesExport 測試強化：付款代碼欄位、特殊 CSV 僅含特殊商品
+14. UI 零散字串開始集中（`AppStrings`）
 
 ## 🧱 架構與可維護性更新（近期）
  - ProductUpdateService（`lib/services/product_update_service.dart`）
@@ -40,20 +44,50 @@
 
 小提醒：時間來源統一由 TimeService 提供（測試可注入固定 now），以確保排序與統計在測試與實機一致。
 
-## 🎯 接下來的優化方向
-- 視覺統一：主題色票、字級階層、Icons / Emoji 規則
-- 匯出圖片視覺再微調（留白、對齊、字重、行距）
-- 介面文案審視（用語一致 / 簡潔）
-- 金額千分位格式化統一（顯示與匯出是否採用純數字保留）
-- 特殊商品（預購 / 折扣）操作流程提示優化
-- 錯誤處理：匯出失敗更細分原因（路徑、權限、寫入、空資料）
-- （可選）啟動補匯出：偵測「昨日缺檔」時自動補產生
+### 目前主要模組簡述
+| 模組 | 目的 | 位置 |
+| ---- | ---- | ---- |
+| 商品排序 ProductSorter | 每日 / 特殊商品置頂策略 | `lib/utils/product_sorter.dart` |
+| 結帳流程 CheckoutController | 結帳整合、重排、快照 | `lib/controllers/checkout_controller.dart` |
+| 收據服務 ReceiptService | 儲存 / 統計 / 編號委派 | `lib/services/receipt_service.dart` |
+| 編號產生 ReceiptIdGenerator | 付款方式代碼 + 每日序號 | `lib/services/receipt_id_generator.dart` |
+| 銷售 / 特殊 CSV 匯出 | 分離特殊商品記錄 & 付款代碼 | `lib/services/sales_export_service.dart` |
+| 動作聚合 PosActionsService | 主畫面功能選單操作 | `lib/services/pos_actions_service.dart` |
+| 條碼掃描 BarcodeScanCoordinator | 鍵盤/藍牙掃描整合 | `lib/managers/barcode_scan_coordinator.dart` |
+| 零用金調度 PettyCashScheduler | 跨日自動重置 | `lib/managers/petty_cash_scheduler.dart` |
 
-## 🧪 建議後續小型技術改進
- 抽離銷售 / 特殊銷售匯出為 service（降低主畫面長度）（已完成：`SalesExportService`）
-- RepaintBoundary 匯出抽象：統一擷取 + 儲存流程 util
-- 將付款金額輸入鍵盤元件化（減少重複）
-- Receipt / Product model 加上版本或 schema tag 以便未來遷移
+### 測試覆蓋範疇摘要（精選）
+| 類別 | 內容 | 代表測試 |
+| ---- | ---- | ---- |
+| 排序 | 特殊置頂/今日售出排序 / 大量資料穩定性 | `product_sorter_test.dart` / `product_sorter_large_dataset_test.dart` |
+| 結帳後重排 | 售出商品移至前段 | `post_checkout_reorder_test.dart` |
+| 收據編號 | 每日遞增/跨日重置 | `receipt_id_generator_test.dart` |
+| 收據服務 | 統計/序號使用 | `receipt_service_test.dart` |
+| 產品儲存 | CRUD + stock 更新 | `product_repository_test.dart` |
+| 動作服務 | 統計對話框顯示（使用常數標題） | `pos_actions_service_test.dart` |
+| 搜尋/篩選 | 關鍵字與條件組合 | `search_filter_manager_test.dart` |
+
+---
+
+## 🎯 後續僅保留的小修方向（如有需要）
+- 個別文案 / 視覺微調（集中於 `app_messages.dart` / `app_strings.dart`）
+- 金額格式 util（千分位 / 統一符號）
+- 匯出欄位若有新需求再行擴充
+- 減少日誌輸出（目前僅偵錯用途，可保留）
+
+## 🧪 測試執行快速指引
+全部：
+```
+flutter test
+```
+單檔：
+```
+flutter test test/receipt_id_generator_test.dart
+```
+新增測試時原則：
+1. 優先純邏輯 / 無 I/O。
+2. 與時間相關行為注入 `now`（`TimeService`）。
+3. 新增導出的驗證要檢查：欄位順序、前導 0、付款代碼、特殊 vs 一般分離。
 
 ## 🧪 測試指引（Unit Tests）
 - 執行全部測試：
@@ -69,22 +103,14 @@
    - 盡量以純函數/服務做單元測試，避免直接觸碰平台 I/O。
    - 與時間相關的行為，透過 TimeService 注入固定時間，讓測試具可預期性。
 
-## 📌 低風險立即可做項目（建議先做）
-| 項目 | 說明 |
-| ---- | ---- |
-| 顏色常數集中 | `lib/config/app_theme_colors.dart`（尚未建立） |
-| 金額格式工具 | `formatCurrency(int amount)` 統一所有顯示 |
-| 匯出前檢查 | 若今日無收據，提前提示 “今日尚無交易” |
-| README 精簡 | 刪除過時「準備實作」章節（已完成） |
+## 📌 維護策略
+本專案為個人自用：避免過度工程；僅針對真實痛點調整。重大異動前跑全測試確保綠燈；無新大型重構計畫。
 
 ---
 
-以下為原始 README 內容（保留歷史記錄，可再逐步精簡整理）：
-
 ---
 
-## 開發指導原則
-不要做太多的預測，隨著我的指令執行。若是有不錯的建議，等執行完我的要求再提出。
+以下為早期歷史內容（保留參考，未再主動維護，可視需要裁剪）：
 
 ## 專案概述
 CheeMeow POS 是一個專為平板設計的橫向銷售點系統，具有溫馨可愛的界面設計。

@@ -10,6 +10,8 @@ class ProductListWidget extends StatefulWidget {
   final Function(Product) onProductTap;
   final VoidCallback? onCheckoutCompleted; // 新增：結帳完成回調
   final bool shouldScrollToTop; // 新增：是否需要滾動到頂部
+  final bool applyDailySort; // 是否套用每日排序（可關閉以保留外部順序）
+  final bool pinSpecial; // 是否強制預購/折扣永遠置頂
 
   const ProductListWidget({
     super.key,
@@ -17,6 +19,8 @@ class ProductListWidget extends StatefulWidget {
     required this.onProductTap,
     this.onCheckoutCompleted,
     this.shouldScrollToTop = false,
+    this.applyDailySort = true,
+    this.pinSpecial = true,
   });
 
   @override
@@ -82,7 +86,14 @@ class _ProductListWidgetState extends State<ProductListWidget> {
   @override
   Widget build(BuildContext context) {
     // 使用集中排序工具，維持與首頁一致的「每日排序」規則
-    final sortedProducts = ProductSorter.sortDaily(widget.products);
+    final displayProducts = widget.applyDailySort
+        ? ProductSorter.sortDaily(
+            widget.products,
+            recencyDominatesSpecial: true,
+            forcePinSpecial: widget.pinSpecial,
+          )
+        : widget.products;
+    // 診斷列印已移除，避免噪音
 
     return Container(
       padding: EdgeInsets.all(16),
@@ -90,7 +101,7 @@ class _ProductListWidgetState extends State<ProductListWidget> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Expanded(
-            child: sortedProducts.isEmpty
+            child: displayProducts.isEmpty
                 ? Center(
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
@@ -111,9 +122,9 @@ class _ProductListWidgetState extends State<ProductListWidget> {
                   )
                 : ListView.builder(
                     controller: _scrollController, // 添加滾動控制器
-                    itemCount: sortedProducts.length,
+                    itemCount: displayProducts.length,
                     itemBuilder: (context, index) {
-                      final product = sortedProducts[index];
+                      final product = displayProducts[index];
                       return Card(
                         margin: EdgeInsets.only(bottom: 8),
                         shape: RoundedRectangleBorder(

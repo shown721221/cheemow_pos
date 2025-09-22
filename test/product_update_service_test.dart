@@ -16,8 +16,22 @@ void main() {
 
     final products = [
       Product(id: 'A', barcode: '111', name: '普通A', price: 100, stock: 10),
-      Product(id: 'B', barcode: '19920203', name: '🎁 預約奇妙', price: 0, category: '特殊商品', stock: 99),
-      Product(id: 'C', barcode: '88888888', name: '💸 祝您有奇妙的一天', price: 0, category: '特殊商品', stock: 99),
+      Product(
+        id: 'B',
+        barcode: '19920203',
+        name: '🎁 預約奇妙',
+        price: 0,
+        category: '特殊商品',
+        stock: 99,
+      ),
+      Product(
+        id: 'C',
+        barcode: '88888888',
+        name: '💸 祝您有奇妙的一天',
+        price: 0,
+        category: '特殊商品',
+        stock: 99,
+      ),
     ];
 
     final cart = [
@@ -26,7 +40,12 @@ void main() {
       CartItem(product: products[2], quantity: 3), // 折扣不扣
     ];
 
-    final outcome = ProductUpdateService.instance.compute(products, cart, now: now);
+    final outcome = ProductUpdateService.instance.compute(
+      products,
+      cart,
+      now: now,
+      useMicroOffset: false,
+    );
 
     // updated count 應該只算有在購物車的不同條碼數量（這裡3筆）
     expect(outcome.updatedCount, 3);

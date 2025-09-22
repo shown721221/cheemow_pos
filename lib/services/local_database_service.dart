@@ -1,7 +1,6 @@
-import 'package:shared_preferences/shared_preferences.dart';
-import 'dart:convert';
 import '../models/product.dart';
 import '../config/constants.dart';
+import '../repositories/product_repository.dart';
 
 /// 本地資料庫服務（使用 SharedPreferences）
 class LocalDatabaseService {
@@ -11,16 +10,12 @@ class LocalDatabaseService {
 
   LocalDatabaseService._();
 
-  SharedPreferences? _prefs;
-
   /// 初始化本地資料庫
   Future<void> initialize() async {
-    _prefs = await SharedPreferences.getInstance();
-
-    // 如果是第一次啟動，建立範例商品資料
-    if (_prefs != null && !_prefs!.containsKey('products_initialized')) {
+    await ProductRepository.instance.initialize();
+    final existing = await ProductRepository.instance.getAll();
+    if (existing.isEmpty) {
       await _createSampleProducts();
-      await _prefs!.setBool('products_initialized', true);
     }
   }
 
@@ -29,40 +24,42 @@ class LocalDatabaseService {
     final sampleProducts = [
       Product(
         id: '1',
-  barcode: AppConstants.barcodePreOrder,
+        barcode: AppConstants.barcodePreOrder,
         name: '🎁 預約奇妙',
         price: 0,
-  category: AppConstants.specialCategory,
+        category: AppConstants.specialCategory,
         stock: 99,
       ),
       Product(
         id: '2',
-  barcode: AppConstants.barcodeDiscount,
+        barcode: AppConstants.barcodeDiscount,
         name: '💸 祝您有奇妙的一天',
         price: 0,
-  category: AppConstants.specialCategory,
+        category: AppConstants.specialCategory,
         stock: 99,
       ),
     ];
 
-    await saveProducts(sampleProducts);
+    await ProductRepository.instance.saveAll(sampleProducts);
   }
 
   /// 確保特殊商品存在
   Future<void> ensureSpecialProducts() async {
-    final products = await getProducts();
+    final products = await ProductRepository.instance.getAll();
     final updatedProducts = List<Product>.from(products);
     bool needsUpdate = false;
 
     // 檢查預約商品是否存在
-  final hasPreOrder = products.any((p) => p.barcode == AppConstants.barcodePreOrder);
+    final hasPreOrder = products.any(
+      (p) => p.barcode == AppConstants.barcodePreOrder,
+    );
     if (!hasPreOrder) {
       final preOrderProduct = Product(
         id: 'special_001',
-  barcode: AppConstants.barcodePreOrder,
+        barcode: AppConstants.barcodePreOrder,
         name: '🎁 預約奇妙',
         price: 0,
-  category: AppConstants.specialCategory,
+        category: AppConstants.specialCategory,
         stock: 99,
       );
       updatedProducts.add(preOrderProduct);
@@ -70,14 +67,16 @@ class LocalDatabaseService {
     }
 
     // 檢查折扣商品是否存在
-  final hasDiscount = products.any((p) => p.barcode == AppConstants.barcodeDiscount);
+    final hasDiscount = products.any(
+      (p) => p.barcode == AppConstants.barcodeDiscount,
+    );
     if (!hasDiscount) {
       final discountProduct = Product(
         id: 'special_002',
-  barcode: AppConstants.barcodeDiscount,
+        barcode: AppConstants.barcodeDiscount,
         name: '💸 祝您有奇妙的一天',
         price: 0,
-  category: AppConstants.specialCategory,
+        category: AppConstants.specialCategory,
         stock: 99,
       );
       updatedProducts.add(discountProduct);
@@ -85,7 +84,7 @@ class LocalDatabaseService {
     }
 
     if (needsUpdate) {
-      await saveProducts(updatedProducts);
+      await ProductRepository.instance.saveAll(updatedProducts);
     }
 
     // 更新現有特殊商品的名稱（添加圖示）
@@ -94,7 +93,7 @@ class LocalDatabaseService {
 
   /// 更新特殊商品名稱，添加圖示
   Future<void> _updateSpecialProductNames() async {
-    final products = await getProducts();
+    final products = await ProductRepository.instance.getAll();
     final updatedProducts = List<Product>.from(products);
     bool needsUpdate = false;
 
@@ -102,9 +101,10 @@ class LocalDatabaseService {
       final product = updatedProducts[i];
 
       // 更新預約商品名稱
-  if (product.barcode == AppConstants.barcodePreOrder) {
+      if (product.barcode == AppConstants.barcodePreOrder) {
         final shouldFixName = !product.name.startsWith('🎁');
-  final shouldFixCategory = product.category != AppConstants.specialCategory;
+        final shouldFixCategory =
+            product.category != AppConstants.specialCategory;
         final shouldFixPrice = product.price != 0;
         final shouldFixStock = product.stock != 99;
         if (shouldFixName ||
@@ -126,9 +126,10 @@ class LocalDatabaseService {
       }
 
       // 更新折扣商品名稱
-  if (product.barcode == AppConstants.barcodeDiscount) {
+      if (product.barcode == AppConstants.barcodeDiscount) {
         final shouldFixName = !product.name.startsWith('💸');
-  final shouldFixCategory = product.category != AppConstants.specialCategory;
+        final shouldFixCategory =
+            product.category != AppConstants.specialCategory;
         final shouldFixPrice = product.price != 0;
         final shouldFixStock = product.stock != 99;
         if (shouldFixName ||
@@ -151,21 +152,18 @@ class LocalDatabaseService {
     }
 
     if (needsUpdate) {
-      await saveProducts(updatedProducts);
+      await ProductRepository.instance.saveAll(updatedProducts);
     }
   }
 
   /// 儲存商品清單
-  Future<void> saveProducts(List<Product> products) async {
-    if (_prefs == null) return;
-    final productsJson = products.map((p) => p.toJson()).toList();
-    await _prefs!.setString('products', jsonEncode(productsJson));
-  }
+  Future<void> saveProducts(List<Product> products) async =>
+      ProductRepository.instance.saveAll(products);
 
   /// 合併匯入的商品（用於CSV匯入）
   /// 相同ID的商品會被更新，新ID的商品會被新增
   Future<void> mergeImportedProducts(List<Product> importedProducts) async {
-    final existingProducts = await getProducts();
+    final existingProducts = await ProductRepository.instance.getAll();
     final Map<String, Product> productMap = {};
 
     // 將現有商品加入Map（以ID為key）
@@ -180,64 +178,39 @@ class LocalDatabaseService {
 
     // 儲存合併後的商品列表
     final mergedProducts = productMap.values.toList();
-    await saveProducts(mergedProducts);
+    await ProductRepository.instance.saveAll(mergedProducts);
   }
 
   /// 取代現有所有商品（用於CSV匯入 - 取代模式）
   /// 注意：會覆蓋既有資料，之後會自動確保特殊商品存在與名稱一致
   Future<void> replaceProducts(List<Product> newProducts) async {
     // 過濾掉兩個特殊商品，避免被匯入資料覆蓋
-  final filtered = newProducts
-    .where((p) => p.barcode != AppConstants.barcodePreOrder && p.barcode != AppConstants.barcodeDiscount)
+    final filtered = newProducts
+        .where(
+          (p) =>
+              p.barcode != AppConstants.barcodePreOrder &&
+              p.barcode != AppConstants.barcodeDiscount,
+        )
         .toList();
 
     // 直接覆蓋目前的商品清單（已排除特殊商品）
-    await saveProducts(filtered);
+    await ProductRepository.instance.saveAll(filtered);
     // 確保兩個特殊商品存在，並同步名稱圖示
     await ensureSpecialProducts();
   }
 
   /// 取得所有商品
   Future<List<Product>> getProducts() async {
-    if (_prefs == null) return [];
-    final productsString = _prefs!.getString('products');
-    if (productsString == null) return [];
-
-    final productsList = jsonDecode(productsString) as List;
-    return productsList.map((json) => Product.fromJson(json)).toList();
+    return ProductRepository.instance.getAll();
   }
 
   /// 依條碼查詢商品
   Future<Product?> getProductByBarcode(String barcode) async {
-    final products = await getProducts();
-    try {
-      return products.firstWhere((product) => product.barcode == barcode);
-    } catch (e) {
-      return null; // 找不到商品
-    }
+    return ProductRepository.instance.getByBarcode(barcode);
   }
 
   /// 更新商品庫存
   Future<void> updateProductStock(String productId, int newStock) async {
-    final products = await getProducts();
-    final productIndex = products.indexWhere((p) => p.id == productId);
-
-    if (productIndex != -1) {
-      // 建立新的商品物件（因為 Product 是 immutable）
-      final p = products[productIndex];
-      final updatedProduct = Product(
-        id: p.id,
-        barcode: p.barcode,
-        name: p.name,
-        price: p.price,
-        category: p.category,
-        stock: newStock,
-        isActive: p.isActive,
-        lastCheckoutTime: p.lastCheckoutTime,
-      );
-
-      products[productIndex] = updatedProduct;
-      await saveProducts(products);
-    }
+    await ProductRepository.instance.updateStock(productId, newStock);
   }
 }

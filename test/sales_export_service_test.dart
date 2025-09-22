@@ -6,9 +6,27 @@ import 'package:cheemeow_pos/models/product.dart';
 
 void main() {
   test('buildCsvsForReceipts generates two CSVs with headers and rows', () {
-    final normal = Product(id: '001', barcode: '000123', name: '普通商品', price: 100, category: '一般');
-    final preorder = Product(id: 'sp1', barcode: '19920203', name: '🎁 預約奇妙', price: 0, category: '特殊商品');
-    final discount = Product(id: 'sp2', barcode: '88888888', name: '💸 祝您有奇妙的一天', price: -50, category: '特殊商品');
+    final normal = Product(
+      id: '001',
+      barcode: '000123',
+      name: '普通商品',
+      price: 100,
+      category: '一般',
+    );
+    final preorder = Product(
+      id: 'sp1',
+      barcode: '19920203',
+      name: '🎁 預約奇妙',
+      price: 0,
+      category: '特殊商品',
+    );
+    final discount = Product(
+      id: 'sp2',
+      barcode: '88888888',
+      name: '💸 祝您有奇妙的一天',
+      price: -50,
+      category: '特殊商品',
+    );
 
     final r1 = Receipt(
       id: '1-001',
@@ -24,9 +42,7 @@ void main() {
     final r2 = Receipt(
       id: '2-002',
       timestamp: DateTime(2025, 9, 10, 13, 0, 0),
-      items: [
-        CartItem(product: discount, quantity: 1),
-      ],
+      items: [CartItem(product: discount, quantity: 1)],
       totalAmount: -50,
       totalQuantity: 1,
       paymentMethod: '轉帳',
@@ -47,10 +63,33 @@ void main() {
 
     // leading zero preserved with prefix '
     expect(salesRows[1].contains("'000123"), isTrue);
+
+    // 付款方式代碼：現金=1 轉帳=2
+    expect(
+      bundle.salesCsv.contains(',1-001'),
+      isTrue,
+    ); // receipt id still present
+    // 找到現金那行應包含 ,1, 付款方式代號欄位
+    final cashLine = salesRows.firstWhere(
+      (l) => l.contains('1-001'),
+      orElse: () => '',
+    );
+    expect(cashLine.contains(',現金,'), isTrue);
+    expect(cashLine.contains(',1,'), isTrue);
+
+    // 特殊 CSV 僅含特殊商品名稱，且不含普通商品名稱
+    expect(bundle.specialCsv.contains('普通商品'), isFalse);
+    expect(bundle.specialCsv.contains('預約奇妙'), isTrue);
+    expect(bundle.specialCsv.contains('祝您有奇妙的一天'), isTrue);
   });
 
   test('skips refunded items', () {
-    final normal = Product(id: '001', barcode: '000123', name: '普通商品', price: 100);
+    final normal = Product(
+      id: '001',
+      barcode: '000123',
+      name: '普通商品',
+      price: 100,
+    );
     final r = Receipt(
       id: '1-001',
       timestamp: DateTime(2025, 9, 10, 14, 0, 0),

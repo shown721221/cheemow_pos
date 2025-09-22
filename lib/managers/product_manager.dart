@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:cheemeow_pos/utils/app_logger.dart';
 import '../models/product.dart';
 import '../services/local_database_service.dart';
 
@@ -23,15 +24,15 @@ class ProductManager extends ChangeNotifier {
     try {
       await LocalDatabaseService.instance.ensureSpecialProducts();
       final loadedProducts = await LocalDatabaseService.instance.getProducts();
-      
+
       // 對商品進行排序：特殊商品在最前面
       _sortProducts(loadedProducts);
-      
+
       _products = loadedProducts;
       notifyListeners();
     } catch (e) {
       if (kDebugMode) {
-        print('載入商品失敗: $e');
+        AppLogger.w('載入商品失敗', e);
       }
     }
   }
@@ -76,21 +77,21 @@ class ProductManager extends ChangeNotifier {
   /// 處理條碼掃描
   void processBarcodeScanned(String barcode) {
     _lastScannedBarcode = barcode;
-    
+
     // 尋找對應的商品
     final product = _findProductByBarcode(barcode);
-    
+
     if (product != null) {
       // 找到商品，觸發添加到購物車的回調
       if (kDebugMode) {
-        print('找到商品: ${product.name}');
+        AppLogger.d('找到商品: ${product.name}');
       }
       _hasUnfoundProduct = false;
       notifyListeners();
     } else {
       // 沒找到商品
       if (kDebugMode) {
-        print('找不到條碼對應的商品: $barcode');
+        AppLogger.d('找不到條碼對應的商品: $barcode');
       }
       _hasUnfoundProduct = true;
       notifyListeners();
@@ -100,9 +101,7 @@ class ProductManager extends ChangeNotifier {
   /// 根據條碼查找商品
   Product? _findProductByBarcode(String barcode) {
     try {
-      return _products.firstWhere(
-        (product) => product.barcode == barcode,
-      );
+      return _products.firstWhere((product) => product.barcode == barcode);
     } catch (e) {
       return null;
     }

@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
+import 'package:cheemeow_pos/utils/app_logger.dart';
 
 /// 條碼掃描管理器
 class BarcodeManager {
@@ -16,20 +17,20 @@ class BarcodeManager {
   void handleCharacterInput(String character) {
     // 清除之前的計時器
     _scanTimer?.cancel();
-    
+
     // 添加字符到緩衝區
     _scanBuffer += character;
-    
+
     // 設置新的計時器，如果在指定時間內沒有新字符，則視為條碼完成
     _scanTimer = Timer(const Duration(milliseconds: 100), () {
       if (_scanBuffer.isNotEmpty) {
         final barcode = _scanBuffer.trim();
         _scanBuffer = '';
-        
+
         if (kDebugMode) {
-          print('條碼掃描完成: $barcode');
+          AppLogger.d('條碼掃描完成: $barcode');
         }
-        
+
         _onBarcodeComplete?.call(barcode);
       }
     });

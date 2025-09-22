@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/services.dart';
+import 'package:cheemeow_pos/utils/app_logger.dart';
 
 /// 鍵盤和條碼掃描處理管理器
 /// 負責處理鍵盤事件和條碼掃描邏輯
@@ -126,8 +127,7 @@ class KeyboardScannerManager {
         delay += const Duration(milliseconds: 25);
       }
       if (_debug) {
-        // ignore: avoid_print
-        print(
+        AppLogger.d(
           '[Scanner] avg=${avg.toStringAsFixed(1)} burst=$isBurst delay=${delay.inMilliseconds}ms len=${_scanBuffer.length} buf="$_scanBuffer"',
         );
       }

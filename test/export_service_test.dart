@@ -10,7 +10,8 @@ void main() {
 
     setUp(() async {
       tempRoot = await Directory.systemTemp.createTemp('export_service_test_');
-      ExportService.testOverrideBaseDir = tempRoot.path; // 讓路徑可預測 & 不觸發 MediaStore
+      ExportService.testOverrideBaseDir =
+          tempRoot.path; // 讓路徑可預測 & 不觸發 MediaStore
     });
 
     tearDown(() async {
@@ -25,10 +26,7 @@ void main() {
     test('saveCsvFiles success with BOM & multiple files', () async {
       final fixedDate = DateTime(2025, 9, 10);
       final res = await ExportService.instance.saveCsvFiles(
-        files: {
-          'a.csv': 'col1,col2\n1,2',
-          'b.csv': 'x,y\n3,4',
-        },
+        files: {'a.csv': 'col1,col2\n1,2', 'b.csv': 'x,y\n3,4'},
         addBom: true,
         now: fixedDate,
       );
@@ -53,7 +51,8 @@ void main() {
     test('saveCsvFiles failure when empty map', () async {
       final res = await ExportService.instance.saveCsvFiles(files: {});
       expect(res.success, isFalse);
-      expect(res.error, isNotNull);
+      expect(res.failure, isNotNull);
+      expect(res.failure!.message, contains('無檔案內容'));
     });
 
     test('savePng writes file and returns path', () async {

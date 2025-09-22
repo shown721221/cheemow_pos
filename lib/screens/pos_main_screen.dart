@@ -1,38 +1,31 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-// import 'dart:ui' as ui; // 擷取已改用 CaptureUtil，不再直接使用
-// import 'dart:convert'; // 已不直接使用
-import 'package:flutter/services.dart';
-import '../widgets/product_list_widget.dart';
+import 'package:cheemeow_pos/utils/app_logger.dart';
+import '../widgets/pos_tab_bar.dart';
+import '../widgets/pos_more_menu.dart';
+import '../widgets/pos_product_panel.dart';
 import '../widgets/shopping_cart_widget.dart';
 import '../dialogs/payment_dialog.dart';
-import '../services/receipt_service.dart';
 import '../models/product.dart';
 import '../models/cart_item.dart';
-import '../models/receipt.dart';
 import '../services/local_database_service.dart';
-import '../services/bluetooth_scanner_service.dart';
 import '../services/csv_import_service.dart';
-import '../managers/keyboard_scanner_manager.dart';
 import '../dialogs/price_input_dialog_manager.dart';
-import '../utils/money_formatter.dart';
 import '../dialogs/dialog_manager.dart';
 import '../config/app_config.dart';
-import 'receipt_list_screen.dart';
 import '../config/app_messages.dart';
 import '../services/time_service.dart';
 import '../controllers/pos_cart_controller.dart';
+import '../controllers/checkout_controller.dart';
 import '../utils/product_sorter.dart';
-import '../services/export_service.dart';
-import '../utils/capture_util.dart';
 import '../dialogs/pin_dialog.dart';
-import '../managers/search_filter_manager.dart';
-import '../services/report_service.dart';
-import '../services/sales_export_service.dart';
-import '../widgets/search_filter_bar.dart';
-import '../services/product_update_service.dart';
-import '../services/barcode_scan_helper.dart';
-import '../config/style_config.dart';
+// 新拆分的匯出與對話框輔助
+// revenue_export_helper 由 PosActionsService 間接使用
+import '../services/pos_actions_service.dart';
+import '../managers/search_filter_manager.dart'; // 舊 manager 仍供 controller 使用
+import '../controllers/search_controller.dart' as pos_search;
+import '../managers/barcode_scan_coordinator.dart';
+import '../managers/petty_cash_scheduler.dart';
 
 class PosMainScreen extends StatefulWidget {
   const PosMainScreen({super.key});
@@ -45,63 +38,76 @@ class _PosMainScreenState extends State<PosMainScreen> {
   List<Product> products = [];
   List<CartItem> cartItems = [];
   late final PosCartController _cartController = PosCartController(cartItems);
+  late final CheckoutController _checkoutController;
   // 結帳後暫存最後購物車，用於結帳完成後仍顯示內容直到下一次操作
   List<CartItem> _lastCheckedOutCart = [];
   String? _lastCheckoutPaymentMethod; // 顯示『已結帳完成 使用 XX 付款方式』
   String lastScannedBarcode = '';
-  KeyboardScannerManager? _kbScanner;
-  bool _shouldScrollToTop = false;
+  BarcodeScanCoordinator? _barcodeCoordinator;
+  PettyCashScheduler? _pettyCashScheduler;
+  bool _shouldScrollToTop = false; // 需要動態切換 true->false 觸發列表回頂
   int _currentPageIndex = 0; // 0: 銷售頁面, 1: 搜尋頁面
-  String _searchQuery = '';
-  List<Product> _searchResults = [];
-  final List<String> _selectedFilters = []; // 選中的篩選條件
+  late final pos_search.PosSearchController _searchController;
   final SearchFilterManager _searchFilterManager = SearchFilterManager();
   StreamSubscription<String>? _barcodeSub;
+  // 一旦第一次結帳後，商品清單改由 CheckoutController 手動重排（將本次售出商品置頂），
+  // 就不再進行每日自動排序，避免覆蓋手動置頂結果；重新載入商品 (例如 CSV 匯入或啟動) 時會重置。
+  bool _manualOrderActive = false;
+  // 移除：早期為了強制列表重建與自動重載的除錯欄位
 
   @override
   void initState() {
     super.initState();
+    _searchController =
+        pos_search.PosSearchController(
+          products: products,
+          manager: _searchFilterManager,
+        )..addListener(() {
+          if (mounted) setState(() {});
+        });
+    _checkoutController = CheckoutController(
+      cartItems: cartItems,
+      cartController: _cartController,
+      productsRef: products,
+      persistProducts: _saveProductsToStorage,
+    );
     _loadProducts();
-    _listenToBarcodeScanner();
-    // 使用鍵盤掃描管理器，集中處理條碼鍵盤事件
-    _kbScanner = KeyboardScannerManager(onBarcodeScanned: _onBarcodeScanned);
-    ServicesBinding.instance.keyboard.addHandler(_kbScanner!.handleKeyEvent);
+    _barcodeCoordinator = BarcodeScanCoordinator(
+      onAddNormal: (p) async => _handleAddScannedProduct(p, p.price),
+      onAddSpecial: (p) async => _handleSpecialScannedProduct(p),
+      onNotFound: (code) => DialogManager.showProductNotFound(context, code),
+      onPreScan: () {
+        if (!mounted) return;
+        if (_lastCheckedOutCart.isNotEmpty || _currentPageIndex != 0) {
+          setState(() {
+            if (_lastCheckedOutCart.isNotEmpty) {
+              _lastCheckedOutCart.clear();
+              _lastCheckoutPaymentMethod = null;
+            }
+            _currentPageIndex = 0;
+          });
+        }
+      },
+    )..start();
 
-    // 開發用途：可用 dart-define 控制啟動時自動匯出今日營收圖片
-    // 例如：flutter run -d <device> --dart-define=EXPORT_REVENUE_ON_START=true
     WidgetsBinding.instance.addPostFrameCallback(
       (_) => _maybeAutoExportRevenueOnStart(),
     );
 
-    // 安排跨日零用金自動重置檢查（每天 00:00）
-    _scheduleMidnightPettyCashReset();
-  }
-
-  Timer? _midnightTimer;
-
-  void _scheduleMidnightPettyCashReset() {
-    _midnightTimer?.cancel();
-    final now = TimeService.now();
-    final tomorrowMidnight = DateTime(now.year, now.month, now.day + 1);
-    _midnightTimer = TimeService.scheduleAt(tomorrowMidnight, () async {
-      await AppConfig.resetPettyCashIfNewDay();
-      if (!mounted) return;
-      setState(() {});
-      _scheduleMidnightPettyCashReset();
-    });
+    _pettyCashScheduler = PettyCashScheduler(
+      onReset: () {
+        if (!mounted) return;
+        setState(() {});
+      },
+    )..start();
   }
 
   @override
   void dispose() {
     _barcodeSub?.cancel();
-    // 移除鍵盤掃描管理器監聽
-    if (_kbScanner != null) {
-      ServicesBinding.instance.keyboard.removeHandler(
-        _kbScanner!.handleKeyEvent,
-      );
-      _kbScanner!.dispose();
-    }
-    _midnightTimer?.cancel();
+    _searchController.dispose();
+    _barcodeCoordinator?.dispose();
+    _pettyCashScheduler?.dispose();
     super.dispose();
   }
 
@@ -110,101 +116,59 @@ class _PosMainScreenState extends State<PosMainScreen> {
     if (!auto) return;
     if (!mounted) return;
     () async {
-      final ok = await _exportTodayRevenueImage();
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            ok
-                ? AppMessages.autoExportRevenueSuccess
-                : AppMessages.autoExportRevenueFailure,
-          ),
-        ),
-      );
+      await PosActionsService.instance.exportTodayRevenueImage(context);
     }();
   }
 
   Future<void> _loadProducts() async {
-    // 確保特殊商品存在
+    await LocalDatabaseService.instance.initialize();
     await LocalDatabaseService.instance.ensureSpecialProducts();
 
     final loadedProducts = await LocalDatabaseService.instance.getProducts();
     final sorted = ProductSorter.sortDaily(
       loadedProducts,
       now: TimeService.now(),
+      recencyDominatesSpecial: true,
+      forcePinSpecial: true,
     );
     setState(() {
-      products = sorted;
+      products
+        ..clear()
+        ..addAll(sorted);
+      // 重新載入資料後恢復自動每日排序狀態
+      _manualOrderActive = false;
     });
+    AppLogger.d('載入產品數量: ${products.length}');
+    _searchController.refreshProducts(products);
   }
 
-  // 每日排序：今日有售出的商品 (lastCheckoutTime 為今日) 置頂；
-  // 特殊商品永遠最前（預購在折扣前），再來今日售出的普通商品（依時間新→舊），
-  // 其餘按名稱。
-  // 已抽離至 ProductSorter.sortDaily
-
-  void _listenToBarcodeScanner() {
-    _barcodeSub = BluetoothScannerService.instance.barcodeStream.listen(
-      (barcode) => _onBarcodeScanned(barcode),
+  Future<void> _handleSpecialScannedProduct(Product product) async {
+    if (!mounted) return;
+    final inputPrice = await PriceInputDialogManager.showCustomNumberInput(
+      context,
+      product,
+      totalAmount,
     );
+    if (inputPrice != null) {
+      _handleAddScannedProduct(product, inputPrice);
+    }
   }
 
-  void _onBarcodeScanned(String barcode) async {
-    // 掃描時若仍在顯示「結帳後預覽」，先切回購物車使用狀態
+  Future<void> _handleAddScannedProduct(Product product, int price) async {
     if (!mounted) return;
-    if (_lastCheckedOutCart.isNotEmpty || _currentPageIndex != 0) {
-      setState(() {
-        if (_lastCheckedOutCart.isNotEmpty) {
-          _lastCheckedOutCart.clear();
-          _lastCheckoutPaymentMethod = null;
-        }
-        _currentPageIndex = 0; // 切回銷售頁（購物車右側持續顯示）
-      });
-    }
-    final decision = await BarcodeScanHelper.decideFromDatabase(barcode);
-    if (!mounted) return;
-    switch (decision.result) {
-      case ScanAddResult.foundNormal:
-        _addToCart(decision.product!);
-        setState(() => lastScannedBarcode = barcode);
-        break;
-      case ScanAddResult.foundSpecialNeedsPrice:
-        // 需要輸入價格再加入
-        _addToCart(decision.product!);
-        setState(() => lastScannedBarcode = barcode);
-        break;
-      case ScanAddResult.notFound:
-        DialogManager.showProductNotFound(context, barcode);
-        break;
-    }
+    setState(() {
+      _cartController.addProduct(product, price);
+      lastScannedBarcode = product.barcode;
+    });
   }
 
   void _addToCart(Product product) async {
-    // 特殊商品（價格為 0）需要輸入實際價格
     if (product.price == 0) {
-      final inputPrice = await PriceInputDialogManager.showCustomNumberInput(
-        context,
-        product,
-        totalAmount,
-      );
-      if (inputPrice != null) {
-        _addProductToCart(product, inputPrice);
-      }
+      await _handleSpecialScannedProduct(product);
     } else {
-      _addProductToCart(product, product.price);
+      await _handleAddScannedProduct(product, product.price);
     }
   }
-
-  // 插入商品到購物車（頂部），若同品且同價已存在則數量+1並移至頂部
-  void _addProductToCart(Product product, int actualPrice) {
-    setState(() {
-      _cartController.addProduct(product, actualPrice);
-    });
-  }
-
-  //（已移除）手動加減數量功能
-
-  // 本地未使用：找不到商品改由 DialogManager 管理
 
   int get totalAmount => _cartController.totalAmount;
 
@@ -296,99 +260,12 @@ class _PosMainScreenState extends State<PosMainScreen> {
         backgroundColor: Colors.blue[800],
         foregroundColor: Colors.white,
         actions: [
-          PopupMenuButton<String>(
-            icon: Icon(Icons.more_vert),
-            tooltip: AppMessages.menuTooltip,
-            onSelected: (String value) async {
+          PosMoreMenu(
+            onImport: () async {
               if (_lastCheckedOutCart.isNotEmpty) _clearPostCheckoutPreview();
-              switch (value) {
-                case 'import':
-                  _importCsvData();
-                  break;
-                case 'receipts':
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => const ReceiptListScreen(),
-                    ),
-                  ).then((_) => _loadProducts());
-                  break;
-                case 'revenue':
-                  await _exportTodayRevenueImage();
-                  break;
-                case 'popularity':
-                  await _exportTodayPopularityImage();
-                  break;
-                case 'pettycash':
-                  await _showSetPettyCashDialog();
-                  break;
-                case 'sales_export':
-                  await _exportSalesData();
-                  break;
-              }
+              await _importCsvData();
             },
-            itemBuilder: (BuildContext context) => [
-              PopupMenuItem<String>(
-                value: 'import',
-                child: Row(
-                  children: const [
-                    Text('🧸', style: TextStyle(fontSize: 18)),
-                    SizedBox(width: 8),
-                    Text(AppMessages.menuImport),
-                  ],
-                ),
-              ),
-              PopupMenuItem<String>(
-                value: 'sales_export',
-                child: Row(
-                  children: const [
-                    Text('📊', style: TextStyle(fontSize: 18)),
-                    SizedBox(width: 8),
-                    Text(AppMessages.menuSalesExport),
-                  ],
-                ),
-              ),
-              PopupMenuItem<String>(
-                value: 'receipts',
-                child: Row(
-                  children: const [
-                    Text('🧾', style: TextStyle(fontSize: 18)),
-                    SizedBox(width: 8),
-                    Text(AppMessages.menuReceipts),
-                  ],
-                ),
-              ),
-              PopupMenuItem<String>(
-                value: 'revenue',
-                child: Row(
-                  children: const [
-                    Text('🌤️', style: TextStyle(fontSize: 18)),
-                    SizedBox(width: 8),
-                    Text(AppMessages.menuRevenue),
-                  ],
-                ),
-              ),
-              PopupMenuItem<String>(
-                value: 'popularity',
-                child: Row(
-                  children: const [
-                    Text('📈', style: TextStyle(fontSize: 18)),
-                    SizedBox(width: 8),
-                    Text(AppMessages.menuPopularity),
-                  ],
-                ),
-              ),
-              PopupMenuItem<String>(
-                value: 'pettycash',
-                child: Row(
-                  children: const [
-                    Text('💰', style: TextStyle(fontSize: 18)),
-                    SizedBox(width: 8),
-                    Text(AppMessages.menuPettyCash),
-                  ],
-                ),
-              ),
-            ],
+            onReloadProducts: _loadProducts,
           ),
         ],
       ),
@@ -402,144 +279,37 @@ class _PosMainScreenState extends State<PosMainScreen> {
               child: Column(
                 children: [
                   // 分頁標籤
-                  Container(
-                    height: 50,
-                    decoration: BoxDecoration(
-                      color: Colors.grey[100],
-                      border: Border(
-                        bottom: BorderSide(color: Colors.grey[300]!),
-                      ),
-                    ),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: GestureDetector(
-                            onTap: () {
-                              if (_lastCheckedOutCart.isNotEmpty) {
-                                _clearPostCheckoutPreview();
-                              }
-                              setState(() => _currentPageIndex = 0);
-                            },
-                            child: Container(
-                              decoration: BoxDecoration(
-                                color: _currentPageIndex == 0
-                                    ? Colors.blue[50]
-                                    : Colors.transparent,
-                                border: Border(
-                                  bottom: BorderSide(
-                                    color: _currentPageIndex == 0
-                                        ? Colors.blue
-                                        : Colors.transparent,
-                                    width: 3,
-                                  ),
-                                ),
-                              ),
-                              child: Center(
-                                child: Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Text(
-                                      '🛒',
-                                      style: TextStyle(
-                                        fontSize: 18,
-                                        color: _currentPageIndex == 0
-                                            ? Colors.blue
-                                            : Colors.black54,
-                                      ),
-                                    ),
-                                    SizedBox(width: 4),
-                                    Text(
-                                      AppMessages.salesTabLabel,
-                                      style: TextStyle(
-                                        fontSize: 16,
-                                        fontWeight: _currentPageIndex == 0
-                                            ? FontWeight.bold
-                                            : FontWeight.normal,
-                                        color: _currentPageIndex == 0
-                                            ? Colors.blue
-                                            : Colors.black54,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                        Expanded(
-                          child: GestureDetector(
-                            onTap: () {
-                              if (_lastCheckedOutCart.isNotEmpty) {
-                                _clearPostCheckoutPreview();
-                              }
-                              setState(() => _currentPageIndex = 1);
-                            },
-                            child: Container(
-                              decoration: BoxDecoration(
-                                color: _currentPageIndex == 1
-                                    ? Colors.blue[50]
-                                    : Colors.transparent,
-                                border: Border(
-                                  bottom: BorderSide(
-                                    color: _currentPageIndex == 1
-                                        ? Colors.blue
-                                        : Colors.transparent,
-                                    width: 3,
-                                  ),
-                                ),
-                              ),
-                              child: Center(
-                                child: Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Text(
-                                      '🔎',
-                                      style: TextStyle(
-                                        fontSize: 18,
-                                        color: _currentPageIndex == 1
-                                            ? Colors.blue
-                                            : Colors.black54,
-                                      ),
-                                    ),
-                                    SizedBox(width: 4),
-                                    Text(
-                                      AppMessages.searchLabel,
-                                      style: TextStyle(
-                                        fontSize: 16,
-                                        fontWeight: _currentPageIndex == 1
-                                            ? FontWeight.bold
-                                            : FontWeight.normal,
-                                        color: _currentPageIndex == 1
-                                            ? Colors.blue
-                                            : Colors.black54,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
+                  PosTabBar(
+                    currentIndex: _currentPageIndex,
+                    onSalesTap: () {
+                      if (_lastCheckedOutCart.isNotEmpty)
+                        _clearPostCheckoutPreview();
+                      setState(() => _currentPageIndex = 0);
+                    },
+                    onSearchTap: () {
+                      if (_lastCheckedOutCart.isNotEmpty)
+                        _clearPostCheckoutPreview();
+                      setState(() => _currentPageIndex = 1);
+                    },
                   ),
                   // 頁面內容
                   Expanded(
-                    child: _currentPageIndex == 0
-                        ? ProductListWidget(
-                            products: _searchResults.isNotEmpty
-                                ? _searchResults
-                                : products,
-                            onProductTap: (p) {
-                              if (_lastCheckedOutCart.isNotEmpty) {
-                                _clearPostCheckoutPreview();
-                                setState(() => _currentPageIndex = 0);
-                              }
-                              _addToCart(p);
-                            },
-                            shouldScrollToTop: _shouldScrollToTop,
-                          )
-                        : _buildSearchPage(),
+                    child: PosProductPanel(
+                      pageIndex: _currentPageIndex,
+                      products: products,
+                      searchController: _searchController,
+                      manualOrderActive: _manualOrderActive,
+                      shouldScrollToTop: _shouldScrollToTop,
+                      onProductTap: (p) {
+                        if (_lastCheckedOutCart.isNotEmpty) {
+                          _clearPostCheckoutPreview();
+                          setState(() => _currentPageIndex = 0);
+                        }
+                        _addToCart(p);
+                      },
+                      onSearchConfirmReturn: () =>
+                          setState(() => _currentPageIndex = 0),
+                    ),
                   ),
                 ],
               ),
@@ -579,725 +349,6 @@ class _PosMainScreenState extends State<PosMainScreen> {
     );
   }
 
-  // 匯出今日營收圖（含：總營收、預購小計、折扣小計、三種付款方式小計）
-  Future<bool> _exportTodayRevenueImage() async {
-    try {
-      final summary = await ReportService.computeTodayRevenueSummary();
-
-      // 建立可愛繽紛的圖像 Widget（統一卡片樣式）
-      final now = TimeService.now();
-      final y = now.year.toString().padLeft(4, '0');
-      final m = now.month.toString().padLeft(2, '0');
-      final d = now.day.toString().padLeft(2, '0');
-      final dateStr = '$y-$m-$d';
-
-      // captureKey 用於不可見的「未遮蔽」版本擷取；預覽不使用 key
-      // captureKey 已由 CaptureUtil 內部自行建立
-
-      final tsHeadline = const TextStyle(
-        fontSize: 28,
-        fontWeight: FontWeight.w900,
-      );
-      final tsSectionLabel = const TextStyle(
-        fontSize: 20,
-        fontWeight: FontWeight.w700,
-      );
-      final tsMetricValueLg = const TextStyle(
-        fontSize: 24,
-        fontWeight: FontWeight.w800,
-      );
-      final tsMetricValue = const TextStyle(
-        fontSize: 18,
-        fontWeight: FontWeight.w700,
-      );
-      // final tsChipValue = const TextStyle(fontSize: 16, fontWeight: FontWeight.w600); // reserved for future chips
-      // metric card
-      Widget metricCard({
-        required String icon,
-        required String title,
-        required String value,
-        required Color bg,
-        Color? valueColor,
-        bool large = false,
-      }) {
-        return Container(
-          padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
-          decoration: BoxDecoration(
-            color: bg,
-            borderRadius: BorderRadius.circular(16),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(icon, style: const TextStyle(fontSize: 22)),
-              const SizedBox(height: 6),
-              Text(
-                title,
-                style: const TextStyle(fontSize: 14, color: Colors.black54),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                value,
-                style: (large ? tsMetricValueLg : tsMetricValue).copyWith(
-                  color: valueColor ?? Colors.black87,
-                ),
-              ),
-            ],
-          ),
-        );
-      }
-
-      Widget revenueWidget({required bool showNumbers, Key? key}) {
-        String money(int v) => MoneyFormatter.thousands(v);
-
-        Color bg1 = StyleConfig.revenueBgPreorder; // 粉
-        Color bg2 = StyleConfig.revenueBgLinePay; // 淡藍
-        Color bg3 = StyleConfig.revenueBgCash; // 淡綠
-        Color bg4 = StyleConfig.revenueBgTransfer; // 淡黃
-
-        String mask(int v) => showNumbers ? money(v) : '💰';
-
-        return RepaintBoundary(
-          key: key,
-          child: Container(
-            width: 800,
-            padding: const EdgeInsets.fromLTRB(28, 28, 28, 24),
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [Colors.white, Color(0xFFF8FAFC)],
-              ),
-              borderRadius: BorderRadius.circular(32),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.08),
-                  blurRadius: 26,
-                  offset: const Offset(0, 10),
-                ),
-              ],
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Row(
-                  children: [
-                    Text(AppMessages.revenueTodayTitle, style: tsHeadline),
-                    const Spacer(),
-                    Text(dateStr, style: StyleConfig.revenueDateTextStyle),
-                  ],
-                ),
-                if (AppConfig.pettyCash > 0) ...[
-                  const SizedBox(height: 4),
-                  Align(
-                    alignment: Alignment.centerRight,
-                    child: Text(
-                      MoneyFormatter.symbol(AppConfig.pettyCash),
-                      style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.black54,
-                      ),
-                    ),
-                  ),
-                ],
-                const SizedBox(height: 12),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    vertical: 16,
-                    horizontal: 20,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(16),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black26,
-                        blurRadius: 10,
-                        offset: Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                  child: Row(
-                    children: [
-                      const Icon(
-                        Icons.star_rounded,
-                        color: Colors.amber,
-                        size: 32,
-                      ),
-                      const SizedBox(width: 12),
-                      Text(
-                        AppMessages.totalRevenueLabel,
-                        style: tsSectionLabel,
-                      ),
-                      const Spacer(),
-                      Text(
-                        mask(summary.total),
-                        style: tsHeadline.copyWith(color: Colors.teal),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Row(
-                  children: [
-                    Expanded(
-                      child: metricCard(
-                        icon: '💵',
-                        title: AppMessages.metricCash,
-                        value: mask(summary.cash),
-                        bg: bg3,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: metricCard(
-                        icon: '🔁',
-                        title: AppMessages.metricTransfer,
-                        value: mask(summary.transfer),
-                        bg: bg4,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: metricCard(
-                        icon: '📲',
-                        title: AppMessages.metricLinePay,
-                        value: mask(summary.linepay),
-                        bg: bg2,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                Row(
-                  children: [
-                    Expanded(
-                      child: metricCard(
-                        icon: '🧸',
-                        title: AppMessages.metricPreorderSubtotal,
-                        value: mask(summary.preorder),
-                        bg: bg1,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: metricCard(
-                        icon: '✨',
-                        title: AppMessages.metricDiscountSubtotal,
-                        value: mask(summary.discount),
-                        bg: const Color(0xFFFFEEF0),
-                        valueColor: Colors.pink,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                const Align(
-                  alignment: Alignment.centerRight,
-                  child: Text(
-                    AppMessages.appTitle,
-                    style: TextStyle(fontSize: 12, color: Colors.black45),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
-      }
-
-      // 顯示唯一一個預覽視窗（預設隱藏數字；點擊可切換顯示）
-      if (mounted) {
-        bool previewShowNumbers = false; // 放在外層，避免 StatefulBuilder 重建時被重設
-        // ignore: unawaited_futures
-        showDialog(
-          context: context,
-          barrierDismissible: true,
-          builder: (ctx) => StatefulBuilder(
-            builder: (ctx, setLocal) {
-              return Dialog(
-                backgroundColor: Colors.transparent,
-                insetPadding: const EdgeInsets.all(16),
-                child: LayoutBuilder(
-                  builder: (ctx, cons) => ClipRRect(
-                    borderRadius: BorderRadius.circular(20),
-                    child: ConstrainedBox(
-                      constraints: BoxConstraints(
-                        maxWidth: 720,
-                        maxHeight: MediaQuery.of(ctx).size.height * 0.85,
-                      ),
-                      child: GestureDetector(
-                        onTap: () {
-                          previewShowNumbers = !previewShowNumbers;
-                          setLocal(() {});
-                        },
-                        child: revenueWidget(showNumbers: previewShowNumbers),
-                      ),
-                    ),
-                  ),
-                ),
-              );
-            },
-          ),
-        );
-      }
-
-      if (!mounted) return false;
-      final bytes = await CaptureUtil.captureWidget(
-        context: context,
-        builder: (k) => revenueWidget(showNumbers: true, key: k),
-        pixelRatio: 3.0,
-      );
-
-      final yy = (now.year % 100).toString().padLeft(2, '0');
-      final fileName = '營收_$yy$m$d.png';
-      final res = await ExportService.instance.savePng(
-        fileName: fileName,
-        bytes: bytes,
-      );
-      if (!mounted) return res.success;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            res.success
-                ? AppMessages.exportRevenueSuccess(res.paths.join('\n'))
-                : AppMessages.exportRevenueFailure(res.error ?? '未知錯誤'),
-          ),
-        ),
-      );
-      return res.success;
-    } catch (e) {
-      if (!mounted) return false;
-      try {
-        if (Navigator.canPop(context)) Navigator.pop(context);
-      } catch (_) {}
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(AppMessages.exportRevenueFailure(e))),
-      );
-      return false;
-    }
-  }
-
-  Future<void> _showSetPettyCashDialog() async {
-    final pin = AppConfig.csvImportPin;
-    // 若已有值且要修改，先輸入 PIN
-    if (AppConfig.pettyCash > 0) {
-      final ok = await PinDialog.show(
-        context: context,
-        pin: pin,
-        subtitle: AppMessages.pettyCashCurrent(AppConfig.pettyCash),
-      );
-      if (!ok) return;
-    }
-    int tempValue = AppConfig.pettyCash;
-    if (!mounted) return;
-    await showDialog<int>(
-      context: context,
-      barrierDismissible: true,
-      builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setS) {
-          String current = tempValue == 0 ? '' : tempValue.toString();
-          void append(String d) {
-            if (current.length >= 7) return;
-            current += d;
-            setS(() => tempValue = int.tryParse(current) ?? 0);
-          }
-
-          void clearAll() {
-            setS(() {
-              current = '';
-              tempValue = 0;
-            });
-          }
-
-          void confirm() async {
-            if (tempValue < 0) return; // 不接受負值
-            await AppConfig.setPettyCash(tempValue);
-            if (!ctx.mounted) return;
-            Navigator.of(ctx).pop(tempValue);
-            if (!mounted) return;
-            setState(() {});
-            if (!mounted) return;
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(AppMessages.pettyCashSet(tempValue))),
-            );
-          }
-
-          Widget priceDisplay() => Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              border: Border.all(color: Colors.grey[400]!),
-              borderRadius: BorderRadius.circular(8),
-              color: Colors.grey[50],
-            ),
-            child: Text(
-              '💲 ${current.isEmpty ? '0' : current}',
-              style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-                color: Colors.blueGrey[800],
-              ),
-              textAlign: TextAlign.center,
-            ),
-          );
-          Widget numKey(String n, VoidCallback onTap) => SizedBox(
-            width: 72,
-            height: 60,
-            child: ElevatedButton(
-              onPressed: onTap,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.blue[50],
-                foregroundColor: Colors.blue[700],
-              ),
-              child: Text(
-                n,
-                style: const TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-          );
-          Widget actionKey(String label, VoidCallback onTap) => SizedBox(
-            width: 72,
-            height: 60,
-            child: ElevatedButton(
-              onPressed: onTap,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.orange[50],
-                foregroundColor: Colors.orange[700],
-              ),
-              child: Text(label, style: const TextStyle(fontSize: 18)),
-            ),
-          );
-          return AlertDialog(
-            content: SizedBox(
-              width: 300,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Text(
-                    AppMessages.setPettyCash,
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 12),
-                  priceDisplay(),
-                  const SizedBox(height: 16),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: [
-                      numKey('1', () => append('1')),
-                      numKey('2', () => append('2')),
-                      numKey('3', () => append('3')),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: [
-                      numKey('4', () => append('4')),
-                      numKey('5', () => append('5')),
-                      numKey('6', () => append('6')),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: [
-                      numKey('7', () => append('7')),
-                      numKey('8', () => append('8')),
-                      numKey('9', () => append('9')),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: [
-                      actionKey('🧹', clearAll),
-                      numKey('0', () => append('0')),
-                      actionKey('✅', confirm),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          );
-        },
-      ),
-    );
-  }
-
-  // 新增：寶寶人氣指數匯出（與營收匯出相同的穩定預覽 + 隱藏擷取流程）
-  Future<void> _exportTodayPopularityImage() async {
-    try {
-      final pop = await ReportService.computeTodayPopularityStats();
-      final fixedCats = [
-        'Duffy',
-        'ShellieMay',
-        'Gelatoni',
-        'StellaLou',
-        'CookieAnn',
-        'OluMel',
-        'LinaBell',
-      ];
-      final Map<String, int> baseMap = {for (final c in fixedCats) c: 0};
-      int others = 0;
-      pop.categoryCount.forEach((String k, int v) {
-        if (baseMap.containsKey(k)) {
-          baseMap[k] = baseMap[k]! + v;
-        } else {
-          others += v;
-        }
-      });
-      final totalAll = pop.totalQty;
-      String pct(int v) => pop.totalQty == 0
-          ? '0%'
-          : '${((v * 1000 / (pop.totalQty == 0 ? 1 : pop.totalQty)).round() / 10).toStringAsFixed(1)}%';
-      final sortable = [
-        ...baseMap.entries.map((e) => MapEntry(e.key, e.value)),
-        MapEntry('其他角色', others),
-      ]..sort((a, b) => b.value.compareTo(a.value));
-      String deco(String raw) {
-        switch (raw) {
-          case 'Duffy':
-            return '🐻 Duffy';
-          case 'ShellieMay':
-            return '🐻 ShellieMay';
-          case 'Gelatoni':
-            return '🐱 Gelatoni';
-          case 'StellaLou':
-            return '🐰 StellaLou';
-          case 'CookieAnn':
-            return '🐶 CookieAnn';
-          case 'OluMel':
-            return '🐢 OluMel';
-          case 'LinaBell':
-            return '🦊 LinaBell';
-          case '其他角色':
-            return '🏰 其他角色';
-          default:
-            return raw;
-        }
-      }
-
-      // 角色代表色（可再微調）
-      final popularityColors = <String, Color>{
-        'Duffy': Colors.brown[400]!,
-        'ShellieMay': Colors.pink[300]!,
-        'Gelatoni': Colors.teal[400]!,
-        'StellaLou': Colors.purple[300]!,
-        'CookieAnn': Colors.amber[400]!,
-        'OluMel': Colors.green[300]!,
-        'LinaBell': Colors.pink[200]!,
-        '其他角色': Colors.blueGrey[300]!,
-      };
-      final now = TimeService.now();
-      final dateStr =
-          '${now.year.toString().padLeft(4, '0')}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
-      // captureKey 已由 CaptureUtil 內部自行建立
-      Widget popularityWidget({Key? key}) => RepaintBoundary(
-        key: key,
-        child: Container(
-          padding: const EdgeInsets.fromLTRB(28, 24, 28, 20),
-          width: 560, // 縮窄整體寬度，減少右側留白
-          decoration: BoxDecoration(
-            // 淡漸層背景讓卡片更柔和
-            gradient: const LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [Colors.white, Color(0xFFF8FAFC)],
-            ),
-            borderRadius: BorderRadius.circular(32),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.08),
-                blurRadius: 26,
-                offset: const Offset(0, 10),
-              ),
-            ],
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Row(
-                children: [
-                  const Text(
-                    '🍼 寶寶人氣指數',
-                    style: TextStyle(fontSize: 24, fontWeight: FontWeight.w800),
-                  ),
-                  const Spacer(),
-                  Text(
-                    dateStr,
-                    style: const TextStyle(
-                      color: Colors.black45,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 22),
-              Wrap(
-                spacing: 14,
-                runSpacing: 14,
-                children: [
-                  _metricChip('交易筆數', pop.receiptCount, Colors.indigo[600]!),
-                  _metricChip(
-                    AppMessages.metricTotalQty,
-                    pop.totalQty,
-                    Colors.teal[700]!,
-                  ),
-                  _metricChip(
-                    AppMessages.metricNormalQty,
-                    pop.normalQty,
-                    Colors.blue[600]!,
-                  ),
-                  _metricChip(
-                    AppMessages.metricPreorderQty,
-                    pop.preorderQty,
-                    Colors.purple[600]!,
-                  ),
-                  _metricChip(
-                    AppMessages.metricDiscountQty,
-                    pop.discountQty,
-                    Colors.orange[700]!,
-                  ),
-                ],
-              ),
-              const SizedBox(height: 18), // 移除表頭後保留適度空隙
-              for (int i = 0; i < sortable.length; i++) ...[
-                _categoryBarNew(
-                  deco(sortable[i].key),
-                  sortable[i].value,
-                  pct(sortable[i].value),
-                  totalAll,
-                  popularityColors[sortable[i].key] ?? Colors.blueGrey,
-                  i == 0
-                      ? '🥇'
-                      : i == 1
-                      ? '🥈'
-                      : i == 2
-                      ? '🥉'
-                      : null,
-                ),
-              ],
-              const SizedBox(height: 20),
-              Align(
-                alignment: Alignment.centerRight,
-                child: Text(
-                  'CheeMeow POS',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.blueGrey[300],
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      );
-
-      // 預覽對話框（使用者看到穩定版本）
-      if (mounted) {
-        // ignore: unawaited_futures
-        showDialog(
-          context: context,
-          barrierDismissible: true,
-          builder: (_) => Dialog(
-            backgroundColor: Colors.transparent,
-            insetPadding: const EdgeInsets.all(16),
-            child: SingleChildScrollView(child: popularityWidget()),
-          ),
-        );
-      }
-      if (!mounted) return;
-      final bytes = await CaptureUtil.captureWidget(
-        context: context,
-        builder: (k) => popularityWidget(key: k),
-        pixelRatio: 3.0,
-      );
-
-      final fileName = '人氣指數_$dateStr.png';
-      final res = await ExportService.instance.savePng(
-        fileName: fileName,
-        bytes: bytes,
-      );
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            res.success && res.paths.isNotEmpty
-                ? AppMessages.popularityExportSuccess(res.paths.first)
-                : AppMessages.popularityExportFailure,
-          ),
-        ),
-      );
-    } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(AppMessages.popularityExportError(e))),
-      );
-    }
-  }
-
-  Future<void> _exportSalesData() async {
-    if (!mounted) return;
-    try {
-      // 確保收據服務初始化（避免尚未初始化導致 _prefs 為 null）
-      await ReceiptService.instance.initialize();
-      final receipts = await ReceiptService.instance.getTodayReceipts();
-      if (receipts.isEmpty) {
-        if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text(AppMessages.salesExportNoData)),
-        );
-        return;
-      }
-
-      // 建立日期（資料夾 yyyy-MM-dd，同現有圖片匯出）與檔名日期後綴（yyMMdd）
-      final now = DateTime.now();
-      // dateFolder 由 ExportService 處理，不再在此使用
-      final dateSuffix =
-          '${(now.year % 100).toString().padLeft(2, '0')}${now.month.toString().padLeft(2, '0')}${now.day.toString().padLeft(2, '0')}';
-
-      // 與營收 / 人氣匯出保持一致：Downloads/cheemeow_pos/<date>
-      // 由 ExportService 處理平台差異
-
-      // 付款方式代碼對應已內建於 SalesExportService 中
-
-      final bundle = SalesExportService.instance.buildCsvsForReceipts(receipts);
-      final salesFileName = '銷售_$dateSuffix.csv';
-      final specialFileName = '特殊商品_$dateSuffix.csv';
-      final res = await ExportService.instance.saveCsvFiles(
-        files: {
-          salesFileName: bundle.salesCsv,
-          specialFileName: bundle.specialCsv,
-        },
-        addBom: true,
-      );
-      if (!mounted) return;
-      if (res.success) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(AppMessages.salesExportSuccess(res.paths))),
-        );
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(AppMessages.salesExportFailure(res.error ?? '未知錯誤')),
-          ),
-        );
-      }
-    } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(AppMessages.salesExportFailure(e))),
-      );
-    }
-  }
-
   void _checkout() async {
     // 直接進入付款方式（極簡流程）
     // 結帳前最終把關：折扣不可大於非折扣商品總額
@@ -1330,365 +381,45 @@ class _PosMainScreenState extends State<PosMainScreen> {
     if (!mounted) return;
     if (payment == null) return; // 取消付款
 
-    // 在清空購物車前拍下快照，用於建立收據
-    final itemsSnapshot = List<CartItem>.from(cartItems);
-    // 記錄購物車商品數量（已不另行顯示數量，保留 snapshot 用於收據）
-    await _processCheckout();
+    final result = await _checkoutController.finalize(payment.method);
     if (!mounted) return;
-
-    // 建立並儲存收據：自訂編號（每日序號），時間精度到分鐘
-    final now = TimeService.now();
-    final id = await ReceiptService.instance.generateReceiptId(
-      payment.method,
-      now: now,
-    );
-    final tsMinute = DateTime(
-      now.year,
-      now.month,
-      now.day,
-      now.hour,
-      now.minute,
-    );
-    final receipt = Receipt.fromCart(
-      itemsSnapshot,
-    ).copyWith(id: id, timestamp: tsMinute, paymentMethod: payment.method);
-    await ReceiptService.instance.saveReceipt(receipt);
-    if (!mounted) return;
-
-    // 顯示結帳完成（統一格式：結帳完成！總金額 N ，(付款方式)）
-    final unifiedTotal = itemsSnapshot.fold<int>(
-      0,
-      (sum, i) => sum + i.subtotal,
-    );
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(AppMessages.checkoutDone(unifiedTotal, payment.method)),
+        content: Text(
+          AppMessages.checkoutDone(result.unifiedTotal, payment.method),
+        ),
         duration: Duration(seconds: 3),
       ),
     );
     setState(() {
       _lastCheckoutPaymentMethod = payment.method;
-      // 結帳完成後：清除搜尋關鍵字與篩選，讓商品排序恢復預設
-      _searchQuery = '';
-      _selectedFilters.clear();
-      _searchResults = [];
+      _searchController.clearQuery();
+      _searchController.clearFilters();
       _currentPageIndex = 0; // 回到銷售頁
-    });
-  }
-
-  Future<void> _processCheckout() async {
-    final outcome = await ProductUpdateService.instance.applyCheckout(
-      products: products,
-      cartItems: cartItems,
-      now: TimeService.now(),
-    );
-
-    debugPrint('結帳數量統計: ${outcome.quantityByBarcode}');
-    debugPrint('實際更新了 ${outcome.updatedCount} 個商品');
-
-    setState(() {
-      // 暫存結帳前的購物車內容供結帳完成後顯示
-      _lastCheckedOutCart = List<CartItem>.from(cartItems);
-      cartItems.clear();
-      products = outcome.resortedProducts;
-
-      // 若目前左側使用的是搜尋/篩選結果，將其以條碼對映為最新的商品資料，以避免顯示舊庫存
-      if (_searchResults.isNotEmpty) {
-        final Map<String, Product> latestByBarcode = {
-          for (final p in outcome.updatedProducts) p.barcode: p,
-        };
-        _searchResults = _searchResults
-            .map((old) => latestByBarcode[old.barcode] ?? old)
-            .toList();
-      }
-      // 設置滾動到頂部標記
+      _lastCheckedOutCart = List<CartItem>.from(
+        _checkoutController.lastCheckedOutCart,
+      );
+      // 觸發商品列表回到頂部
       _shouldScrollToTop = true;
+      // 啟用手動排序鎖定，後續不再自動每日排序，保留剛結帳商品置頂效果
+      _manualOrderActive = true;
     });
-
-    // 立即重置滾動標記
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      setState(() {
-        _shouldScrollToTop = false;
-      });
-    });
-
-    // 保存更新後的商品資料到本地存儲
-    await _saveProductsToStorage();
-
-    debugPrint(
-      '結帳完成，商品列表已更新，實際更新: ${outcome.updatedCount} 個商品 (daily sort applied)',
-    );
-  }
-
-  /// 建構搜尋頁面
-  Widget _buildSearchPage() {
-    return Column(
-      children: [
-        // 搜尋輸入框
-        Container(
-          padding: EdgeInsets.all(16),
-          child: TextField(
-            decoration: InputDecoration(
-              hintText: AppMessages.searchProductsHint,
-              prefixIcon: Icon(Icons.search),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-              filled: true,
-              fillColor: Colors.grey[50],
-            ),
-            onChanged: _performSearch,
-          ),
-        ),
-        // 快速篩選按鈕區域（以可重用元件呈現）
-        Expanded(
-          child: Container(
-            padding: EdgeInsets.symmetric(horizontal: 12),
-            child: SearchFilterBar(
-              buildFilterButton: (label, {bool isSpecial = false}) =>
-                  _buildFilterButton(label, isSpecial: isSpecial),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  /// 執行搜尋
-  void _performSearch(String query) {
-    setState(() {
-      _searchQuery = query.trim();
-      _searchResults = _searchFilterManager.search(products, _searchQuery);
-    });
-  }
-
-  /// 建構篩選按鈕
-  Widget _buildFilterButton(String label, {bool isSpecial = false}) {
-    final isSelected = _selectedFilters.contains(label);
-
-    Color backgroundColor;
-    Color textColor;
-
-    if (isSpecial) {
-      // 特殊按鈕（重選、確認）
-      if (label == '重選') {
-        backgroundColor = Colors.orange[100]!;
-        textColor = Colors.orange[700]!;
-      } else {
-        // 確認
-        backgroundColor = Colors.green[100]!;
-        textColor = Colors.green[700]!;
-      }
-    } else {
-      // 普通篩選按鈕
-      backgroundColor = isSelected ? Colors.blue[100]! : Colors.grey[100]!;
-      textColor = isSelected ? Colors.blue[700]! : Colors.grey[700]!;
-    }
-
-    return GestureDetector(
-      onTap: () => _onFilterButtonTap(label),
-      child: Container(
-        height: 70, // 固定高度 70px
-        decoration: BoxDecoration(
-          color: backgroundColor,
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(
-            color: isSelected ? Colors.blue[300]! : Colors.grey[300]!,
-            width: 1,
-          ),
-        ),
-        child: Center(
-          child: Text(
-            label,
-            style: TextStyle(
-              fontSize: 13,
-              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-              color: textColor,
-            ),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-        ),
-      ),
-    );
-  }
-
-  /// 檢查地區按鈕是否應該被禁用
-  /// 處理篩選按鈕點擊
-  void _onFilterButtonTap(String label) {
-    setState(() {
-      if (label == AppMessages.reset) {
-        _selectedFilters.clear();
-        _searchQuery = '';
-        _searchResults = [];
-      } else if (label == AppMessages.confirm) {
-        if (_searchQuery.startsWith(AppMessages.filterResultPrefix)) {
-          _searchQuery = '';
+    // 下一幀重置旗標，方便下次再次觸發
+    if (mounted) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        if (_shouldScrollToTop) {
+          setState(() => _shouldScrollToTop = false);
         }
-        _applyFiltersWithTextSearch();
-        _currentPageIndex = 0; // 切到銷售頁
-      } else {
-        final updated = _searchFilterManager.toggleFilter(
-          _selectedFilters,
-          label,
-        );
-        _selectedFilters
-          ..clear()
-          ..addAll(updated);
-      }
-    });
+      });
+    }
   }
-
-  /// 處理互斥群組的邏輯
-
-  /// 應用篩選條件
-  /// 應用篩選條件並結合文字搜尋
-  void _applyFiltersWithTextSearch() {
-    final filtered = _searchFilterManager.filter(
-      products,
-      _selectedFilters,
-      searchQuery: _searchQuery,
-    );
-    setState(() {
-      _searchResults = filtered;
-      _searchQuery = AppMessages.filterResultLabel(_selectedFilters);
-    });
-
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(AppMessages.searchResultCount(filtered.length)),
-        duration: Duration(seconds: 2),
-      ),
-    );
-  }
-
-  // 敬請期待改由 DialogManager.showComingSoon(context, featureName) 統一處理
 
   Future<void> _saveProductsToStorage() async {
     try {
       await LocalDatabaseService.instance.saveProducts(products);
     } catch (e) {
-      debugPrint('保存商品資料失敗: $e');
+      AppLogger.w('保存商品資料失敗', e);
     }
-  }
-
-  //（已移除）場次功能不使用
-
-  Widget _metricChip(String label, int value, Color color) {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 14),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withValues(alpha: 0.4), width: 1),
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(label, style: TextStyle(fontSize: 11, color: _darken(color))),
-          const SizedBox(height: 2),
-          Text(
-            '$value',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w700,
-              color: _darken(color),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Color _darken(Color c) {
-    final hsl = HSLColor.fromColor(c);
-    final dark = hsl.withLightness((hsl.lightness * 0.7).clamp(0.0, 1.0));
-    return dark.toColor();
-  }
-
-  Widget _categoryBarNew(
-    String name,
-    int count,
-    String percent,
-    int total,
-    Color barColor, [
-    String? medal,
-  ]) {
-    final ratio = total == 0 ? 0.0 : count / total;
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 5),
-      child: Row(
-        children: [
-          // 獎牌欄位（可為 null）
-          SizedBox(
-            width: 26,
-            child: Text(
-              medal ?? '',
-              textAlign: TextAlign.center,
-              style: const TextStyle(fontSize: 14),
-            ),
-          ),
-          SizedBox(
-            width: 128, // 增加可視文字寬（原 120）
-            child: Text(
-              name,
-              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-          SizedBox(
-            width: 50, // 微放大，搭配字體
-            child: Text(
-              '$count',
-              textAlign: TextAlign.right,
-              style: const TextStyle(
-                fontSize: 13,
-                color: Colors.black87,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-          const SizedBox(width: 4),
-          Flexible(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 230), // 縮短條形寬度騰出文字空間
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(9),
-                child: Stack(
-                  children: [
-                    Container(height: 18, color: Colors.blueGrey[50]),
-                    FractionallySizedBox(
-                      widthFactor: ratio.clamp(0.0, 1.0),
-                      child: Container(
-                        height: 18,
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: [
-                              barColor.withValues(alpha: 0.85),
-                              barColor,
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(width: 8), // 百分比更靠近
-          SizedBox(
-            width: 56,
-            child: Text(
-              percent,
-              textAlign: TextAlign.right,
-              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
-            ),
-          ),
-        ],
-      ),
-    );
   }
 }

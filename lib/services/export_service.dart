@@ -2,17 +2,12 @@ import 'dart:io';
 import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
+import 'package:cheemeow_pos/utils/app_logger.dart';
+import 'package:cheemeow_pos/models/export_models.dart';
 import 'package:media_store_plus/media_store_plus.dart';
 import 'package:path_provider/path_provider.dart';
 
-class ExportResult {
-  final bool success;
-  final List<String> paths;
-  final String? error;
-  ExportResult({required this.success, this.paths = const [], this.error});
-  factory ExportResult.failure(String msg) =>
-      ExportResult(success: false, error: msg);
-}
+// 舊 ExportResult 已被 UnifiedExportResult 取代
 
 class ExportService {
   ExportService._();
@@ -23,7 +18,7 @@ class ExportService {
   String _dateFolder(DateTime now) =>
       '${now.year.toString().padLeft(4, '0')}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
 
-  Future<ExportResult> savePng({
+  Future<UnifiedExportResult> savePng({
     required String fileName,
     required Uint8List bytes,
     DateTime? now,
@@ -32,7 +27,14 @@ class ExportService {
       final n = now ?? DateTime.now();
       final folder = _dateFolder(n);
       final root = await _resolveBaseDirectory(folder);
-      if (root == null) return ExportResult.failure('無法取得儲存目錄');
+      if (root == null) {
+        return UnifiedExportResult.failure(
+          const ExportFailure(
+            code: ExportFailureCode.noStorageDirectory,
+            message: '無法取得儲存目錄',
+          ),
+        );
+      }
       if (Platform.isAndroid && testOverrideBaseDir == null) {
         final tmp = await _writeTemp(fileName, bytes);
         try {
@@ -50,9 +52,14 @@ class ExportService {
             final real = await mediaStore.getFilePathFromUri(uriString: path);
             if (real != null) path = real;
           }
-          return ExportResult(
-            success: path != null,
-            paths: path != null ? [path] : const [],
+          if (path != null) {
+            return UnifiedExportResult.success([path]);
+          }
+          return UnifiedExportResult.failure(
+            const ExportFailure(
+              code: ExportFailureCode.unknown,
+              message: '檔案儲存失敗 (未知原因)',
+            ),
           );
         } finally {
           try {
@@ -69,25 +76,39 @@ class ExportService {
           } catch (_) {}
         }
         await file.writeAsBytes(bytes, flush: true);
-        return ExportResult(success: true, paths: [file.path]);
+        return UnifiedExportResult.success([file.path]);
       }
     } catch (e, st) {
-      debugPrint('[ExportService][savePng] error: $e\n$st');
-      return ExportResult.failure(e.toString());
+      final failure = _mapError('[savePng]', e, st);
+      return UnifiedExportResult.failure(failure);
     }
   }
 
-  Future<ExportResult> saveCsvFiles({
+  Future<UnifiedExportResult> saveCsvFiles({
     required Map<String, String> files,
     bool addBom = true,
     DateTime? now,
   }) async {
-    if (files.isEmpty) return ExportResult.failure('無檔案內容');
+    if (files.isEmpty) {
+      return UnifiedExportResult.failure(
+        const ExportFailure(
+          code: ExportFailureCode.emptyInput,
+          message: '無檔案內容',
+        ),
+      );
+    }
     try {
       final n = now ?? DateTime.now();
       final folder = _dateFolder(n);
       final root = await _resolveBaseDirectory(folder);
-      if (root == null) return ExportResult.failure('無法取得儲存目錄');
+      if (root == null) {
+        return UnifiedExportResult.failure(
+          const ExportFailure(
+            code: ExportFailureCode.noStorageDirectory,
+            message: '無法取得儲存目錄',
+          ),
+        );
+      }
       final savedPaths = <String>[];
       if (Platform.isAndroid && testOverrideBaseDir == null) {
         await MediaStore.ensureInitialized();
@@ -117,7 +138,15 @@ class ExportService {
             } catch (_) {}
           }
         }
-        return ExportResult(success: savedPaths.isNotEmpty, paths: savedPaths);
+        if (savedPaths.isNotEmpty) {
+          return UnifiedExportResult.success(savedPaths);
+        }
+        return UnifiedExportResult.failure(
+          const ExportFailure(
+            code: ExportFailureCode.unknown,
+            message: 'CSV 檔案全部儲存失敗',
+          ),
+        );
       } else {
         final dir = Directory(root);
         if (!await dir.exists()) await dir.create(recursive: true);
@@ -133,11 +162,19 @@ class ExportService {
           await file.writeAsBytes(data, flush: true);
           savedPaths.add(file.path);
         }
-        return ExportResult(success: savedPaths.isNotEmpty, paths: savedPaths);
+        if (savedPaths.isNotEmpty) {
+          return UnifiedExportResult.success(savedPaths);
+        }
+        return UnifiedExportResult.failure(
+          const ExportFailure(
+            code: ExportFailureCode.unknown,
+            message: 'CSV 檔案未成功寫入',
+          ),
+        );
       }
     } catch (e, st) {
-      debugPrint('[ExportService][saveCsvFiles] error: $e\n$st');
-      return ExportResult.failure(e.toString());
+      final failure = _mapError('[saveCsvFiles]', e, st);
+      return UnifiedExportResult.failure(failure);
     }
   }
 
@@ -173,5 +210,32 @@ class ExportService {
       return '${docs.path}/cheemeow_pos/$dateFolder';
     } catch (_) {}
     return null;
+  }
+
+  ExportFailure _mapError(String action, Object e, StackTrace st) {
+    AppLogger.e('[ExportService] $action error', e, st);
+    if (e is FileSystemException) {
+      final osError = e.osError?.errorCode;
+      if (osError == 13) {
+        return ExportFailure(
+          code: ExportFailureCode.permissionDenied,
+          message: '沒有存取權限',
+          error: e,
+          stackTrace: st,
+        );
+      }
+      return ExportFailure(
+        code: ExportFailureCode.ioError,
+        message: '檔案系統錯誤: ${e.message}',
+        error: e,
+        stackTrace: st,
+      );
+    }
+    return ExportFailure(
+      code: ExportFailureCode.unknown,
+      message: '未知錯誤: $e',
+      error: e,
+      stackTrace: st,
+    );
   }
 }

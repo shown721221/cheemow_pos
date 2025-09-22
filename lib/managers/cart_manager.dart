@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:cheemeow_pos/utils/app_logger.dart';
 import '../models/product.dart';
 import '../models/cart_item.dart';
 import '../services/local_database_service.dart';
@@ -8,9 +9,9 @@ class CartManager extends ChangeNotifier {
   final List<CartItem> _cartItems = [];
 
   List<CartItem> get cartItems => List.unmodifiable(_cartItems);
-  
+
   bool get hasItems => _cartItems.isNotEmpty;
-  
+
   int get totalAmount {
     return _cartItems.fold(0, (total, item) => total + item.subtotal);
   }
@@ -30,7 +31,7 @@ class CartManager extends ChangeNotifier {
       _cartItems[existingIndex].increaseQuantity();
     } else {
       // 新商品，添加到購物車
-      final productToAdd = customPrice != null 
+      final productToAdd = customPrice != null
           ? Product(
               id: product.id,
               name: product.name,
@@ -40,13 +41,13 @@ class CartManager extends ChangeNotifier {
               lastCheckoutTime: product.lastCheckoutTime,
             )
           : product;
-      
+
       _cartItems.add(CartItem(product: productToAdd, quantity: 1));
     }
-    
+
     notifyListeners();
     if (kDebugMode) {
-      print('添加商品到購物車: ${product.name}, 當前購物車商品數: ${_cartItems.length}');
+      AppLogger.d('添加商品到購物車: ${product.name}, 當前購物車商品數: ${_cartItems.length}');
     }
   }
 
@@ -83,7 +84,7 @@ class CartManager extends ChangeNotifier {
     _cartItems.clear();
     notifyListeners();
     if (kDebugMode) {
-      print('購物車已清空');
+      AppLogger.d('購物車已清空');
     }
   }
 
@@ -97,13 +98,13 @@ class CartManager extends ChangeNotifier {
           newStock,
         );
       }
-      
+
       if (kDebugMode) {
-        print('庫存更新完成');
+        AppLogger.d('庫存更新完成');
       }
     } catch (e) {
       if (kDebugMode) {
-        print('更新庫存失敗: $e');
+        AppLogger.w('更新庫存失敗', e);
       }
       rethrow;
     }

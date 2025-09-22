@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
+import 'package:cheemeow_pos/utils/app_logger.dart';
 import '../models/product.dart';
 import '../models/cart_item.dart';
 import '../models/receipt.dart';
@@ -13,7 +14,7 @@ class PosController extends ChangeNotifier {
   List<Product> _products = [];
   final List<CartItem> _cartItems = [];
   String _lastScannedBarcode = '';
-  
+
   // 掃描相關
   String _scanBuffer = '';
   Timer? _scanTimer;
@@ -22,9 +23,11 @@ class PosController extends ChangeNotifier {
   List<Product> get products => List.unmodifiable(_products);
   List<CartItem> get cartItems => List.unmodifiable(_cartItems);
   String get lastScannedBarcode => _lastScannedBarcode;
-  
-  int get totalAmount => _cartItems.fold(0, (total, item) => total + item.subtotal);
-  int get totalQuantity => _cartItems.fold(0, (total, item) => total + item.quantity);
+
+  int get totalAmount =>
+      _cartItems.fold(0, (total, item) => total + item.subtotal);
+  int get totalQuantity =>
+      _cartItems.fold(0, (total, item) => total + item.quantity);
   bool get hasItems => _cartItems.isNotEmpty;
 
   /// 初始化控制器
@@ -37,15 +40,15 @@ class PosController extends ChangeNotifier {
     try {
       await LocalDatabaseService.instance.ensureSpecialProducts();
       final loadedProducts = await LocalDatabaseService.instance.getProducts();
-      
+
       // 對商品進行排序：特殊商品在最前面
       _sortProducts(loadedProducts);
-      
+
       _products = loadedProducts;
       notifyListeners();
     } catch (e) {
       if (kDebugMode) {
-        print('載入商品失敗: $e');
+        AppLogger.w('載入商品失敗', e);
       }
     }
   }
@@ -81,7 +84,7 @@ class PosController extends ChangeNotifier {
   /// 處理條碼掃描輸入
   void handleBarcodeInput(String character) {
     _scanBuffer += character;
-    
+
     // 重置計時器
     _scanTimer?.cancel();
     _scanTimer = Timer(Duration(milliseconds: 100), () {
@@ -95,7 +98,9 @@ class PosController extends ChangeNotifier {
   /// 處理完整條碼掃描
   void processBarcodeScanned(String barcode) async {
     try {
-      final product = await LocalDatabaseService.instance.getProductByBarcode(barcode);
+      final product = await LocalDatabaseService.instance.getProductByBarcode(
+        barcode,
+      );
       if (product != null) {
         addToCart(product);
         _lastScannedBarcode = barcode;
@@ -107,7 +112,7 @@ class PosController extends ChangeNotifier {
       }
     } catch (e) {
       if (kDebugMode) {
-        print('掃描條碼處理失敗: $e');
+        AppLogger.w('掃描條碼處理失敗', e);
       }
     }
   }
@@ -119,7 +124,7 @@ class PosController extends ChangeNotifier {
       // 由 UI 層處理價格輸入對話框
       return;
     }
-    
+
     addProductToCart(product, product.price);
   }
 
@@ -153,7 +158,7 @@ class PosController extends ChangeNotifier {
       // 新商品插入到頂部（索引0）
       _cartItems.insert(0, CartItem(product: productToAdd));
     }
-    
+
     notifyListeners();
   }
 
@@ -205,11 +210,17 @@ class PosController extends ChangeNotifier {
           .fold<int>(0, (sum, item) => sum + item.subtotal);
       final int discountAbsTotal = _cartItems
           .where((item) => item.product.isDiscountProduct)
-          .fold<int>(0, (sum, item) => sum + (item.subtotal < 0 ? -item.subtotal : item.subtotal));
+          .fold<int>(
+            0,
+            (sum, item) =>
+                sum + (item.subtotal < 0 ? -item.subtotal : item.subtotal),
+          );
 
       if (discountAbsTotal > nonDiscountTotal) {
         if (kDebugMode) {
-          print('⛔️ 折扣金額 ($discountAbsTotal) 大於非折扣商品總額 ($nonDiscountTotal)，已阻止結帳');
+          AppLogger.w(
+            '折扣金額 ($discountAbsTotal) 大於非折扣商品總額 ($nonDiscountTotal)，已阻止結帳',
+          );
         }
         return null;
       }
@@ -219,13 +230,13 @@ class PosController extends ChangeNotifier {
       // 1. 建立收據並儲存（優先級最高）
       final receipt = Receipt.fromCart(_cartItems);
       final receiptSaved = await ReceiptService.instance.saveReceipt(receipt);
-      
+
       if (!receiptSaved) {
         throw Exception('收據儲存失敗');
       }
 
       if (kDebugMode) {
-        print('✅ 收據已安全儲存: ${receipt.id}');
+        AppLogger.i('收據已安全儲存: ${receipt.id}');
       }
 
       // 2. 更新商品的結帳時間
@@ -237,7 +248,7 @@ class PosController extends ChangeNotifier {
       return receipt;
     } catch (e) {
       if (kDebugMode) {
-        print('結帳處理失敗: $e');
+        AppLogger.w('結帳處理失敗', e);
       }
       return null;
     }
@@ -270,24 +281,25 @@ class PosController extends ChangeNotifier {
 
       // 更新商品列表
       _products = updatedProducts;
-      
+
       // 保存到本地資料庫
       await LocalDatabaseService.instance.saveProducts(_products);
-      
+
       notifyListeners();
-      
+
       if (kDebugMode) {
-        print('實際更新了 $updatedCount 個商品的結帳時間');
+        AppLogger.d('實際更新了 $updatedCount 個商品的結帳時間');
       }
     } catch (e) {
       if (kDebugMode) {
-        print('更新商品結帳時間失敗: $e');
+        AppLogger.w('更新商品結帳時間失敗', e);
       }
     }
   }
 
   /// 檢查是否有未找到的商品（用於 UI 顯示錯誤）
-  bool get hasUnfoundProduct => _lastScannedBarcode.isNotEmpty && 
+  bool get hasUnfoundProduct =>
+      _lastScannedBarcode.isNotEmpty &&
       !_products.any((p) => p.barcode == _lastScannedBarcode);
 
   /// 清除未找到商品的狀態

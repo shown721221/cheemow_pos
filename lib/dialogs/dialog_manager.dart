@@ -264,4 +264,21 @@ class DialogManager {
   static void hideLoading(BuildContext context) {
     Navigator.of(context).pop();
   }
+
+  /// 簡單資訊對話框
+  static void showInfo(BuildContext context, String title, String message) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(title),
+        content: Text(message),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text(AppMessages.confirm),
+          ),
+        ],
+      ),
+    );
+  }
 }

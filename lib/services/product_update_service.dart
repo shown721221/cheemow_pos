@@ -37,6 +37,7 @@ class ProductUpdateService {
     List<Product> products,
     List<CartItem> cartItems, {
     DateTime? now,
+    bool useMicroOffset = true,
   }) {
     final checkoutTime = now ?? TimeService.now();
 
@@ -53,28 +54,37 @@ class ProductUpdateService {
     final updatedProducts = <Product>[];
     int updatedCount = 0;
 
+    // 為同一筆結帳中有售出的商品提供微秒遞增，避免排序時時間完全相同導致位置不穩
+    int microOffset = 0;
     for (final p in products) {
       final qty = quantityByBarcode[p.barcode] ?? 0;
       if (qty > 0) {
-        // 特殊商品不扣庫存，但仍更新最後結帳時間
         final newStock = p.isSpecialProduct ? p.stock : (p.stock - qty);
-        updatedProducts.add(Product(
-          id: p.id,
-          barcode: p.barcode,
-          name: p.name,
-          price: p.price,
-          category: p.category,
-          stock: newStock,
-          isActive: p.isActive,
-          lastCheckoutTime: checkoutTime,
-        ));
+        final adjustedTime = useMicroOffset
+            ? checkoutTime.add(Duration(microseconds: microOffset++))
+            : checkoutTime;
+        updatedProducts.add(
+          Product(
+            id: p.id,
+            barcode: p.barcode,
+            name: p.name,
+            price: p.price,
+            category: p.category,
+            stock: newStock,
+            isActive: p.isActive,
+            lastCheckoutTime: adjustedTime,
+          ),
+        );
         updatedCount++;
       } else {
         updatedProducts.add(p);
       }
     }
 
-    final resorted = ProductSorter.sortDaily(updatedProducts, now: checkoutTime);
+    final resorted = ProductSorter.sortDaily(
+      updatedProducts,
+      now: checkoutTime,
+    );
 
     return ProductUpdateOutcome(
       updatedProducts: updatedProducts,
@@ -89,8 +99,14 @@ class ProductUpdateService {
     required List<Product> products,
     required List<CartItem> cartItems,
     DateTime? now,
+    bool useMicroOffset = true,
   }) async {
-    final outcome = compute(products, cartItems, now: now);
+    final outcome = compute(
+      products,
+      cartItems,
+      now: now,
+      useMicroOffset: useMicroOffset,
+    );
     await LocalDatabaseService.instance.saveProducts(outcome.updatedProducts);
     return outcome;
   }
