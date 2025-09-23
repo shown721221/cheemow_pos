@@ -1,3 +1,6 @@
+import java.util.Properties
+import java.io.FileInputStream
+
 plugins {
     id("com.android.application")
     id("kotlin-android")
@@ -35,6 +38,17 @@ android {
     // android/keystore/debug.keystore with default android debug creds.
     val sharedDebugKeystore = file("keystore/debug.keystore")
 
+    // 讀取 key.properties (若建立了正式簽署憑證則啟用 release 簽署)
+    val keystorePropertiesFile = rootProject.file("key.properties")
+    val keystoreProps = Properties()
+    if (keystorePropertiesFile.exists()) {
+        try {
+            FileInputStream(keystorePropertiesFile).use { fis ->
+                keystoreProps.load(fis)
+            }
+        } catch (_: Exception) {}
+    }
+
     signingConfigs {
         if (sharedDebugKeystore.exists()) {
             create("sharedDebug") {
@@ -42,6 +56,19 @@ android {
                 storePassword = "android"
                 keyAlias = "AndroidDebugKey"
                 keyPassword = "android"
+            }
+        }
+        if (keystorePropertiesFile.exists() &&
+            keystoreProps["storeFile"] != null &&
+            keystoreProps["storePassword"] != null &&
+            keystoreProps["keyAlias"] != null &&
+            keystoreProps["keyPassword"] != null) {
+            create("releaseSigning") {
+                val storePath = keystoreProps["storeFile"].toString()
+                storeFile = if (storePath.startsWith("/")) file(storePath) else file(storePath)
+                storePassword = keystoreProps["storePassword"].toString()
+                keyAlias = keystoreProps["keyAlias"].toString()
+                keyPassword = keystoreProps["keyPassword"].toString()
             }
         }
     }
@@ -56,13 +83,15 @@ android {
             }
         }
         release {
-            // For CI/local quick runs we sign release with debug config unless
-            // a proper release signing is configured via key.properties.
-            if (sharedDebugKeystore.exists()) {
-                signingConfig = signingConfigs.getByName("sharedDebug")
-            } else {
-                signingConfig = signingConfigs.getByName("debug")
+            // 若存在 releaseSigning 則使用，否則 fallback 到 sharedDebug / debug
+            signingConfig = when {
+                signingConfigs.findByName("releaseSigning") != null -> signingConfigs.getByName("releaseSigning")
+                sharedDebugKeystore.exists() -> signingConfigs.getByName("sharedDebug")
+                else -> signingConfigs.getByName("debug")
             }
+            // 依需求可開啟：minifyEnabled / shrinkResources
+            isMinifyEnabled = false
+            isShrinkResources = false
         }
     }
 }

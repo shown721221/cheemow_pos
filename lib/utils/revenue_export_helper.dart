@@ -7,6 +7,8 @@ import 'package:cheemeow_pos/config/app_config.dart';
 import 'package:cheemeow_pos/utils/money_formatter.dart';
 import 'package:cheemeow_pos/config/style_config.dart';
 import 'package:cheemeow_pos/services/time_service.dart';
+import 'package:cheemeow_pos/widgets/export_panel.dart';
+import 'package:cheemeow_pos/utils/date_util.dart';
 
 /// 營收匯出版：封裝原先在 PosMainScreen 的巨量方法，減少檔案行數
 class RevenueExportHelper {
@@ -16,10 +18,7 @@ class RevenueExportHelper {
     try {
       final summary = await ReportService.computeTodayRevenueSummary();
       final now = TimeService.now();
-      final y = now.year.toString().padLeft(4, '0');
-      final m = now.month.toString().padLeft(2, '0');
-      final d = now.day.toString().padLeft(2, '0');
-      final dateStr = '$y-$m-$d';
+      final dateStr = DateUtil.ymd(now);
 
       final tsHeadline = const TextStyle(
         fontSize: 28,
@@ -137,174 +136,141 @@ class RevenueExportHelper {
       String mask(int v, bool show) => show ? money(v) : '💰';
 
       Widget revenueWidget({required bool showNumbers, Key? key}) {
-        return RepaintBoundary(
-          key: key,
-          child: Container(
-            width: StyleConfig.exportPanelWidth,
-            height: StyleConfig.exportPanelHeight,
-            padding: StyleConfig.exportPanelPadding,
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [Colors.white, Color(0xFFF8FAFC)],
+        return ExportPanel(
+          repaintBoundaryKey: key,
+          constrainMinHeight: true,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Row(
+                children: [
+                  Text(AppMessages.revenueTodayTitle, style: tsHeadline),
+                  const Spacer(),
+                  Text(dateStr, style: StyleConfig.revenueDateTextStyle),
+                ],
               ),
-              borderRadius: BorderRadius.circular(32),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.08),
-                  blurRadius: 26,
-                  offset: const Offset(0, 10),
+              if (AppConfig.pettyCash > 0) ...[
+                const SizedBox(height: 4),
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: Text(
+                    '零用金 ${MoneyFormatter.symbol(AppConfig.pettyCash)}',
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                      color: gold,
+                    ),
+                  ),
                 ),
               ],
-            ),
-            child: LayoutBuilder(
-              builder: (ctx, cons) => SingleChildScrollView(
-                physics: const NeverScrollableScrollPhysics(),
-                child: ConstrainedBox(
-                  constraints: BoxConstraints(minHeight: cons.maxHeight),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      Row(
-                        children: [
-                          Text(
-                            AppMessages.revenueTodayTitle,
-                            style: tsHeadline,
-                          ),
-                          const Spacer(),
-                          Text(
-                            dateStr,
-                            style: StyleConfig.revenueDateTextStyle,
-                          ),
-                        ],
-                      ),
-                      if (AppConfig.pettyCash > 0) ...[
-                        const SizedBox(height: 4),
-                        Align(
-                          alignment: Alignment.centerRight,
-                          child: Text(
-                            '零用金 ${MoneyFormatter.symbol(AppConfig.pettyCash)}',
-                            style: const TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w700,
-                              color: gold,
-                            ),
-                          ),
-                        ),
-                      ],
-                      const SizedBox(height: 12),
-                      Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.symmetric(
-                          vertical: 12,
-                          horizontal: 20,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(16),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black26,
-                              blurRadius: 8,
-                              offset: const Offset(0, 2),
-                            ),
-                          ],
-                        ),
-                        child: Center(
-                          child: Text(
-                            mask(summary.total, showNumbers),
-                            style: tsHeadline.copyWith(
-                              color: gold,
-                              fontSize: 34,
-                              fontWeight: FontWeight.w900,
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: metricCard(
-                              icon: '💵',
-                              title: 'Cash',
-                              value: mask(summary.cash, showNumbers),
-                              bg: bg3,
-                              inline: true,
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: metricCard(
-                              iconWidget: Image.asset(
-                                'assets/images/cathay.png',
-                                height: 24,
-                                fit: BoxFit.contain,
-                              ),
-                              // no title per requirement
-                              title: null,
-                              value: mask(summary.transfer, showNumbers),
-                              bg: bg4,
-                              inline: true,
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: metricCard(
-                              iconWidget: Image.asset(
-                                'assets/images/linepay.png',
-                                height: 20,
-                                fit: BoxFit.contain,
-                              ),
-                              title: null,
-                              value: mask(summary.linepay, showNumbers),
-                              bg: bg2,
-                              inline: true,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: metricCard(
-                              icon: '🎁',
-                              title: AppMessages.metricPreorderSubtotal,
-                              value: mask(summary.preorder, showNumbers),
-                              bg: bg1,
-                              inline: true,
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: metricCard(
-                              icon: '💸',
-                              title: AppMessages.metricDiscountSubtotal,
-                              value: mask(summary.discount, showNumbers),
-                              bg: const Color(0xFFFFEEF0),
-                              valueColor: gold,
-                              inline: true,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      const Align(
-                        alignment: Alignment.centerRight,
-                        child: Text(
-                          AppMessages.appTitle,
-                          style: TextStyle(fontSize: 12, color: Colors.black45),
-                        ),
-                      ),
-                    ],
+              const SizedBox(height: 12),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(
+                  vertical: 12,
+                  horizontal: 20,
+                ),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black26,
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Center(
+                  child: Text(
+                    mask(summary.total, showNumbers),
+                    style: tsHeadline.copyWith(
+                      color: gold,
+                      fontSize: 34,
+                      fontWeight: FontWeight.w900,
+                    ),
+                    textAlign: TextAlign.center,
                   ),
                 ),
               ),
-            ),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Expanded(
+                    child: metricCard(
+                      icon: '💵',
+                      title: 'Cash',
+                      value: mask(summary.cash, showNumbers),
+                      bg: bg3,
+                      inline: true,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: metricCard(
+                      iconWidget: Image.asset(
+                        'assets/images/cathay.png',
+                        height: 24,
+                        fit: BoxFit.contain,
+                      ),
+                      // no title per requirement
+                      title: null,
+                      value: mask(summary.transfer, showNumbers),
+                      bg: bg4,
+                      inline: true,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: metricCard(
+                      iconWidget: Image.asset(
+                        'assets/images/linepay.png',
+                        height: 20,
+                        fit: BoxFit.contain,
+                      ),
+                      title: null,
+                      value: mask(summary.linepay, showNumbers),
+                      bg: bg2,
+                      inline: true,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Expanded(
+                    child: metricCard(
+                      icon: '🎁',
+                      title: AppMessages.metricPreorderSubtotal,
+                      value: mask(summary.preorder, showNumbers),
+                      bg: bg1,
+                      inline: true,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: metricCard(
+                      icon: '💸',
+                      title: AppMessages.metricDiscountSubtotal,
+                      value: mask(summary.discount, showNumbers),
+                      bg: const Color(0xFFFFEEF0),
+                      valueColor: gold,
+                      inline: true,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              const Align(
+                alignment: Alignment.centerRight,
+                child: Text(
+                  AppMessages.appTitle,
+                  style: TextStyle(fontSize: 12, color: Colors.black45),
+                ),
+              ),
+            ],
           ),
         );
       }
@@ -350,8 +316,7 @@ class RevenueExportHelper {
         pixelRatio: 3.0,
       );
 
-      final yy = (now.year % 100).toString().padLeft(2, '0');
-      final fileName = '營收_$yy$m$d.png';
+      final fileName = '營收_${DateUtil.ymdCompact(now)}.png';
       final res = await ExportService.instance.savePng(
         fileName: fileName,
         bytes: bytes,

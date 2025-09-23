@@ -5,6 +5,8 @@ import 'package:cheemeow_pos/utils/capture_util.dart';
 import 'package:cheemeow_pos/config/app_messages.dart';
 import 'package:cheemeow_pos/services/time_service.dart';
 import 'package:cheemeow_pos/config/style_config.dart';
+import 'package:cheemeow_pos/utils/date_util.dart';
+import 'package:cheemeow_pos/widgets/export_panel.dart';
 
 class PopularityExportHelper {
   PopularityExportHelper._();
@@ -51,108 +53,86 @@ class PopularityExportHelper {
         '其他角色': Colors.blueGrey[300]!,
       };
       final now = TimeService.now();
-      final dateStr =
-          '${now.year.toString().padLeft(4, '0')}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+      final dateStr = DateUtil.ymd(now);
 
       // 移除舊 metricChip；改由新 statCard 系統。
 
       // 移除舊 categoryBar 邏輯，改為垂直圖。
 
-      Widget popularityWidget({Key? key}) => RepaintBoundary(
-        key: key,
-        child: Container(
-          width: StyleConfig.exportPanelWidth,
-          height: StyleConfig.exportPanelHeight,
-          // 與營收面板相同 padding（避免高度視覺差異）
-          padding: StyleConfig.exportPanelPadding,
-          decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [Colors.white, Color(0xFFF8FAFC)],
+      Widget popularityWidget({Key? key}) => ExportPanel(
+        repaintBoundaryKey: key,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // Header（與營收面板統一字級，改成獎台風格圖示）
+            Row(
+              children: [
+                const Text(
+                  '🥇🥈🥉 寶寶人氣指數',
+                  style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900),
+                ),
+                const Spacer(),
+                Text(dateStr, style: StyleConfig.revenueDateTextStyle),
+              ],
             ),
-            borderRadius: BorderRadius.circular(32),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.08),
-                blurRadius: 26,
-                offset: const Offset(0, 10),
-              ),
-            ],
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // Header（與營收面板統一字級，改成獎台風格圖示）
-              Row(
-                children: [
-                  const Text(
-                    '🥇🥈🥉 寶寶人氣指數',
-                    style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900),
-                  ),
-                  const Spacer(),
-                  Text(dateStr, style: StyleConfig.revenueDateTextStyle),
-                ],
-              ),
-              const SizedBox(height: 14),
-              // 統計摘要：強制單行（與面板同寬 800 − padding），以 Row+Expanded 平均分配避免換行。
-              Row(
-                children: [
-                  _StatSummaryTile(
-                    label: '交易筆數',
-                    value: pop.receiptCount,
-                    color: Colors.indigo[600]!,
-                  ),
-                  const SizedBox(width: 10),
-                  _StatSummaryTile(
-                    label: AppMessages.metricTotalQty,
-                    value: pop.totalQty,
-                    color: Colors.teal[700]!,
-                  ),
-                  const SizedBox(width: 10),
-                  _StatSummaryTile(
-                    label: AppMessages.metricNormalQty,
-                    value: pop.normalQty,
-                    color: Colors.blue[600]!,
-                  ),
-                  const SizedBox(width: 10),
-                  _StatSummaryTile(
-                    label: AppMessages.metricPreorderQty,
-                    value: pop.preorderQty,
-                    color: Colors.purple[600]!,
-                  ),
-                  const SizedBox(width: 10),
-                  _StatSummaryTile(
-                    label: AppMessages.metricDiscountQty,
-                    value: pop.discountQty,
-                    color: Colors.orange[700]!,
-                  ),
-                ],
-              ),
-              const SizedBox(height: 18),
-              // 垂直統計圖：以柱狀圖方式顯示各角色佔比
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.only(bottom: 4),
-                  child: _VerticalPopularityChart(
-                    data: sortable,
-                    colors: popularityColors,
-                    total: totalAll,
-                    pct: pct,
-                  ),
+            const SizedBox(height: 14),
+            // 統計摘要：強制單行（與面板同寬 800 − padding），以 Row+Expanded 平均分配避免換行。
+            Row(
+              children: [
+                _StatSummaryTile(
+                  label: '交易筆數',
+                  value: pop.receiptCount,
+                  color: Colors.indigo[600]!,
+                ),
+                const SizedBox(width: 10),
+                _StatSummaryTile(
+                  label: AppMessages.metricTotalQty,
+                  value: pop.totalQty,
+                  color: Colors.teal[700]!,
+                ),
+                const SizedBox(width: 10),
+                _StatSummaryTile(
+                  label: AppMessages.metricNormalQty,
+                  value: pop.normalQty,
+                  color: Colors.blue[600]!,
+                ),
+                const SizedBox(width: 10),
+                _StatSummaryTile(
+                  label: AppMessages.metricPreorderQty,
+                  value: pop.preorderQty,
+                  color: Colors.purple[600]!,
+                ),
+                const SizedBox(width: 10),
+                _StatSummaryTile(
+                  label: AppMessages.metricDiscountQty,
+                  value: pop.discountQty,
+                  color: Colors.orange[700]!,
+                ),
+              ],
+            ),
+            const SizedBox(height: 18),
+            // 垂直統計圖：以柱狀圖方式顯示各角色佔比
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.only(bottom: 4),
+                child: _VerticalPopularityChart(
+                  data: sortable,
+                  colors: popularityColors,
+                  total: totalAll,
+                  pct: pct,
                 ),
               ),
-              const SizedBox(height: 12),
-              const Align(
-                alignment: Alignment.centerRight,
-                child: Text(
-                  AppMessages.appTitle,
-                  style: TextStyle(fontSize: 12, color: Colors.black45),
-                ),
+            ),
+            const SizedBox(height: 12),
+            const Align(
+              alignment: Alignment.centerRight,
+              child: Text(
+                AppMessages.appTitle,
+                style: TextStyle(fontSize: 12, color: Colors.black45),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       );
 

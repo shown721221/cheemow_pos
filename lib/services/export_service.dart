@@ -6,6 +6,7 @@ import 'package:cheemeow_pos/utils/app_logger.dart';
 import 'package:cheemeow_pos/models/export_models.dart';
 import 'package:media_store_plus/media_store_plus.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:cheemeow_pos/utils/date_util.dart';
 
 // 舊 ExportResult 已被 UnifiedExportResult 取代
 
@@ -15,8 +16,7 @@ class ExportService {
 
   static String? testOverrideBaseDir; // 測試覆寫
 
-  String _dateFolder(DateTime now) =>
-      '${now.year.toString().padLeft(4, '0')}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+  String _dateFolder(DateTime now) => DateUtil.ymd(now);
 
   Future<UnifiedExportResult> savePng({
     required String fileName,
