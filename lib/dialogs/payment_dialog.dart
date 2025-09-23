@@ -7,6 +7,8 @@ import '../config/app_messages.dart';
 import '../config/style_config.dart';
 import '../config/app_theme.dart';
 import '../utils/money_util.dart';
+import '../utils/payment_compute.dart';
+import '../widgets/payment_method_selector.dart';
 
 class PaymentResult {
   final String method; // 現金/轉帳/LinePay
@@ -34,18 +36,11 @@ class PaymentDialog {
       builder: (ctx) {
         return StatefulBuilder(
           builder: (context, setState) {
-            final String raw = cashController.text.trim();
-            final int paidRaw = int.tryParse(raw) ?? 0;
-            final int effectivePaid =
-                (method == PaymentMethods.cash && raw.isEmpty)
-                ? totalAmount
-                : paidRaw;
-            final int change = method == PaymentMethods.cash
-                ? (effectivePaid - totalAmount)
-                : 0;
-            final bool canConfirm = method == PaymentMethods.cash
-                ? (raw.isEmpty || paidRaw >= totalAmount)
-                : true;
+            final compute = PaymentCompute.evaluate(
+              method: method,
+              totalAmount: totalAmount,
+              rawInput: cashController.text,
+            );
 
             return AlertDialog(
               title: null,
@@ -77,41 +72,9 @@ class PaymentDialog {
                           ),
                           const SizedBox(height: StyleConfig.gap12),
                           // 單行付款方式按鈕
-                          Row(
-                            children: [
-                              Expanded(
-                                child: _PayOptionButton(
-                                  label: AppMessages.cashLabel,
-                                  selected: method == PaymentMethods.cash,
-                                  onTap: () => setState(
-                                    () => method = PaymentMethods.cash,
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: StyleConfig.gap8),
-                              Expanded(
-                                child: _PayOptionButton(
-                                  label: AppMessages.transferLabel,
-                                  selected: method == PaymentMethods.transfer,
-                                  onTap: () => setState(
-                                    () => method = PaymentMethods.transfer,
-                                  ),
-                                  imageAsset: 'assets/images/cathay.png',
-                                  imageHeight: 28,
-                                ),
-                              ),
-                              const SizedBox(width: StyleConfig.gap8),
-                              Expanded(
-                                child: _PayOptionButton(
-                                  label: AppMessages.linePayLabel,
-                                  selected: method == PaymentMethods.linePay,
-                                  onTap: () => setState(
-                                    () => method = PaymentMethods.linePay,
-                                  ),
-                                  imageAsset: 'assets/images/linepay.png',
-                                ),
-                              ),
-                            ],
+                          PaymentMethodSelector(
+                            method: method,
+                            onChanged: (m) => setState(() => method = m),
                           ),
                           const SizedBox(height: StyleConfig.gap12),
                           if (method == PaymentMethods.cash) ...[
@@ -194,11 +157,11 @@ class PaymentDialog {
                                 ),
                                 const SizedBox(width: 8),
                                 Text(
-                                  change >= 0
-                                      ? MoneyFormatter.symbol(change)
-                                      : '${AppMessages.insufficient} ${MoneyFormatter.symbol(-change)}',
+                                  compute.change >= 0
+                                      ? MoneyFormatter.symbol(compute.change)
+                                      : '${AppMessages.insufficient} ${MoneyFormatter.symbol(-compute.change)}',
                                   style: TextStyle(
-                                    color: change < 0
+                                    color: compute.change < 0
                                         ? AppColors.error
                                         : AppColors.success,
                                     fontWeight: FontWeight.bold,
@@ -224,18 +187,18 @@ class PaymentDialog {
               ),
               actions: [
                 ElevatedButton(
-                  onPressed: canConfirm
+          onPressed: compute.canConfirm
                       ? () {
                           Navigator.pop(
                             ctx,
                             PaymentResult(
                               method: method,
-                              paidCash: method == PaymentMethods.cash
-                                  ? effectivePaid
-                                  : 0,
-                              change: method == PaymentMethods.cash
-                                  ? change
-                                  : 0,
+                paidCash: method == PaymentMethods.cash
+                  ? compute.effectivePaid
+                  : 0,
+                change: method == PaymentMethods.cash
+                  ? compute.change
+                  : 0,
                             ),
                           );
                         }
@@ -252,57 +215,6 @@ class PaymentDialog {
   }
 
   // 已移至 MoneyUtil.suggestCashOptions
-}
-
-class _PayOptionButton extends StatelessWidget {
-  final String label;
-  final bool selected;
-  final VoidCallback onTap;
-  final String? imageAsset; // 若提供，優先顯示圖片（例如 LinePay 標誌）
-  final double imageHeight; // 圖片高度（不改變按鈕既定高度）
-  const _PayOptionButton({
-    required this.label,
-    required this.selected,
-    required this.onTap,
-    this.imageAsset,
-    this.imageHeight = 20,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final ButtonStyle selectedStyle = StyleConfig.payOptionSelectedStyle;
-    final ButtonStyle unselectedStyle = StyleConfig.payOptionUnselectedStyle;
-    final Widget content;
-    if (imageAsset == null) {
-      content = Text(label);
-    } else {
-      // 使用圖片但保留無障礙語意與測試可定位文字
-      content = Semantics(
-        label: label,
-        child: ExcludeSemantics(
-          child: Image.asset(
-            imageAsset!,
-            height: imageHeight,
-            fit: BoxFit.contain,
-            errorBuilder: (c, e, s) => Text(label),
-          ),
-        ),
-      );
-    }
-
-    final buttonChild = SizedBox(height: 44, child: Center(child: content));
-    return selected
-        ? FilledButton(
-            onPressed: onTap,
-            style: selectedStyle,
-            child: buttonChild,
-          )
-        : OutlinedButton(
-            onPressed: onTap,
-            style: unselectedStyle,
-            child: buttonChild,
-          );
-  }
 }
 
 class _QuickAmountButton extends StatelessWidget {
