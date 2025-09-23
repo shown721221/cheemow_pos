@@ -19,6 +19,7 @@ import '../controllers/pos_cart_controller.dart';
 import '../controllers/checkout_controller.dart';
 import '../utils/product_sorter.dart';
 import '../dialogs/pin_dialog.dart';
+import '../widgets/primary_app_bar.dart';
 // 新拆分的匯出與對話框輔助
 // revenue_export_helper 由 PosActionsService 間接使用
 import '../services/pos_actions_service.dart';
@@ -255,14 +256,14 @@ class _PosMainScreenState extends State<PosMainScreen> {
     return Scaffold(
       resizeToAvoidBottomInset: false, // 防止鍵盤影響佈局
       backgroundColor: Colors.white,
-      appBar: AppBar(
-        title: const Text(AppMessages.appTitle),
-        backgroundColor: Colors.blue[800],
-        foregroundColor: Colors.white,
+      appBar: PrimaryAppBar(
+        titleText: AppMessages.appTitle,
         actions: [
           PosMoreMenu(
             onImport: () async {
-              if (_lastCheckedOutCart.isNotEmpty) _clearPostCheckoutPreview();
+              if (_lastCheckedOutCart.isNotEmpty) {
+                _clearPostCheckoutPreview();
+              }
               await _importCsvData();
             },
             onReloadProducts: _loadProducts,
@@ -282,13 +283,15 @@ class _PosMainScreenState extends State<PosMainScreen> {
                   PosTabBar(
                     currentIndex: _currentPageIndex,
                     onSalesTap: () {
-                      if (_lastCheckedOutCart.isNotEmpty)
+                      if (_lastCheckedOutCart.isNotEmpty) {
                         _clearPostCheckoutPreview();
+                      }
                       setState(() => _currentPageIndex = 0);
                     },
                     onSearchTap: () {
-                      if (_lastCheckedOutCart.isNotEmpty)
+                      if (_lastCheckedOutCart.isNotEmpty) {
                         _clearPostCheckoutPreview();
+                      }
                       setState(() => _currentPageIndex = 1);
                     },
                   ),

@@ -1,38 +1,51 @@
 import 'package:flutter/material.dart';
-import '../config/app_messages.dart';
+import '../config/app_theme.dart';
+import '../config/ui_tokens.dart';
 
 class PosTabBar extends StatelessWidget {
   final int currentIndex;
   final VoidCallback onSalesTap;
   final VoidCallback onSearchTap;
+  final String productIcon;
+  final String searchIcon;
+  final String productLabel;
+  final String searchLabel;
   const PosTabBar({
     super.key,
     required this.currentIndex,
     required this.onSalesTap,
     required this.onSearchTap,
+    this.productIcon = UiTokens.productTabEmoji,
+    this.searchIcon = UiTokens.searchTabEmoji,
+    this.productLabel = 'product',
+    this.searchLabel = 'search',
   });
   @override
   Widget build(BuildContext context) {
     return Container(
       height: 50,
       decoration: BoxDecoration(
-        color: Colors.grey[100],
-        border: Border(bottom: BorderSide(color: Colors.grey[300]!)),
+        color: AppColors.darkScaffold, // 黑色背景
+        border: Border(
+          bottom: BorderSide(
+            color: AppColors.neutralBorder.withValues(alpha: 0.3),
+          ),
+        ),
       ),
       child: Row(
         children: [
           _buildTab(
             context: context,
             selected: currentIndex == 0,
-            icon: '🛒',
-            label: AppMessages.salesTabLabel,
+            icon: productIcon, // 預設玩偶，可替換
+            label: productLabel,
             onTap: onSalesTap,
           ),
           _buildTab(
             context: context,
             selected: currentIndex == 1,
-            icon: '🔎',
-            label: AppMessages.searchLabel,
+            icon: searchIcon,
+            label: searchLabel,
             onTap: onSearchTap,
           ),
         ],
@@ -52,10 +65,12 @@ class PosTabBar extends StatelessWidget {
         onTap: onTap,
         child: Container(
           decoration: BoxDecoration(
-            color: selected ? Colors.blue[50] : Colors.transparent,
+            color: selected
+                ? AppColors.primaryContainer.withValues(alpha: 0.15)
+                : Colors.transparent,
             border: Border(
               bottom: BorderSide(
-                color: selected ? Colors.blue : Colors.transparent,
+                color: selected ? AppColors.primary : Colors.transparent,
                 width: 3,
               ),
             ),
@@ -68,7 +83,9 @@ class PosTabBar extends StatelessWidget {
                   icon,
                   style: TextStyle(
                     fontSize: 18,
-                    color: selected ? Colors.blue : Colors.black54,
+                    color: selected
+                        ? AppColors.primary
+                        : AppColors.onDarkSecondary,
                   ),
                 ),
                 const SizedBox(width: 4),
@@ -77,7 +94,9 @@ class PosTabBar extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: selected ? FontWeight.bold : FontWeight.normal,
-                    color: selected ? Colors.blue : Colors.black54,
+                    color: selected
+                        ? AppColors.primary
+                        : AppColors.onDarkSecondary,
                   ),
                 ),
               ],

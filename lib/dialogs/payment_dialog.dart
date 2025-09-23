@@ -5,6 +5,7 @@ import '../utils/money_formatter.dart';
 import '../widgets/numeric_keypad.dart';
 import '../config/app_messages.dart';
 import '../config/style_config.dart';
+import '../config/app_theme.dart';
 import '../utils/money_util.dart';
 
 class PaymentResult {
@@ -181,9 +182,12 @@ class PaymentDialog {
                             Row(
                               mainAxisAlignment: MainAxisAlignment.end,
                               children: [
-                                const Text(
+                                Text(
                                   AppMessages.changeLabel,
-                                  style: TextStyle(color: Colors.black54),
+                                  style: TextStyle(
+                                    color: AppColors.onDarkSecondary,
+                                    fontSize: 14,
+                                  ),
                                 ),
                                 const SizedBox(width: 8),
                                 Text(
@@ -192,9 +196,10 @@ class PaymentDialog {
                                       : '${AppMessages.insufficient} ${MoneyFormatter.symbol(-change)}',
                                   style: TextStyle(
                                     color: change < 0
-                                        ? Colors.red
-                                        : Colors.green[700],
+                                        ? AppColors.error
+                                        : AppColors.success,
                                     fontWeight: FontWeight.bold,
+                                    fontSize: 16,
                                   ),
                                 ),
                               ],
@@ -286,6 +291,13 @@ class _QuickAmountButton extends StatelessWidget {
       style: OutlinedButton.styleFrom(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         minimumSize: const Size(0, 40),
+        backgroundColor: AppColors.darkCard,
+        side: BorderSide(
+          color: AppColors.info.withValues(alpha: .55),
+          width: 1,
+        ),
+        foregroundColor: AppColors.info,
+        textStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
       ),
       child: Text(label),
     );
@@ -303,11 +315,16 @@ class _PaymentPlaceholder extends StatelessWidget {
       height: 160,
       alignment: Alignment.center,
       decoration: BoxDecoration(
-        border: Border.all(color: Colors.grey.shade300),
+        border: Border.all(
+          color: AppColors.neutralBorder.withValues(alpha: .4),
+        ),
         borderRadius: BorderRadius.circular(12),
-        color: Colors.grey.shade50,
+        color: AppColors.darkCard,
       ),
-      child: Text(label, style: const TextStyle(color: Colors.black54)),
+      child: Text(
+        label,
+        style: TextStyle(color: AppColors.onDarkSecondary, fontSize: 14),
+      ),
     );
   }
 }

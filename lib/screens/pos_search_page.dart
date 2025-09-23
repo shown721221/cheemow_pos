@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../config/app_theme.dart';
 import '../controllers/search_controller.dart' as pos_search;
 import '../widgets/search_filter_bar.dart';
 import '../config/app_messages.dart';
@@ -14,33 +15,37 @@ class PosSearchPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Container(
-          padding: const EdgeInsets.all(16),
-          child: TextField(
-            decoration: InputDecoration(
-              hintText: AppMessages.searchProductsHint,
-              prefixIcon: const Icon(Icons.search),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
+    return Container(
+      color: AppColors.darkScaffold,
+      child: Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(16),
+            child: TextField(
+              decoration: InputDecoration(
+                hintText: AppMessages.searchProductsHint,
+                prefixIcon: const Icon(Icons.search),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                filled: true,
+                fillColor: AppColors.darkCard,
               ),
-              filled: true,
-              fillColor: Colors.grey[50],
-            ),
-            onChanged: (q) => searchController.updateQuery(q),
-          ),
-        ),
-        Expanded(
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12),
-            child: SearchFilterBar(
-              buildFilterButton: (label, {bool isSpecial = false}) =>
-                  _buildFilterButton(context, label, isSpecial: isSpecial),
+              onChanged: (q) => searchController.updateQuery(q),
             ),
           ),
-        ),
-      ],
+          Expanded(
+            child: Container(
+              color: AppColors.darkScaffold,
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              child: SearchFilterBar(
+                buildFilterButton: (label, {bool isSpecial = false}) =>
+                    _buildFilterButton(context, label, isSpecial: isSpecial),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -55,16 +60,18 @@ class PosSearchPage extends StatelessWidget {
     Color textColor;
 
     if (isSpecial) {
-      if (label == '重選') {
-        backgroundColor = Colors.orange[100]!;
-        textColor = Colors.orange[700]!;
+      if (label == AppMessages.reset) {
+        backgroundColor = AppColors.warning.withValues(alpha: .15);
+        textColor = AppColors.warning;
       } else {
-        backgroundColor = Colors.green[100]!;
-        textColor = Colors.green[700]!;
+        backgroundColor = AppColors.success.withValues(alpha: .15);
+        textColor = AppColors.success;
       }
     } else {
-      backgroundColor = isSelected ? Colors.blue[100]! : Colors.grey[100]!;
-      textColor = isSelected ? Colors.blue[700]! : Colors.grey[700]!;
+      backgroundColor = isSelected
+          ? AppColors.primaryContainer.withValues(alpha: .18)
+          : AppColors.darkCard;
+      textColor = isSelected ? AppColors.primary : AppColors.onDarkSecondary;
     }
 
     return GestureDetector(
@@ -75,7 +82,9 @@ class PosSearchPage extends StatelessWidget {
           color: backgroundColor,
           borderRadius: BorderRadius.circular(8),
           border: Border.all(
-            color: isSelected ? Colors.blue[300]! : Colors.grey[300]!,
+            color: isSelected
+                ? AppColors.primary.withValues(alpha: .6)
+                : AppColors.neutralBorder.withValues(alpha: .4),
             width: 1,
           ),
         ),

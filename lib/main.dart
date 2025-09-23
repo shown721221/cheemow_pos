@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'config/app_config.dart';
+import 'config/app_theme.dart';
 import 'screens/pos_main_screen.dart';
 
 void main() async {
@@ -35,10 +36,9 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'CheeMeow POS',
-      theme: ThemeData(
-        primarySwatch: Colors.blue,
-        useMaterial3: false, // 保持 Material 2 設計
-      ),
+      theme: AppTheme.light(),
+      darkTheme: AppTheme.dark(),
+      themeMode: ThemeMode.dark, // 目前強制暗色，可日後改為 system
       home: PosMainScreen(),
       debugShowCheckedModeBanner: false,
     );

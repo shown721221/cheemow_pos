@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../config/app_theme.dart';
 import '../utils/money_formatter.dart';
 
 import '../config/app_config.dart';
@@ -8,6 +9,7 @@ import '../models/receipt.dart';
 import '../services/local_database_service.dart';
 import '../services/receipt_service.dart';
 import '../config/constants.dart';
+import '../widgets/empty_state.dart';
 
 class ReceiptListScreen extends StatefulWidget {
   const ReceiptListScreen({super.key});
@@ -112,7 +114,15 @@ class _ReceiptListScreenState extends State<ReceiptListScreen> {
                 final receipts = snapshot.data ?? [];
                 final filtered = _applyFilters(receipts);
                 if (filtered.isEmpty) {
-                  return const Center(child: Text(AppMessages.noReceipts));
+                  return const Center(
+                    child: EmptyState(
+                      icon: Icons.receipt_long,
+                      title: AppMessages.noReceipts,
+                      titleSize: 20,
+                      message: null,
+                      iconSize: 56,
+                    ),
+                  );
                 }
                 return ListView.separated(
                   itemCount: filtered.length,
@@ -174,14 +184,13 @@ class _ReceiptListScreenState extends State<ReceiptListScreen> {
     addSeg('售出 $nonSpecialQty 件');
     // 使用與商品清單一致的顏色：預購=紫色、折扣=橘色（取自 ProductStyleUtils 規則）
     if (preorderQty > 0) {
-      addSeg('預購 $preorderQty 件', color: Colors.purple[700]);
+      addSeg('預購 $preorderQty 件', color: AppColors.preorder);
     }
     if (discountQty > 0) {
-      addSeg('折扣 $discountQty 件', color: Colors.orange[700]);
+      addSeg('折扣 $discountQty 件', color: AppColors.discount);
     }
     if (r.refundedProductIds.isNotEmpty) {
-      // 退貨改用紅色系顯示
-      addSeg('已退 ${r.refundedProductIds.length} 件', color: Colors.red.shade600);
+      addSeg('已退 ${r.refundedProductIds.length} 件', color: AppColors.error);
     }
     return ListTile(
       dense: true,
@@ -190,7 +199,7 @@ class _ReceiptListScreenState extends State<ReceiptListScreen> {
           style: const TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.w600,
-            color: Colors.black87,
+            color: AppColors.onDarkPrimary,
           ),
           children: spans,
         ),
@@ -434,7 +443,7 @@ class _ReceiptListScreenState extends State<ReceiptListScreen> {
                         '${current.id} ・ ${current.timestamp.hour.toString().padLeft(2, '0')}:${current.timestamp.minute.toString().padLeft(2, '0')} ・ $payment',
                         style: const TextStyle(
                           fontSize: 14,
-                          color: Colors.black54,
+                          color: AppColors.onDarkSecondary,
                         ),
                       ),
                     ),
@@ -458,10 +467,12 @@ class _ReceiptListScreenState extends State<ReceiptListScreen> {
                               style: TextStyle(
                                 fontWeight: FontWeight.w600,
                                 color: refunded
-                                    ? Colors.red[500]
+                                    ? AppColors.error
                                     : (it.product.isDiscountProduct
-                                          ? Colors.red[700]
-                                          : null),
+                                          ? AppColors.discount
+                                          : (it.product.isPreOrderProduct
+                                                ? AppColors.preorder
+                                                : AppColors.onDarkPrimary)),
                                 decoration: refunded
                                     ? TextDecoration.lineThrough
                                     : null,
@@ -470,7 +481,9 @@ class _ReceiptListScreenState extends State<ReceiptListScreen> {
                             subtitle: Text(
                               '單價 ${MoneyFormatter.symbol(it.product.price)} × ${it.quantity}',
                               style: TextStyle(
-                                color: refunded ? Colors.red[400] : null,
+                                color: refunded
+                                    ? AppColors.error
+                                    : AppColors.onDarkSecondary,
                                 decoration: refunded
                                     ? TextDecoration.lineThrough
                                     : null,
@@ -479,12 +492,12 @@ class _ReceiptListScreenState extends State<ReceiptListScreen> {
                             trailing: refunded
                                 ? Icon(
                                     Icons.assignment_return,
-                                    color: Colors.red[400],
+                                    color: AppColors.error,
                                   )
                                 : IconButton(
                                     icon: const Icon(
                                       Icons.assignment_return,
-                                      color: Colors.teal,
+                                      color: AppColors.success,
                                     ),
                                     tooltip: AppMessages.refundTooltip,
                                     onPressed: () => refundItem(it),
@@ -559,7 +572,7 @@ class _ReceiptListScreenState extends State<ReceiptListScreen> {
               confirmed = true;
               Navigator.of(ctx).pop();
             },
-            style: FilledButton.styleFrom(backgroundColor: Colors.red),
+            style: FilledButton.styleFrom(backgroundColor: AppColors.error),
             child: const Text(AppMessages.confirmDelete),
           ),
         ],
@@ -600,8 +613,8 @@ class _ReceiptListScreenState extends State<ReceiptListScreen> {
                     })
                   : null,
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.blue[50],
-                foregroundColor: Colors.blue[700],
+                backgroundColor: AppColors.primaryContainer,
+                foregroundColor: AppColors.primary,
               ),
               child: Text(
                 d,
@@ -618,8 +631,8 @@ class _ReceiptListScreenState extends State<ReceiptListScreen> {
             child: ElevatedButton(
               onPressed: onTap,
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.orange[50],
-                foregroundColor: Colors.orange[700],
+                backgroundColor: AppColors.discount.withValues(alpha: 0.15),
+                foregroundColor: AppColors.discount,
               ),
               child: Text(label, style: const TextStyle(fontSize: 18)),
             ),
@@ -635,7 +648,7 @@ class _ReceiptListScreenState extends State<ReceiptListScreen> {
                     warningText,
                     textAlign: TextAlign.center,
                     style: TextStyle(
-                      color: Colors.orange[700],
+                      color: AppColors.discount,
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
                     ),
@@ -647,16 +660,16 @@ class _ReceiptListScreenState extends State<ReceiptListScreen> {
                     style: const TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
-                      color: Colors.deepOrange,
+                      color: AppColors.discount,
                     ),
                   ),
                   const SizedBox(height: 12),
                   Container(
                     padding: const EdgeInsets.symmetric(vertical: 12),
                     decoration: BoxDecoration(
-                      border: Border.all(color: Colors.grey[300]!),
+                      border: Border.all(color: AppColors.neutralBorder),
                       borderRadius: BorderRadius.circular(8),
-                      color: Colors.grey[50],
+                      color: AppColors.darkCard,
                     ),
                     child: Text(
                       masked,
@@ -672,7 +685,7 @@ class _ReceiptListScreenState extends State<ReceiptListScreen> {
                     const SizedBox(height: 8),
                     Text(
                       error!,
-                      style: TextStyle(color: Colors.red[700], fontSize: 12),
+                      style: TextStyle(color: AppColors.error, fontSize: 12),
                     ),
                   ],
                   const SizedBox(height: 12),

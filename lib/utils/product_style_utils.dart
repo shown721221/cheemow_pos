@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/product.dart';
 import '../config/app_messages.dart';
+import '../config/app_theme.dart';
 
 /// 商品顯示樣式工具
 class ProductStyleUtils {
@@ -10,33 +11,29 @@ class ProductStyleUtils {
   /// 根據商品類型取得商品名稱的顏色
   static Color getProductNameColor(Product product) {
     if (product.isPreOrderProduct) {
-      return Colors.purple[700]!; // 預約商品：紫色
+      return AppColors.preorder; // 預約商品：紫色
     } else if (product.isDiscountProduct) {
-      return Colors.orange[700]!; // 折扣商品：橘色
-    } else {
-      return Colors.black87; // 一般商品：黑色
+      return AppColors.discount; // 折扣商品：橘色
     }
+    // 一般商品：在暗色背景改用淺色文字（若未啟用暗色主題仍可接受）
+    return AppColors.onDarkPrimary.withValues(alpha: 0.85);
   }
 
   /// 根據商品類型取得卡片的邊框顏色
   static Color? getCardBorderColor(Product product) {
     if (product.isPreOrderProduct) {
-      return Colors.purple[300]; // 預約商品：淺紫色邊框
+      return AppColors.preorder.withValues(alpha: 0.4); // 淺紫
     } else if (product.isDiscountProduct) {
-      return Colors.orange[300]; // 折扣商品：淺橘色邊框
+      return AppColors.discount.withValues(alpha: 0.4); // 淺橘
     }
     return null; // 一般商品：無特殊邊框
   }
 
   /// 根據庫存數量回傳對應的顏色
   static Color getStockColor(int stock) {
-    if (stock > 0) {
-      return Colors.green[700]!; // 正數：綠色
-    } else if (stock == 0) {
-      return Colors.orange[700]!; // 零：橘色
-    } else {
-      return Colors.red[700]!; // 負數：紅色
-    }
+    if (stock > 0) return AppColors.stockPositive;
+    if (stock == 0) return AppColors.stockZero;
+    return AppColors.error;
   }
 
   /// 根據庫存數量回傳顯示文字
@@ -61,13 +58,9 @@ class ProductStyleUtils {
 
   /// 取得商品圖標顏色
   static Color getProductIconColor(Product product) {
-    if (product.isPreOrderProduct) {
-      return Colors.purple[600]!;
-    } else if (product.isDiscountProduct) {
-      return Colors.orange[600]!;
-    } else {
-      return Colors.grey[600]!;
-    }
+    if (product.isPreOrderProduct) return AppColors.preorder;
+    if (product.isDiscountProduct) return AppColors.discount;
+    return Colors.grey[600]!;
   }
 
   /// 取得庫存狀態描述
@@ -108,7 +101,7 @@ class ProductStyleUtils {
   static BoxDecoration buildCardDecoration(Product product) {
     final borderColor = getCardBorderColor(product);
     return BoxDecoration(
-      color: Colors.white,
+      color: AppColors.darkCard, // 在深色模式下的卡片底色（淺色模式稍微偏暗也可接受）
       borderRadius: BorderRadius.circular(12),
       border: borderColor != null
           ? Border.all(color: borderColor, width: 2)
@@ -125,8 +118,12 @@ class ProductStyleUtils {
 
   /// 回傳商品型態徽章顏色（預購/折扣）
   static Color? getTypeBadgeColor(Product product) {
-    if (product.isPreOrderProduct) return Colors.purple[200];
-    if (product.isDiscountProduct) return Colors.orange[200];
+    if (product.isPreOrderProduct) {
+      return AppColors.preorder.withValues(alpha: 0.25);
+    }
+    if (product.isDiscountProduct) {
+      return AppColors.discount.withValues(alpha: 0.25);
+    }
     return null;
   }
 

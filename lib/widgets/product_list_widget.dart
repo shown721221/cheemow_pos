@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
+import '../config/app_theme.dart';
 import '../models/product.dart';
 import '../widgets/price_display.dart';
 import '../utils/product_sorter.dart';
-import '../config/style_config.dart';
+import '../widgets/empty_state.dart';
 import '../config/app_messages.dart';
 
 class ProductListWidget extends StatefulWidget {
@@ -10,8 +11,8 @@ class ProductListWidget extends StatefulWidget {
   final Function(Product) onProductTap;
   final VoidCallback? onCheckoutCompleted; // 新增：結帳完成回調
   final bool shouldScrollToTop; // 新增：是否需要滾動到頂部
-  final bool applyDailySort; // 是否套用每日排序（可關閉以保留外部順序）
   final bool pinSpecial; // 是否強制預購/折扣永遠置頂
+  final bool sortByStock; // 是否依庫存排序（預設開啟：在既有大類順序內 / 或純庫存）
 
   const ProductListWidget({
     super.key,
@@ -19,8 +20,8 @@ class ProductListWidget extends StatefulWidget {
     required this.onProductTap,
     this.onCheckoutCompleted,
     this.shouldScrollToTop = false,
-    this.applyDailySort = true,
     this.pinSpecial = true,
+    this.sortByStock = true,
   });
 
   @override
@@ -57,27 +58,27 @@ class _ProductListWidgetState extends State<ProductListWidget> {
 
   // 根據商品類型取得商品名稱的顏色
   Color _getProductNameColor(Product product) {
-    if (product.isPreOrderProduct) return StyleConfig.preorderColor;
-    if (product.isDiscountProduct) return StyleConfig.discountColor;
-    return StyleConfig.normalTextColor;
+    if (product.isPreOrderProduct) return AppColors.preorder;
+    if (product.isDiscountProduct) return AppColors.discount;
+    return AppColors.onDarkPrimary.withValues(alpha: .95);
   }
 
   // 根據商品類型取得卡片的邊框顏色
   Color? _getCardBorderColor(Product product) {
     if (product.isPreOrderProduct) {
-      return StyleConfig.preorderColor.withValues(alpha: .35);
+      return AppColors.preorder.withValues(alpha: .35);
     }
     if (product.isDiscountProduct) {
-      return StyleConfig.discountColor.withValues(alpha: .35);
+      return AppColors.discount.withValues(alpha: .35);
     }
     return null;
   }
 
-  // 根據庫存數量回傳對應的顏色
+  // 根據庫存數量回傳對應的顏色（紅<0 / 黃=0 / 綠>0，類似紅綠燈）
   Color _getStockColor(int stock) {
-    if (stock > 0) return Colors.green[700]!;
-    if (stock == 0) return Colors.orange[700]!;
-    return Colors.red[700]!;
+    if (stock > 0) return AppColors.stockPositive;
+    if (stock == 0) return AppColors.stockZero;
+    return AppColors.error;
   }
 
   // 根據庫存數量回傳顯示文字
@@ -86,16 +87,16 @@ class _ProductListWidgetState extends State<ProductListWidget> {
   @override
   Widget build(BuildContext context) {
     // 使用集中排序工具，維持與首頁一致的「每日排序」規則
-    final displayProducts = widget.applyDailySort
-        ? ProductSorter.sortDaily(
-            widget.products,
-            recencyDominatesSpecial: true,
-            forcePinSpecial: widget.pinSpecial,
-          )
-        : widget.products;
+    final displayProducts = ProductSorter.sort(
+      widget.products,
+      recencyDominatesSpecial: true,
+      forcePinSpecial: widget.pinSpecial,
+      byStock: widget.sortByStock,
+    );
     // 診斷列印已移除，避免噪音
 
     return Container(
+      color: AppColors.darkScaffold,
       padding: EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -103,21 +104,11 @@ class _ProductListWidgetState extends State<ProductListWidget> {
           Expanded(
             child: displayProducts.isEmpty
                 ? Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.inventory_2, size: 64, color: Colors.grey),
-                        SizedBox(height: 16),
-                        Text(
-                          AppMessages.productListEmptyTitle,
-                          style: TextStyle(color: Colors.grey),
-                        ),
-                        SizedBox(height: 8),
-                        Text(
-                          AppMessages.productListEmptyHint,
-                          style: TextStyle(color: Colors.grey, fontSize: 12),
-                        ),
-                      ],
+                    child: EmptyState(
+                      icon: Icons.inventory_2,
+                      title: AppMessages.productListEmptyTitle,
+                      message: AppMessages.productListEmptyHint,
+                      titleSize: 22,
                     ),
                   )
                 : ListView.builder(
@@ -126,6 +117,7 @@ class _ProductListWidgetState extends State<ProductListWidget> {
                     itemBuilder: (context, index) {
                       final product = displayProducts[index];
                       return Card(
+                        color: AppColors.darkCard,
                         margin: EdgeInsets.only(bottom: 8),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(8),
@@ -172,7 +164,7 @@ class _ProductListWidgetState extends State<ProductListWidget> {
                                 iconSize: 20,
                                 fontSize: 18,
                                 fontWeight: FontWeight.bold,
-                                color: Colors.green[700],
+                                color: AppColors.stockPositive,
                               ),
                             ],
                           ),

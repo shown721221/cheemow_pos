@@ -50,7 +50,6 @@ class PosProductPanel extends StatelessWidget {
 
     return ProductListWidget(
       products: effectiveProducts,
-      applyDailySort: !manualOrderActive && !inSearch,
       pinSpecial: true,
       onProductTap: onProductTap,
       shouldScrollToTop: shouldScrollToTop,

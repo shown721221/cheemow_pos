@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import '../models/cart_item.dart';
 import '../widgets/price_display.dart';
 import '../config/app_messages.dart';
+import '../config/app_theme.dart';
+import 'empty_state.dart';
+import '../config/ui_tokens.dart';
 
 class ShoppingCartWidget extends StatelessWidget {
   final List<CartItem> cartItems;
@@ -49,7 +52,7 @@ class ShoppingCartWidget extends StatelessWidget {
       behavior: HitTestBehavior.translucent,
       child: Container(
         padding: EdgeInsets.all(16),
-        color: Colors.grey[50],
+        color: AppColors.darkCard,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -60,11 +63,14 @@ class ShoppingCartWidget extends StatelessWidget {
                   IconButton(
                     icon: Text(
                       '🗑️',
-                      style: TextStyle(fontSize: 22, color: Colors.grey[600]),
+                      style: TextStyle(
+                        fontSize: 22,
+                        color: AppColors.onDarkSecondary,
+                      ),
                     ),
                     onPressed: onClearCart,
                     tooltip: AppMessages.clearCartTooltip,
-                    color: Colors.grey[600],
+                    color: AppColors.onDarkSecondary,
                   ),
               ],
             ),
@@ -77,8 +83,10 @@ class ShoppingCartWidget extends StatelessWidget {
                 padding: EdgeInsets.symmetric(vertical: 6, horizontal: 12),
                 margin: EdgeInsets.only(bottom: 8),
                 decoration: BoxDecoration(
-                  color: Colors.green[50],
-                  border: Border.all(color: Colors.green[200]!),
+                  color: AppColors.success.withValues(alpha: 0.08),
+                  border: Border.all(
+                    color: AppColors.success.withValues(alpha: 0.35),
+                  ),
                   borderRadius: BorderRadius.circular(6),
                 ),
                 child: Text(
@@ -89,7 +97,7 @@ class ShoppingCartWidget extends StatelessWidget {
                   ),
                   style: TextStyle(
                     fontSize: 12,
-                    color: Colors.green[800],
+                    color: AppColors.success,
                     fontWeight: FontWeight.w500,
                   ),
                 ),
@@ -98,44 +106,13 @@ class ShoppingCartWidget extends StatelessWidget {
             Expanded(
               child: displayItems.isEmpty
                   ? Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          // 大一點的購物車圖示，配合愛心主題
-                          Text(
-                            '🛍️',
-                            style: TextStyle(
-                              fontSize: 72,
-                              color: Colors.grey[300],
-                            ),
-                          ),
-                          SizedBox(height: 20),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(
-                                Icons.favorite,
-                                size: 28,
-                                color: Colors.red[400],
-                              ),
-                              SizedBox(width: 10),
-                              Text(
-                                AppMessages.cartEmptyTitle,
-                                style: TextStyle(
-                                  color: Colors.grey[600],
-                                  fontSize: 26,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                              SizedBox(width: 10),
-                              Icon(
-                                Icons.favorite,
-                                size: 28,
-                                color: Colors.red[400],
-                              ),
-                            ],
-                          ),
-                        ],
+                      child: EmptyState(
+                        emoji: UiTokens.cartEmptyEmoji,
+                        title: AppMessages.cartEmptyTitle,
+                        titleSize: 26,
+                        titleColor:
+                            AppColors.discount.withValues(alpha: 0.75),
+                        message: null,
                       ),
                     )
                   : ListView.builder(
@@ -152,12 +129,12 @@ class ShoppingCartWidget extends StatelessWidget {
                             background: Container(
                               alignment: Alignment.centerRight,
                               padding: EdgeInsets.only(right: 16),
-                              color: Colors.red,
+                              color: AppColors.error,
                               child: Text(
                                 '🗑️',
                                 style: TextStyle(
                                   fontSize: 22,
-                                  color: Colors.white,
+                                  color: AppColors.onDarkPrimary,
                                 ),
                               ),
                             ),
@@ -195,9 +172,9 @@ class ShoppingCartWidget extends StatelessWidget {
                                                 ? (item
                                                           .product
                                                           .isPreOrderProduct
-                                                      ? Colors.purple[700]
-                                                      : Colors.orange[700])
-                                                : null,
+                                                      ? AppColors.preorder
+                                                      : AppColors.discount)
+                                                : AppColors.onDarkPrimary,
                                           ),
                                           overflow: TextOverflow.ellipsis,
                                         ),
@@ -218,7 +195,7 @@ class ShoppingCartWidget extends StatelessWidget {
                                           AppMessages.qtyLabel,
                                           style: TextStyle(
                                             fontSize: 10,
-                                            color: Colors.grey[600],
+                                            color: AppColors.onDarkSecondary,
                                           ),
                                         ),
                                         SizedBox(height: 2),
@@ -301,8 +278,8 @@ class ShoppingCartWidget extends StatelessWidget {
                           style: TextStyle(fontSize: 18),
                         ),
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.green,
-                          foregroundColor: Colors.white,
+                          backgroundColor: AppColors.success,
+                          foregroundColor: AppColors.onDarkPrimary,
                         ),
                       ),
                     ),

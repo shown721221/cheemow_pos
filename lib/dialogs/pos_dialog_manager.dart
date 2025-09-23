@@ -254,14 +254,28 @@ class PosDialogManager {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: Row(
+          title: const SizedBox.shrink(),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.search_off, color: Colors.orange, size: 28),
-              SizedBox(width: 8),
-              Text(AppMessages.productNotFoundTitle),
+              Icon(Icons.search_off, color: Colors.orange[700], size: 48),
+              const SizedBox(height: 16),
+              Text(
+                AppMessages.productNotFoundTitle,
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                AppMessages.productNotFoundMessage(barcode),
+                textAlign: TextAlign.center,
+                style: TextStyle(color: Colors.white70, fontSize: 14),
+              ),
             ],
           ),
-          content: Text(AppMessages.productNotFoundMessage(barcode)),
           actions: [
             ElevatedButton(
               onPressed: () {
