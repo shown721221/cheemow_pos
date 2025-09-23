@@ -53,8 +53,8 @@ class ProductSorter {
     }
 
     // 特殊區塊：維持原本名稱排序（或可依庫存，但需求為固定置頂不動，可保持名稱穩定）
-  preOrders.sort(_nameComparator.call);
-  discounts.sort(_nameComparator.call);
+    preOrders.sort(_nameComparator.call);
+    discounts.sort(_nameComparator.call);
 
     // 今日售出一般：時間新->舊
     todayNormal.sort(
@@ -65,7 +65,7 @@ class ProductSorter {
     others.sort((a, b) {
       final diff = b.stock.compareTo(a.stock);
       if (diff != 0) return diff;
-  return _nameComparator.call(a, b);
+      return _nameComparator.call(a, b);
     });
 
     return [...preOrders, ...discounts, ...todayNormal, ...others];

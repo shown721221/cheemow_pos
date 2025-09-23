@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'app_theme.dart';
 
 /// 集中顏色 / 樣式，避免重複硬編。
 class StyleConfig {
@@ -24,12 +25,28 @@ class StyleConfig {
 
   static ButtonStyle payOptionSelectedStyle = FilledButton.styleFrom(
     minimumSize: const Size.fromHeight(44),
-    backgroundColor: primaryActionColor,
-    foregroundColor: primaryOnColor,
+    backgroundColor: AppColors.primaryContainer, // 淺色底
+    foregroundColor: AppColors.primary, // 文字 / 圖片主色
+    padding: const EdgeInsets.symmetric(horizontal: 12),
+    shape: RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(8),
+      side: BorderSide(
+        color: AppColors.primary.withValues(alpha: .35),
+        width: 1,
+      ),
+    ),
   );
 
   static ButtonStyle payOptionUnselectedStyle = OutlinedButton.styleFrom(
     minimumSize: const Size.fromHeight(44),
+    backgroundColor: AppColors.subtleBg, // 更淺的底
+    foregroundColor: AppColors.normalText,
+    padding: const EdgeInsets.symmetric(horizontal: 12),
+    side: BorderSide(
+      color: AppColors.neutralBorder.withValues(alpha: .4),
+      width: 1,
+    ),
+    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
   );
 
   // 營收卡顏色主題（集中管理）

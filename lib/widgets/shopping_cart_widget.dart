@@ -110,8 +110,7 @@ class ShoppingCartWidget extends StatelessWidget {
                         emoji: UiTokens.cartEmptyEmoji,
                         title: AppMessages.cartEmptyTitle,
                         titleSize: 26,
-                        titleColor:
-                            AppColors.discount.withValues(alpha: 0.75),
+                        titleColor: AppColors.discount.withValues(alpha: 0.75),
                         message: null,
                       ),
                     )

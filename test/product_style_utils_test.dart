@@ -3,16 +3,16 @@ import 'package:cheemeow_pos/utils/product_style_utils.dart';
 import 'package:cheemeow_pos/models/product.dart';
 import 'package:cheemeow_pos/config/constants.dart';
 
-Product _p({
-  bool preorder = false,
-  bool discount = false,
-  int stock = 5,
-}) {
+Product _p({bool preorder = false, bool discount = false, int stock = 5}) {
   final barcode = preorder
       ? AppConstants.barcodePreOrder
       : discount
-          ? AppConstants.barcodeDiscount
-          : 'NORMAL_${preorder ? 'P' : discount ? 'D' : 'N'}';
+      ? AppConstants.barcodeDiscount
+      : 'NORMAL_${preorder
+            ? 'P'
+            : discount
+            ? 'D'
+            : 'N'}';
   return Product(
     id: 'id_$barcode',
     barcode: barcode,
@@ -27,8 +27,12 @@ Product _p({
 void main() {
   group('ProductStyleUtils', () {
     test('getProductNameColor preorder/discount distinct', () {
-      final preColor = ProductStyleUtils.getProductNameColor(_p(preorder: true));
-      final discColor = ProductStyleUtils.getProductNameColor(_p(discount: true));
+      final preColor = ProductStyleUtils.getProductNameColor(
+        _p(preorder: true),
+      );
+      final discColor = ProductStyleUtils.getProductNameColor(
+        _p(discount: true),
+      );
       expect(preColor != discColor, true);
     });
 

@@ -9,9 +9,9 @@ class PrimaryAppBar extends AppBar {
     super.actions,
     super.bottom,
   }) : super(
-          title: Text(titleText),
-          centerTitle: true,
-          backgroundColor: AppColors.success,
-          foregroundColor: Colors.white,
-        );
+         title: Text(titleText),
+         centerTitle: true,
+         backgroundColor: AppColors.success,
+         foregroundColor: Colors.white,
+       );
 }

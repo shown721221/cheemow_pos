@@ -10,6 +10,7 @@ import '../services/local_database_service.dart';
 import '../services/receipt_service.dart';
 import '../config/constants.dart';
 import '../widgets/empty_state.dart';
+import '../config/style_config.dart';
 
 class ReceiptListScreen extends StatefulWidget {
   const ReceiptListScreen({super.key});
@@ -20,10 +21,8 @@ class ReceiptListScreen extends StatefulWidget {
 class _ReceiptListScreenState extends State<ReceiptListScreen> {
   late Future<List<Receipt>> _future;
   String _query = '';
-  final Set<String> _payFilters = {}; // 現金/轉帳/LinePay
-  bool _withDiscount = false;
-  bool _withPreorder = false;
-  bool _withRefund = false; // 退貨篩選
+  String? _selectedPay; // 單選付款方式
+  String? _tagFilter; // discount / preorder / refund 單選
   bool _onlyToday = true;
 
   @override
@@ -225,44 +224,71 @@ class _ReceiptListScreenState extends State<ReceiptListScreen> {
   );
 
   Widget _buildFilters() {
-    FilterChip payChip(String label, String key) => FilterChip(
-      label: Text(label),
-      selected: _payFilters.contains(key),
-      onSelected: (s) => setState(() {
-        if (_payFilters.contains(key)) {
-          _payFilters.remove(key);
-        } else {
-          _payFilters.add(key);
-        }
-      }),
-    );
+    void selectPay(String key) =>
+        setState(() => _selectedPay = (_selectedPay == key) ? null : key);
+    void selectTag(String key) =>
+        setState(() => _tagFilter = (_tagFilter == key) ? null : key);
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
       child: Row(
         children: [
-          payChip(AppMessages.cashLabel, PaymentMethods.cash),
-          const SizedBox(width: 8),
-          payChip(AppMessages.transferLabel, '轉帳'),
-          const SizedBox(width: 8),
-          payChip(AppMessages.linePayLabel, 'LinePay'),
-          const SizedBox(width: 12),
-          FilterChip(
-            label: const Text(AppMessages.chipDiscount),
-            selected: _withDiscount,
-            onSelected: (s) => setState(() => _withDiscount = s),
+          FilterPillButton(
+            selected: _selectedPay == PaymentMethods.cash,
+            onTap: () => selectPay(PaymentMethods.cash),
+            child: Text(AppMessages.cashLabel),
           ),
-          const SizedBox(width: 8),
-          FilterChip(
-            label: const Text(AppMessages.chipPreorder),
-            selected: _withPreorder,
-            onSelected: (s) => setState(() => _withPreorder = s),
+          FilterPillButton(
+            selected: _selectedPay == PaymentMethods.transfer,
+            onTap: () => selectPay(PaymentMethods.transfer),
+            child: Image.asset(
+              'assets/images/cathay.png',
+              height: 24,
+              fit: BoxFit.contain,
+              errorBuilder: (_, __, ___) => Text(AppMessages.transferLabel),
+            ),
           ),
-          const SizedBox(width: 8),
-          FilterChip(
-            label: const Text(AppMessages.chipRefund),
-            selected: _withRefund,
-            onSelected: (s) => setState(() => _withRefund = s),
+          FilterPillButton(
+            selected: _selectedPay == PaymentMethods.linePay,
+            onTap: () => selectPay(PaymentMethods.linePay),
+            child: Image.asset(
+              'assets/images/linepay.png',
+              height: 20,
+              fit: BoxFit.contain,
+              errorBuilder: (_, __, ___) => Text(AppMessages.linePayLabel),
+            ),
+          ),
+          FilterPillButton(
+            selected: _tagFilter == 'discount',
+            onTap: () => selectTag('discount'),
+            child: const Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text('💸', style: TextStyle(fontSize: 16)),
+                SizedBox(width: 4),
+                Text('折扣'),
+              ],
+            ),
+            minWidth: 72,
+          ),
+          FilterPillButton(
+            selected: _tagFilter == 'preorder',
+            onTap: () => selectTag('preorder'),
+            child: const Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text('🎁', style: TextStyle(fontSize: 16)),
+                SizedBox(width: 4),
+                Text('預購商品'),
+              ],
+            ),
+            minWidth: 72,
+          ),
+          FilterPillButton(
+            selected: _tagFilter == 'refund',
+            onTap: () => selectTag('refund'),
+            child: const Text(AppMessages.chipRefund),
+            minWidth: 72,
           ),
         ],
       ),
@@ -282,21 +308,25 @@ class _ReceiptListScreenState extends State<ReceiptListScreen> {
         return inId || inPay || inItems;
       });
     }
-    if (_payFilters.isNotEmpty) {
-      list = list.where((r) => _payFilters.contains(r.paymentMethod));
+    if (_selectedPay != null) {
+      list = list.where((r) => r.paymentMethod == _selectedPay);
     }
-    if (_withDiscount) {
-      list = list.where(
-        (r) => r.items.any((it) => it.product.isDiscountProduct),
-      );
-    }
-    if (_withPreorder) {
-      list = list.where(
-        (r) => r.items.any((it) => it.product.isPreOrderProduct),
-      );
-    }
-    if (_withRefund) {
-      list = list.where((r) => r.refundedProductIds.isNotEmpty);
+    if (_tagFilter != null) {
+      switch (_tagFilter) {
+        case 'discount':
+          list = list.where(
+            (r) => r.items.any((it) => it.product.isDiscountProduct),
+          );
+          break;
+        case 'preorder':
+          list = list.where(
+            (r) => r.items.any((it) => it.product.isPreOrderProduct),
+          );
+          break;
+        case 'refund':
+          list = list.where((r) => r.refundedProductIds.isNotEmpty);
+          break;
+      }
     }
     return list.toList();
   }
@@ -734,6 +764,44 @@ class _ReceiptListScreenState extends State<ReceiptListScreen> {
       ),
     );
     return ok;
+  }
+}
+
+/// 可重用的篩選膠囊按鈕；統一支付方式與標籤篩選的樣式。
+class FilterPillButton extends StatelessWidget {
+  const FilterPillButton({
+    super.key,
+    required this.selected,
+    required this.onTap,
+    required this.child,
+    this.height = 40,
+    this.minWidth = 80,
+  });
+
+  final bool selected;
+  final VoidCallback onTap;
+  final Widget child;
+  final double height;
+  final double minWidth;
+
+  @override
+  Widget build(BuildContext context) {
+    final ButtonStyle baseSel = StyleConfig.payOptionSelectedStyle;
+    final ButtonStyle baseUnSel = StyleConfig.payOptionUnselectedStyle;
+    final style = (selected ? baseSel : baseUnSel).copyWith(
+      padding: WidgetStateProperty.all(
+        const EdgeInsets.symmetric(horizontal: 12),
+      ),
+      minimumSize: WidgetStateProperty.all(Size(minWidth, height)),
+    );
+    final buttonChild = SizedBox(
+      height: height,
+      child: Center(child: child),
+    );
+    final btn = selected
+        ? FilledButton(onPressed: onTap, style: style, child: buttonChild)
+        : OutlinedButton(onPressed: onTap, style: style, child: buttonChild);
+    return Padding(padding: const EdgeInsets.only(right: 8), child: btn);
   }
 }
 

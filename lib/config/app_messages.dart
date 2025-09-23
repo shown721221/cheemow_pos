@@ -129,10 +129,11 @@ class AppMessages {
   static String onlyTodayLabel(int total) => '僅顯示今日 ($total)';
   static String allReceiptsLabel(int total) => '全部收據 ($total)';
   static const String noReceipts = '沒有符合條件的收據';
-  static const String receiptSearchHint = '搜尋收據 ID / 付款方式 / 商品名稱';
-  static const String chipDiscount = '折扣';
-  static const String chipPreorder = '預購商品';
-  static const String chipRefund = '退貨';
+  static const String receiptSearchHint = '搜尋商品名稱';
+  // 收據篩選用標籤（使用 emoji 與文字分離於 UI, 仍保留整體字串供其他情境需要）
+  static const String chipDiscount = '💸 折扣';
+  static const String chipPreorder = '🎁 預購商品';
+  static const String chipRefund = '♻️ 退貨';
   static const String refundDialogTitle = '是否要退貨';
   static String refundDialogMessage(String name, int qty) =>
       '要退貨「$name」嗎？（數量：$qty）';
@@ -143,7 +144,8 @@ class AppMessages {
   static const String confirmDelete = '確認刪除';
 
   // 付款方式顯示
-  static const String cashLabel = '💵 現金';
+  // 現金：改為英文顯示，保留錢幣 emoji。若需更換可用：💰, 💵, 💶, 💷, 💴 (日圓樣式較接近藍色紙鈔)；暫用通用 💵。
+  static const String cashLabel = '💵 Cash';
   static const String transferLabel = '🔁 轉帳';
   static const String linePayLabel = '📲 LinePay';
   static const String enterPaidAmount = '輸入實收金額';

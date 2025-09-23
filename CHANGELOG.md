@@ -25,6 +25,9 @@ All notable changes to this project will be documented in this file.
  - 重構：抽出 `PrimaryAppBar` 與 `UiTokens`（emoji/spacing），提升視覺元件模組化，可測試性與後續替換 Logo 彈性。
  - 重構：`PosTabBar` 參數化（icon/label 可替換），統一使用 UiTokens。
  - 重構：購物車空狀態改用通用 `EmptyState`（移除客製 Column 重複）。
+- UI：付款方式 LinePay 按鈕改為顯示品牌圖片 `linepay.png`（保留語意標籤提升辨識與測試穩定）
+- UI：付款方式按鈕改為淺色底（未選取 subtleBg / 選取 primaryContainer），並還原對話框原始高度行為
+ - UI：轉帳付款方式改為顯示 `cathay.png` 圖示，並改用資料夾載入 `assets/images/` 方便後續新增
 
 ## 1.0.0 - 2025-09-22
 - 專案更名統一為 `cheemeow_pos`

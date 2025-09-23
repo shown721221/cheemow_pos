@@ -24,6 +24,7 @@ class EmptyState extends StatelessWidget {
 
   /// 主字體大小，預設 20~22 視情境
   final double? titleSize;
+
   /// 可選：標題顏色（若未指定依原本語意顏色）
   final Color? titleColor;
 
@@ -35,8 +36,8 @@ class EmptyState extends StatelessWidget {
     this.message,
     this.children,
     this.iconSize,
-  this.titleSize,
-  this.titleColor,
+    this.titleSize,
+    this.titleColor,
   }) : assert(icon != null || emoji != null, 'icon 與 emoji 至少提供一種');
 
   @override

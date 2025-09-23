@@ -61,7 +61,7 @@ class PaymentDialog {
                 builder: (innerCtx) {
                   final bottomInset = MediaQuery.of(innerCtx).viewInsets.bottom;
                   return ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 640),
+                    constraints: const BoxConstraints(maxWidth: 500),
                     child: Padding(
                       padding: EdgeInsets.only(
                         bottom: bottomInset > 0 ? 12 : 0,
@@ -96,6 +96,8 @@ class PaymentDialog {
                                   onTap: () => setState(
                                     () => method = PaymentMethods.transfer,
                                   ),
+                                  imageAsset: 'assets/images/cathay.png',
+                                  imageHeight: 28,
                                 ),
                               ),
                               const SizedBox(width: StyleConfig.gap8),
@@ -106,6 +108,7 @@ class PaymentDialog {
                                   onTap: () => setState(
                                     () => method = PaymentMethods.linePay,
                                   ),
+                                  imageAsset: 'assets/images/linepay.png',
                                 ),
                               ),
                             ],
@@ -255,26 +258,49 @@ class _PayOptionButton extends StatelessWidget {
   final String label;
   final bool selected;
   final VoidCallback onTap;
+  final String? imageAsset; // 若提供，優先顯示圖片（例如 LinePay 標誌）
+  final double imageHeight; // 圖片高度（不改變按鈕既定高度）
   const _PayOptionButton({
     required this.label,
     required this.selected,
     required this.onTap,
+    this.imageAsset,
+    this.imageHeight = 20,
   });
 
   @override
   Widget build(BuildContext context) {
     final ButtonStyle selectedStyle = StyleConfig.payOptionSelectedStyle;
     final ButtonStyle unselectedStyle = StyleConfig.payOptionUnselectedStyle;
+    final Widget content;
+    if (imageAsset == null) {
+      content = Text(label);
+    } else {
+      // 使用圖片但保留無障礙語意與測試可定位文字
+      content = Semantics(
+        label: label,
+        child: ExcludeSemantics(
+          child: Image.asset(
+            imageAsset!,
+            height: imageHeight,
+            fit: BoxFit.contain,
+            errorBuilder: (c, e, s) => Text(label),
+          ),
+        ),
+      );
+    }
+
+    final buttonChild = SizedBox(height: 44, child: Center(child: content));
     return selected
         ? FilledButton(
             onPressed: onTap,
             style: selectedStyle,
-            child: Text(label),
+            child: buttonChild,
           )
         : OutlinedButton(
             onPressed: onTap,
             style: unselectedStyle,
-            child: Text(label),
+            child: buttonChild,
           );
   }
 }
