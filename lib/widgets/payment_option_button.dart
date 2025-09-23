@@ -39,7 +39,15 @@ class PaymentOptionButton extends StatelessWidget {
     }
     final buttonChild = SizedBox(height: 44, child: Center(child: content));
     return selected
-        ? FilledButton(onPressed: onTap, style: selectedStyle, child: buttonChild)
-        : OutlinedButton(onPressed: onTap, style: unselectedStyle, child: buttonChild);
+        ? FilledButton(
+            onPressed: onTap,
+            style: selectedStyle,
+            child: buttonChild,
+          )
+        : OutlinedButton(
+            onPressed: onTap,
+            style: unselectedStyle,
+            child: buttonChild,
+          );
   }
 }

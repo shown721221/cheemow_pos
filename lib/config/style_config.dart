@@ -61,6 +61,20 @@ class StyleConfig {
     color: Colors.black54,
   );
 
+  // 匯出面板固定尺寸（以營收圖為基準）
+  static const double exportPanelWidth = 800;
+  // 統一匯出面板高度（以目前營收面板自然高度為基準，留少許緩衝）
+  // 若日後內容增減可調整此值。Popularity 面板會以此高度顯示（內容較少則底部留白）。
+  // 440 會在有零用金列時略微 overflow，調升到 470 保留約 10~15px 緩衝
+  static const double exportPanelHeight = 470;
+  // 高度若未指定則以內容撐開；如需硬指定可另外加 exportPanelRevenueHeight 等。
+  static const EdgeInsets exportPanelPadding = EdgeInsets.fromLTRB(
+    28,
+    28,
+    28,
+    24,
+  );
+
   static TextStyle badgeText(Color c) =>
       TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: c);
 

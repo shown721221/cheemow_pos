@@ -56,7 +56,7 @@ class PaymentDialog {
                 builder: (innerCtx) {
                   final bottomInset = MediaQuery.of(innerCtx).viewInsets.bottom;
                   return ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 500),
+                    constraints: const BoxConstraints(maxWidth: 350),
                     child: Padding(
                       padding: EdgeInsets.only(
                         bottom: bottomInset > 0 ? 12 : 0,
@@ -65,10 +65,28 @@ class PaymentDialog {
                         mainAxisSize: MainAxisSize.min,
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          // 顯示應收金額（僅數字）
-                          Align(
-                            alignment: Alignment.centerRight,
-                            child: LargePriceDisplay(amount: totalAmount),
+                          // 頂部：左側總金額，右側找零（僅現金）
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Expanded(
+                                child: LargePriceDisplay(amount: totalAmount),
+                              ),
+                              if (method == PaymentMethods.cash)
+                                Text(
+                                  compute.change >= 0
+                                      ? '${AppMessages.changeLabel} ${MoneyFormatter.symbol(compute.change)}'
+                                      : '${AppMessages.insufficient} ${MoneyFormatter.symbol(-compute.change)}',
+                                  textAlign: TextAlign.right,
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w700,
+                                    color: compute.change < 0
+                                        ? AppColors.error
+                                        : AppColors.success,
+                                  ),
+                                ),
+                            ],
                           ),
                           const SizedBox(height: StyleConfig.gap12),
                           // 單行付款方式按鈕
@@ -78,20 +96,7 @@ class PaymentDialog {
                           ),
                           const SizedBox(height: StyleConfig.gap12),
                           if (method == PaymentMethods.cash) ...[
-                            TextField(
-                              controller: cashController,
-                              keyboardType: TextInputType.number,
-                              readOnly: true, // 避免平板 IME 失效問題，改用自訂小鍵盤
-                              decoration: const InputDecoration(
-                                hintText: AppMessages.enterPaidAmount,
-                                border: OutlineInputBorder(),
-                              ),
-                              onTap: () {
-                                /* 僅顯示游標，由下方自訂鍵盤輸入 */
-                              },
-                            ),
-                            const SizedBox(height: StyleConfig.gap8),
-                            // 動態快速金額（後面三種）
+                            // 先顯示快速金額按鈕（位置已與輸入框交換）
                             Builder(
                               builder: (context) {
                                 final suggestions =
@@ -108,12 +113,16 @@ class PaymentDialog {
                                     ) ...[
                                       Expanded(
                                         child: _QuickAmountButton(
-                                          label: suggestions[i].toString(),
+                                          label: '💲 ${suggestions[i]}',
+                                          selected:
+                                              cashController.text ==
+                                              suggestions[i].toString(),
                                           onTap: () {
                                             cashController.text = suggestions[i]
                                                 .toString();
                                             setState(() {});
                                           },
+                                          height: 48,
                                         ),
                                       ),
                                       if (i != suggestions.length - 1)
@@ -121,6 +130,19 @@ class PaymentDialog {
                                     ],
                                   ],
                                 );
+                              },
+                            ),
+                            const SizedBox(height: StyleConfig.gap8),
+                            TextField(
+                              controller: cashController,
+                              keyboardType: TextInputType.number,
+                              readOnly: true, // 避免平板 IME 失效問題，改用自訂小鍵盤
+                              decoration: const InputDecoration(
+                                hintText: AppMessages.enterPaidAmount,
+                                border: OutlineInputBorder(),
+                              ),
+                              onTap: () {
+                                /* 僅顯示游標，由下方自訂鍵盤輸入 */
                               },
                             ),
                             const SizedBox(height: StyleConfig.gap8),
@@ -145,31 +167,6 @@ class PaymentDialog {
                               },
                             ),
                             const SizedBox(height: StyleConfig.gap8),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.end,
-                              children: [
-                                Text(
-                                  AppMessages.changeLabel,
-                                  style: TextStyle(
-                                    color: AppColors.onDarkSecondary,
-                                    fontSize: 14,
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
-                                Text(
-                                  compute.change >= 0
-                                      ? MoneyFormatter.symbol(compute.change)
-                                      : '${AppMessages.insufficient} ${MoneyFormatter.symbol(-compute.change)}',
-                                  style: TextStyle(
-                                    color: compute.change < 0
-                                        ? AppColors.error
-                                        : AppColors.success,
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 16,
-                                  ),
-                                ),
-                              ],
-                            ),
                           ] else if (method == PaymentMethods.transfer) ...[
                             _PaymentPlaceholder(
                               label: AppMessages.paymentTransferPlaceholder,
@@ -187,18 +184,18 @@ class PaymentDialog {
               ),
               actions: [
                 ElevatedButton(
-          onPressed: compute.canConfirm
+                  onPressed: compute.canConfirm
                       ? () {
                           Navigator.pop(
                             ctx,
                             PaymentResult(
                               method: method,
-                paidCash: method == PaymentMethods.cash
-                  ? compute.effectivePaid
-                  : 0,
-                change: method == PaymentMethods.cash
-                  ? compute.change
-                  : 0,
+                              paidCash: method == PaymentMethods.cash
+                                  ? compute.effectivePaid
+                                  : 0,
+                              change: method == PaymentMethods.cash
+                                  ? compute.change
+                                  : 0,
                             ),
                           );
                         }
@@ -220,22 +217,31 @@ class PaymentDialog {
 class _QuickAmountButton extends StatelessWidget {
   final String label;
   final VoidCallback onTap;
-  const _QuickAmountButton({required this.label, required this.onTap});
+  final double height;
+  final bool selected;
+  const _QuickAmountButton({
+    required this.label,
+    required this.onTap,
+    this.height = 40,
+    this.selected = false,
+  });
 
   @override
   Widget build(BuildContext context) {
+    final Color baseColor = AppColors.info;
+    final bool sel = selected;
+    final bg = sel ? baseColor.withValues(alpha: .18) : AppColors.darkCard;
+    final border = sel ? baseColor : baseColor.withValues(alpha: .55);
+    final fg = sel ? baseColor : baseColor;
     return OutlinedButton(
       onPressed: onTap,
       style: OutlinedButton.styleFrom(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-        minimumSize: const Size(0, 40),
-        backgroundColor: AppColors.darkCard,
-        side: BorderSide(
-          color: AppColors.info.withValues(alpha: .55),
-          width: 1,
-        ),
-        foregroundColor: AppColors.info,
-        textStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+        minimumSize: Size(0, height),
+        backgroundColor: bg,
+        side: BorderSide(color: border, width: 1.4),
+        foregroundColor: fg,
+        textStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
       ),
       child: Text(label),
     );

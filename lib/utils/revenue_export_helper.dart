@@ -25,51 +25,107 @@ class RevenueExportHelper {
         fontSize: 28,
         fontWeight: FontWeight.w900,
       );
-      final tsSectionLabel = const TextStyle(
-        fontSize: 20,
-        fontWeight: FontWeight.w700,
-      );
+      const gold = Color(0xFFB68600); // 金色
       final tsMetricValueLg = const TextStyle(
         fontSize: 24,
         fontWeight: FontWeight.w800,
+        color: gold,
       );
       final tsMetricValue = const TextStyle(
         fontSize: 18,
         fontWeight: FontWeight.w700,
+        color: gold,
       );
 
       Widget metricCard({
-        required String icon,
-        required String title,
+        String? icon,
+        Widget? iconWidget,
+        String? title,
         required String value,
         required Color bg,
         Color? valueColor,
         bool large = false,
+        bool inline = false,
+        TextStyle? titleStyleOverride,
       }) {
+        final valueText = Text(
+          value,
+          style: (large ? tsMetricValueLg : tsMetricValue).copyWith(
+            color: valueColor ?? gold,
+          ),
+          textAlign: TextAlign.center,
+        );
         return Container(
           padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
           decoration: BoxDecoration(
             color: bg,
             borderRadius: BorderRadius.circular(16),
           ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(icon, style: const TextStyle(fontSize: 22)),
-              const SizedBox(height: 6),
-              Text(
-                title,
-                style: const TextStyle(fontSize: 14, color: Colors.black54),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                value,
-                style: (large ? tsMetricValueLg : tsMetricValue).copyWith(
-                  color: valueColor ?? Colors.black87,
+          child: inline
+              ? Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        if (iconWidget != null)
+                          SizedBox(height: 24, child: iconWidget)
+                        else if (icon != null)
+                          Text(icon, style: const TextStyle(fontSize: 22)),
+                        if (title != null) ...[
+                          const SizedBox(width: 6),
+                          Flexible(
+                            child: Text(
+                              title,
+                              style:
+                                  titleStyleOverride ??
+                                  const TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.black87,
+                                  ),
+                              overflow: TextOverflow.ellipsis,
+                              textAlign: TextAlign.center,
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    valueText,
+                  ],
+                )
+              : Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    SizedBox(
+                      height: 24,
+                      child:
+                          iconWidget ??
+                          (icon != null
+                              ? Text(icon, style: const TextStyle(fontSize: 22))
+                              : const SizedBox.shrink()),
+                    ),
+                    if (title != null) ...[
+                      const SizedBox(height: 6),
+                      Text(
+                        title,
+                        style:
+                            titleStyleOverride ??
+                            const TextStyle(
+                              fontSize: 14,
+                              color: Colors.black54,
+                            ),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 2),
+                    ],
+                    valueText,
+                  ],
                 ),
-              ),
-            ],
-          ),
         );
       }
 
@@ -84,8 +140,9 @@ class RevenueExportHelper {
         return RepaintBoundary(
           key: key,
           child: Container(
-            width: 800,
-            padding: const EdgeInsets.fromLTRB(28, 28, 28, 24),
+            width: StyleConfig.exportPanelWidth,
+            height: StyleConfig.exportPanelHeight,
+            padding: StyleConfig.exportPanelPadding,
             decoration: BoxDecoration(
               gradient: const LinearGradient(
                 begin: Alignment.topCenter,
@@ -101,131 +158,152 @@ class RevenueExportHelper {
                 ),
               ],
             ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Row(
-                  children: [
-                    Text(AppMessages.revenueTodayTitle, style: tsHeadline),
-                    const Spacer(),
-                    Text(dateStr, style: StyleConfig.revenueDateTextStyle),
-                  ],
-                ),
-                if (AppConfig.pettyCash > 0) ...[
-                  const SizedBox(height: 4),
-                  Align(
-                    alignment: Alignment.centerRight,
-                    child: Text(
-                      MoneyFormatter.symbol(AppConfig.pettyCash),
-                      style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.black54,
-                      ),
-                    ),
-                  ),
-                ],
-                const SizedBox(height: 12),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    vertical: 16,
-                    horizontal: 20,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(16),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black26,
-                        blurRadius: 10,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                  child: Row(
+            child: LayoutBuilder(
+              builder: (ctx, cons) => SingleChildScrollView(
+                physics: const NeverScrollableScrollPhysics(),
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(minHeight: cons.maxHeight),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      const Icon(
-                        Icons.star_rounded,
-                        color: Colors.amber,
-                        size: 32,
+                      Row(
+                        children: [
+                          Text(
+                            AppMessages.revenueTodayTitle,
+                            style: tsHeadline,
+                          ),
+                          const Spacer(),
+                          Text(
+                            dateStr,
+                            style: StyleConfig.revenueDateTextStyle,
+                          ),
+                        ],
                       ),
-                      const SizedBox(width: 12),
-                      Text(
-                        AppMessages.totalRevenueLabel,
-                        style: tsSectionLabel,
+                      if (AppConfig.pettyCash > 0) ...[
+                        const SizedBox(height: 4),
+                        Align(
+                          alignment: Alignment.centerRight,
+                          child: Text(
+                            '零用金 ${MoneyFormatter.symbol(AppConfig.pettyCash)}',
+                            style: const TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w700,
+                              color: gold,
+                            ),
+                          ),
+                        ),
+                      ],
+                      const SizedBox(height: 12),
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(
+                          vertical: 12,
+                          horizontal: 20,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(16),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black26,
+                              blurRadius: 8,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: Center(
+                          child: Text(
+                            mask(summary.total, showNumbers),
+                            style: tsHeadline.copyWith(
+                              color: gold,
+                              fontSize: 34,
+                              fontWeight: FontWeight.w900,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
                       ),
-                      const Spacer(),
-                      Text(
-                        mask(summary.total, showNumbers),
-                        style: tsHeadline.copyWith(color: Colors.teal),
+                      const SizedBox(height: 16),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: metricCard(
+                              icon: '💵',
+                              title: 'Cash',
+                              value: mask(summary.cash, showNumbers),
+                              bg: bg3,
+                              inline: true,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: metricCard(
+                              iconWidget: Image.asset(
+                                'assets/images/cathay.png',
+                                height: 24,
+                                fit: BoxFit.contain,
+                              ),
+                              // no title per requirement
+                              title: null,
+                              value: mask(summary.transfer, showNumbers),
+                              bg: bg4,
+                              inline: true,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: metricCard(
+                              iconWidget: Image.asset(
+                                'assets/images/linepay.png',
+                                height: 20,
+                                fit: BoxFit.contain,
+                              ),
+                              title: null,
+                              value: mask(summary.linepay, showNumbers),
+                              bg: bg2,
+                              inline: true,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: metricCard(
+                              icon: '🎁',
+                              title: AppMessages.metricPreorderSubtotal,
+                              value: mask(summary.preorder, showNumbers),
+                              bg: bg1,
+                              inline: true,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: metricCard(
+                              icon: '💸',
+                              title: AppMessages.metricDiscountSubtotal,
+                              value: mask(summary.discount, showNumbers),
+                              bg: const Color(0xFFFFEEF0),
+                              valueColor: gold,
+                              inline: true,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      const Align(
+                        alignment: Alignment.centerRight,
+                        child: Text(
+                          AppMessages.appTitle,
+                          style: TextStyle(fontSize: 12, color: Colors.black45),
+                        ),
                       ),
                     ],
                   ),
                 ),
-                const SizedBox(height: 16),
-                Row(
-                  children: [
-                    Expanded(
-                      child: metricCard(
-                        icon: '💵',
-                        title: AppMessages.metricCash,
-                        value: mask(summary.cash, showNumbers),
-                        bg: bg3,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: metricCard(
-                        icon: '🔁',
-                        title: AppMessages.metricTransfer,
-                        value: mask(summary.transfer, showNumbers),
-                        bg: bg4,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: metricCard(
-                        icon: '📲',
-                        title: AppMessages.metricLinePay,
-                        value: mask(summary.linepay, showNumbers),
-                        bg: bg2,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                Row(
-                  children: [
-                    Expanded(
-                      child: metricCard(
-                        icon: '🧸',
-                        title: AppMessages.metricPreorderSubtotal,
-                        value: mask(summary.preorder, showNumbers),
-                        bg: bg1,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: metricCard(
-                        icon: '✨',
-                        title: AppMessages.metricDiscountSubtotal,
-                        value: mask(summary.discount, showNumbers),
-                        bg: const Color(0xFFFFEEF0),
-                        valueColor: Colors.pink,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                const Align(
-                  alignment: Alignment.centerRight,
-                  child: Text(
-                    AppMessages.appTitle,
-                    style: TextStyle(fontSize: 12, color: Colors.black45),
-                  ),
-                ),
-              ],
+              ),
             ),
           ),
         );

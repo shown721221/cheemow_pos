@@ -54,49 +54,65 @@ class PinDialog {
             ),
           );
 
+          List<Widget> buildPinBoxes() {
+            return List.generate(4, (i) {
+              final filled = i < input.length;
+              return AnimatedContainer(
+                duration: const Duration(milliseconds: 160),
+                width: 48,
+                height: 56,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(
+                    color: filled ? Colors.blueAccent : Colors.grey[300]!,
+                    width: filled ? 2 : 1,
+                  ),
+                  color: filled ? Colors.blue[50] : Colors.white,
+                ),
+                child: Text(
+                  filled ? '•' : '',
+                  style: const TextStyle(
+                    fontSize: 28,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 0,
+                  ),
+                ),
+              );
+            });
+          }
+
           return AlertDialog(
             content: SizedBox(
-              width: 320,
+              width: 340,
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
+                  if (subtitle != null) ...[
+                    Text(
+                      subtitle,
+                      style: const TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.deepOrange,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 6),
+                  ],
                   Text(
                     title,
-                    style: const TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.deepOrange,
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.blueGrey[700],
                     ),
                     textAlign: TextAlign.center,
                   ),
-                  if (subtitle != null) ...[
-                    const SizedBox(height: 6),
-                    Text(
-                      subtitle,
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.blueGrey[600],
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                  ],
-                  const SizedBox(height: 12),
-                  Container(
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    decoration: BoxDecoration(
-                      border: Border.all(color: Colors.grey[300]!),
-                      borderRadius: BorderRadius.circular(8),
-                      color: Colors.grey[50],
-                    ),
-                    child: Text(
-                      ('••••'.substring(0, input.length)).padRight(4, '—'),
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(
-                        fontSize: 24,
-                        letterSpacing: 4,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
+                  const SizedBox(height: 14),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: buildPinBoxes(),
                   ),
                   const SizedBox(height: 12),
                   Row(
@@ -126,7 +142,7 @@ class PinDialog {
                             backgroundColor: Colors.orange[50],
                             foregroundColor: Colors.orange[700],
                           ),
-                          child: const Text(AppMessages.clear),
+                          child: const Icon(Icons.backspace_outlined),
                         ),
                       ),
                       numKey('0'),
@@ -139,7 +155,7 @@ class PinDialog {
                             backgroundColor: Colors.grey[200],
                             foregroundColor: Colors.grey[700],
                           ),
-                          child: const Text(AppMessages.cancel),
+                          child: const Icon(Icons.close_rounded),
                         ),
                       ),
                     ],

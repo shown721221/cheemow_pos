@@ -48,15 +48,18 @@ void main() {
       expect(r.canConfirm, true);
     });
 
-    test('non-cash ignores rawInput empty => effectivePaid = 0, change 0, canConfirm true', () {
-      final r = PaymentCompute.evaluate(
-        method: PaymentMethods.transfer,
-        totalAmount: 500,
-        rawInput: '',
-      );
-      expect(r.effectivePaid, 0);
-      expect(r.change, 0);
-      expect(r.canConfirm, true);
-    });
+    test(
+      'non-cash ignores rawInput empty => effectivePaid = 0, change 0, canConfirm true',
+      () {
+        final r = PaymentCompute.evaluate(
+          method: PaymentMethods.transfer,
+          totalAmount: 500,
+          rawInput: '',
+        );
+        expect(r.effectivePaid, 0);
+        expect(r.change, 0);
+        expect(r.canConfirm, true);
+      },
+    );
   });
 }

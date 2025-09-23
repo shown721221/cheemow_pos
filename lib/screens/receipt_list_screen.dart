@@ -191,22 +191,36 @@ class _ReceiptListScreenState extends State<ReceiptListScreen> {
     if (r.refundedProductIds.isNotEmpty) {
       addSeg('已退 ${r.refundedProductIds.length} 件', color: AppColors.error);
     }
-    return ListTile(
-      dense: true,
-      title: RichText(
-        text: TextSpan(
-          style: const TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-            color: AppColors.onDarkPrimary,
-          ),
-          children: spans,
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(8),
+          color: AppColors.darkCard.withValues(alpha: .35),
         ),
-        textScaler: const TextScaler.linear(1.0),
+        child: ListTile(
+          dense: false,
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 12,
+            vertical: 6,
+          ),
+          minVerticalPadding: 4,
+          title: RichText(
+            text: TextSpan(
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w700,
+                color: AppColors.onDarkPrimary,
+                height: 1.25,
+              ),
+              children: spans,
+            ),
+            textScaler: const TextScaler.linear(1.0),
+          ),
+          trailing: const Icon(Icons.chevron_right, size: 22),
+          onTap: () => _showReceiptDetailDialog(r),
+        ),
       ),
-      subtitle: null, // 已將預購/折扣/退貨資訊整合進主摘要行
-      trailing: const Icon(Icons.chevron_right),
-      onTap: () => _showReceiptDetailDialog(r),
     );
   }
 

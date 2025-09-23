@@ -102,7 +102,7 @@ class AppMessages {
   static const String cartEmptyTitle = '帶寶寶回家吧';
   static const String appTitle = 'CheeMeow POS';
   static const String salesTabLabel = '銷售';
-  static const String revenueTodayTitle = '🌈 今日營收';
+  static const String revenueTodayTitle = '😻 今日營收';
 
   // 商品列表（空狀態 / 庫存）
   static const String productListEmptyTitle = '暫無商品資料';

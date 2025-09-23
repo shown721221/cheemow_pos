@@ -25,7 +25,9 @@ class PaymentCompute {
 
     final effectivePaid = (isCash && trimmed.isEmpty) ? totalAmount : paidRaw;
     final change = isCash ? (effectivePaid - totalAmount) : 0;
-    final canConfirm = isCash ? (trimmed.isEmpty || paidRaw >= totalAmount) : true;
+    final canConfirm = isCash
+        ? (trimmed.isEmpty || paidRaw >= totalAmount)
+        : true;
 
     return PaymentComputeResult(
       effectivePaid: effectivePaid,
