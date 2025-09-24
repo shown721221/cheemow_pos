@@ -25,7 +25,7 @@ class PriceDisplay extends StatelessWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-  Text('💵', style: TextStyle(fontSize: iconSize)),
+  Text('�', style: TextStyle(fontSize: iconSize)),
   SizedBox(width: 6.0),
         Text(
           thousands ? MoneyFormatter.thousands(amount) : amount.toString(),

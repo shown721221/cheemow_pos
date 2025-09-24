@@ -144,8 +144,8 @@ class AppMessages {
   static const String confirmDelete = '確認刪除';
 
   // 付款方式顯示
-  // 現金：改為英文顯示，保留錢幣 emoji。若需更換可用：💰, 💵, 💶, 💷, 💴 (日圓樣式較接近藍色紙鈔)；暫用通用 💵。
-  static const String cashLabel = '💵 Cash';
+    // 現金：改為英文顯示，保留錢幣 emoji。若需更換可用：💰, �, 💶, 💷, 💴（目前採用通用 �）。
+    static const String cashLabel = '� Cash';
   static const String transferLabel = '🔁 轉帳';
   static const String linePayLabel = '📲 LinePay';
   static const String enterPaidAmount = '輸入實收金額';

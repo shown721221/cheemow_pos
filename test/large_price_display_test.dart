@@ -9,7 +9,7 @@ void main() {
     ));
     // Expect to find the formatted text 1,234,567
     expect(find.text('1,234,567'), findsOneWidget);
-    // And the money icon
-    expect(find.text('💵'), findsOneWidget);
+  // And the money icon (now using 💲)
+  expect(find.text('�'), findsOneWidget);
   });
 }

@@ -199,7 +199,7 @@ class RevenueExportHelper {
                 children: [
                   Expanded(
                     child: metricCard(
-                      icon: '💵',
+                      icon: '�',
                       title: 'Cash',
                       value: mask(summary.cash, showNumbers),
                       bg: bg3,
