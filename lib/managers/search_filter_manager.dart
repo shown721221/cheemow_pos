@@ -108,60 +108,34 @@ class SearchFilterManager {
             if (!matchesHongKong) return false;
             break;
           case 'Duffy':
-            if (!name.contains('duffy') && !name.contains('達菲')) return false;
+            if (!name.contains('duffy')) return false;
             break;
           case 'Gelatoni':
-            if (!name.contains('gelatoni') && !name.contains('傑拉托尼')) {
-              return false;
-            }
+            if (!name.contains('gelatoni')) return false;
             break;
           case 'OluMel':
-            if (!name.contains('olumel') && !name.contains('歐嚕')) return false;
+            if (!name.contains('olumel')) return false;
             break;
           case 'ShellieMay':
-            if (!name.contains('shelliemay') && !name.contains('雪莉玫')) {
-              return false;
-            }
+            if (!name.contains('shelliemay')) return false;
             break;
           case 'StellaLou':
-            if (!name.contains('stellalou') &&
-                !name.contains('星黛露') &&
-                !name.contains('史黛拉露')) {
-              return false;
-            }
+            if (!name.contains('stellalou')) return false;
             break;
           case 'CookieAnn':
-            if (!name.contains('cookieann') &&
-                !name.contains('可琦安') &&
-                !name.contains('cookie')) {
-              return false;
-            }
+            if (!name.contains('cookieann')) return false;
             break;
           case 'LinaBell':
-            if (!name.contains('linabell') &&
-                !name.contains('玲娜貝兒') &&
-                !name.contains('貝兒')) {
-              return false;
-            }
+            if (!name.contains('linabell')) return false;
             break;
           case '其他角色':
             final isKnown = name.contains('duffy') ||
-                name.contains('達菲') ||
                 name.contains('gelatoni') ||
-                name.contains('傑拉托尼') ||
                 name.contains('olumel') ||
-                name.contains('歐嚕') ||
                 name.contains('shelliemay') ||
-                name.contains('雪莉玫') ||
                 name.contains('stellalou') ||
-                name.contains('星黛露') ||
-                name.contains('史黛拉露') ||
                 name.contains('cookieann') ||
-                name.contains('可琦安') ||
-                name.contains('cookie') ||
-                name.contains('linabell') ||
-                name.contains('玲娜貝兒') ||
-                name.contains('貝兒');
+                name.contains('linabell');
             if (isKnown) return false;
             break;
           case '娃娃':
