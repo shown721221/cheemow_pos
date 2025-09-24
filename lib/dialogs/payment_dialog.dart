@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../config/constants.dart';
-import '../widgets/price_display.dart';
 import '../utils/money_formatter.dart';
 import '../widgets/numeric_keypad.dart';
 import '../config/app_messages.dart';
@@ -65,12 +64,19 @@ class PaymentDialog {
                         mainAxisSize: MainAxisSize.min,
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          // 頂部：左側總金額，右側找零（僅現金）
+                          // 頂部：左側總金額，右側找零（僅現金），使用頂對齊避免 baseline 斷言
                           Row(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Expanded(
-                                child: LargePriceDisplay(amount: totalAmount),
+                                child: Text(
+                                  MoneyFormatter.symbol(totalAmount),
+                                  style: TextStyle(
+                                    fontSize: 24,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.green[700],
+                                  ),
+                                ),
                               ),
                               if (method == PaymentMethods.cash)
                                 Text(
@@ -96,7 +102,21 @@ class PaymentDialog {
                           ),
                           const SizedBox(height: StyleConfig.gap12),
                           if (method == PaymentMethods.cash) ...[
-                            // 先顯示快速金額按鈕（位置已與輸入框交換）
+                            // 輸入框在上
+                            TextField(
+                              controller: cashController,
+                              keyboardType: TextInputType.number,
+                              readOnly: true, // 避免平板 IME 失效問題，改用自訂小鍵盤
+                              decoration: const InputDecoration(
+                                hintText: AppMessages.enterPaidAmount,
+                                border: OutlineInputBorder(),
+                              ),
+                              onTap: () {
+                                /* 僅顯示游標，由下方自訂鍵盤輸入 */
+                              },
+                            ),
+                            const SizedBox(height: StyleConfig.gap8),
+                            // 快速金額按鈕在下，文案改為「實收 N」
                             Builder(
                               builder: (context) {
                                 final suggestions =
@@ -113,7 +133,7 @@ class PaymentDialog {
                                     ) ...[
                                       Expanded(
                                         child: _QuickAmountButton(
-                                          label: '\$ ${suggestions[i]}',
+                                          label: '實收 ${suggestions[i]}',
                                           selected:
                                               cashController.text ==
                                               suggestions[i].toString(),
@@ -133,25 +153,12 @@ class PaymentDialog {
                               },
                             ),
                             const SizedBox(height: StyleConfig.gap8),
-                            TextField(
-                              controller: cashController,
-                              keyboardType: TextInputType.number,
-                              readOnly: true, // 避免平板 IME 失效問題，改用自訂小鍵盤
-                              decoration: const InputDecoration(
-                                hintText: AppMessages.enterPaidAmount,
-                                border: OutlineInputBorder(),
-                              ),
-                              onTap: () {
-                                /* 僅顯示游標，由下方自訂鍵盤輸入 */
-                              },
-                            ),
-                            const SizedBox(height: StyleConfig.gap8),
                             NumericKeypad(
                               keys: const [
                                 ['1', '2', '3'],
                                 ['4', '5', '6'],
                                 ['7', '8', '9'],
-                                ['00', '0', '⌫'],
+                                ['ESC', '0', '⌫'],
                               ],
                               onKeyTap: (key) {
                                 String t = cashController.text;
@@ -159,6 +166,8 @@ class PaymentDialog {
                                   if (t.isNotEmpty) {
                                     t = t.substring(0, t.length - 1);
                                   }
+                                } else if (key == 'ESC') {
+                                  t = '';
                                 } else {
                                   t = t + key;
                                 }

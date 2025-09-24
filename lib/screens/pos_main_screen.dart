@@ -243,7 +243,8 @@ class _PosMainScreenState extends State<PosMainScreen> {
     return PinDialog.show(
       context: context,
       pin: pin,
-      subtitle: '⚠️ 這會覆蓋所有商品資料',
+      subtitle: '注意 ⚠️ 這會覆蓋所有商品資料',
+      subtitleEmphasis: true,
     );
   }
 
@@ -394,16 +395,8 @@ class _PosMainScreenState extends State<PosMainScreen> {
     if (!mounted) return;
     if (payment == null) return; // 取消付款
 
-    final result = await _checkoutController.finalize(payment.method);
+    await _checkoutController.finalize(payment.method);
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          AppMessages.checkoutDone(result.unifiedTotal, payment.method),
-        ),
-        duration: Duration(seconds: 3),
-      ),
-    );
     setState(() {
       _lastCheckoutPaymentMethod = payment.method;
       _searchController.clearQuery();

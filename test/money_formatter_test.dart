@@ -11,8 +11,8 @@ void main() {
     expect(MoneyFormatter.thousands(-9876543), '-9,876,543');
   });
 
-    test('symbol formatting', () {
-      expect(MoneyFormatter.symbol(50), '\$ 50');
-      expect(MoneyFormatter.symbol(1000), '\$ 1,000');
+  test('symbol formatting', () {
+    expect(MoneyFormatter.symbol(50), '\$ 50');
+    expect(MoneyFormatter.symbol(1000), '\$ 1,000');
   });
 }

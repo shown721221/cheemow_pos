@@ -144,8 +144,8 @@ class AppMessages {
   static const String confirmDelete = '確認刪除';
 
   // 付款方式顯示
-    // 現金：改為英文顯示，保留錢幣 emoji。若需更換可用：💰, �, 💶, 💷, 💴（目前採用通用 �）。
-    static const String cashLabel = '� Cash';
+  // 現金：改為英文顯示，保留錢幣 emoji。若需更換可用：💰, �, 💶, 💷, 💴（目前採用通用 �）。
+  static const String cashLabel = '\$ Cash'; // 產出字串 "$ Cash"
   static const String transferLabel = '🔁 轉帳';
   static const String linePayLabel = '📲 LinePay';
   static const String enterPaidAmount = '輸入實收金額';
@@ -179,12 +179,12 @@ class AppMessages {
 
   // 零用金
   static const String setPettyCash = '💰 設定零用金';
-    static String pettyCashCurrent(int amount) => '目前零用金：\$$amount';
+  static String pettyCashCurrent(int amount) => '目前零用金：\$$amount';
   static const String unknownPaymentMethod = '未知方式';
 
   // PIN 對話框
   static const String pinTitleMagic = '✨ 請輸入奇妙數字 ✨';
-  static const String changePaymentPinWarning = '🔒 變更付款方式需要管理密碼';
+  static const String changePaymentPinWarning = '確定要變更付款方式嗎 ?';
   static const String pinWrong = '密碼錯誤，請再試一次';
 
   // 匯入

@@ -8,7 +8,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:cheemeow_pos/main.dart';
 import 'package:cheemeow_pos/services/time_service.dart';
-
+import 'package:cheemeow_pos/widgets/primary_app_bar.dart';
 
 void main() {
   testWidgets('POS App smoke test', (WidgetTester tester) async {
@@ -16,6 +16,7 @@ void main() {
     TimeService.disableSchedulingForTests = true;
     await tester.pumpWidget(const MyApp());
     await tester.pump(const Duration(milliseconds: 100));
-    expect(find.textContaining('POS'), findsWidgets);
+    // 標題目前是圖片，改為確認主要 AppBar 是否存在
+    expect(find.byType(PrimaryAppBar), findsOneWidget);
   });
 }

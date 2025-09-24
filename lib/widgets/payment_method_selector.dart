@@ -20,9 +20,10 @@ class PaymentMethodSelector extends StatelessWidget {
       children: [
         Expanded(
           child: PaymentOptionButton(
-            label: AppMessages.cashLabel,
+            label: '💰',
             selected: method == PaymentMethods.cash,
             onTap: () => onChanged(PaymentMethods.cash),
+            textStyle: const TextStyle(fontSize: 22),
           ),
         ),
         const SizedBox(width: StyleConfig.gap8),

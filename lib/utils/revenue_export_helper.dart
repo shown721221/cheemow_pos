@@ -78,7 +78,8 @@ class RevenueExportHelper {
                           Flexible(
                             child: Text(
                               title,
-                              style: titleStyleOverride ??
+                              style:
+                                  titleStyleOverride ??
                                   const TextStyle(
                                     fontSize: 14,
                                     fontWeight: FontWeight.w600,

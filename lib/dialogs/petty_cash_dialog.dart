@@ -141,7 +141,7 @@ class PettyCashDialog {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     children: [
-                      actionKey('🧹', clearAll),
+                      actionKey('ESC', clearAll),
                       numKey('0', () => append('0')),
                       actionKey('✅', confirm),
                     ],

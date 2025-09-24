@@ -11,6 +11,7 @@ import '../services/receipt_service.dart';
 import '../config/constants.dart';
 import '../widgets/empty_state.dart';
 import '../config/style_config.dart';
+import '../dialogs/pin_dialog.dart';
 
 class ReceiptListScreen extends StatefulWidget {
   const ReceiptListScreen({super.key});
@@ -32,6 +33,7 @@ class _ReceiptListScreenState extends State<ReceiptListScreen> {
   }
 
   Future<List<Receipt>> _loadReceipts() async {
+    await ReceiptService.instance.initialize();
     return _onlyToday
         ? ReceiptService.instance.getTodayReceipts()
         : ReceiptService.instance.getReceipts();
@@ -47,9 +49,10 @@ class _ReceiptListScreenState extends State<ReceiptListScreen> {
             tooltip: AppMessages.clearReceiptsTooltip,
             icon: const Icon(Icons.delete_outline),
             onPressed: () async {
-              final ok = await _confirmWithPin(
-                warningText: AppMessages.warningClearReceipts,
-                promptText: AppMessages.pinTitleMagic,
+              final ok = await PinDialog.show(
+                context: context,
+                pin: AppConfig.csvImportPin,
+                subtitle: AppMessages.warningClearReceipts,
               );
               if (!ok) return;
               final irreversible = await _confirmIrreversibleDeletion();
@@ -247,34 +250,46 @@ class _ReceiptListScreenState extends State<ReceiptListScreen> {
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
       child: Row(
         children: [
+          // 與結帳視覺一致但使用穩定的膠囊按鈕（寬度有約束）
           FilterPillButton(
             selected: _selectedPay == PaymentMethods.cash,
             onTap: () => selectPay(PaymentMethods.cash),
-            child: Text(AppMessages.cashLabel),
+            minWidth: 72,
+            height: 44,
+            child: const Text('💰', style: TextStyle(fontSize: 20)),
           ),
           FilterPillButton(
             selected: _selectedPay == PaymentMethods.transfer,
             onTap: () => selectPay(PaymentMethods.transfer),
+            minWidth: 72,
+            height: 44,
             child: Image.asset(
               'assets/images/cathay.png',
               height: 24,
               fit: BoxFit.contain,
-              errorBuilder: (_, __, ___) => Text(AppMessages.transferLabel),
+              errorBuilder: (_, __, ___) =>
+                  const Text(AppMessages.transferLabel),
             ),
           ),
           FilterPillButton(
             selected: _selectedPay == PaymentMethods.linePay,
             onTap: () => selectPay(PaymentMethods.linePay),
+            minWidth: 72,
+            height: 44,
             child: Image.asset(
               'assets/images/linepay.png',
               height: 20,
               fit: BoxFit.contain,
-              errorBuilder: (_, __, ___) => Text(AppMessages.linePayLabel),
+              errorBuilder: (_, __, ___) =>
+                  const Text(AppMessages.linePayLabel),
             ),
           ),
+          const SizedBox(width: 8),
+          const SizedBox(width: 8),
           FilterPillButton(
             selected: _tagFilter == 'discount',
             onTap: () => selectTag('discount'),
+            minWidth: 72,
             child: const Row(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -283,11 +298,11 @@ class _ReceiptListScreenState extends State<ReceiptListScreen> {
                 Text('折扣'),
               ],
             ),
-            minWidth: 72,
           ),
           FilterPillButton(
             selected: _tagFilter == 'preorder',
             onTap: () => selectTag('preorder'),
+            minWidth: 72,
             child: const Row(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -296,13 +311,12 @@ class _ReceiptListScreenState extends State<ReceiptListScreen> {
                 Text('預購商品'),
               ],
             ),
-            minWidth: 72,
           ),
           FilterPillButton(
             selected: _tagFilter == 'refund',
             onTap: () => selectTag('refund'),
-            child: const Text(AppMessages.chipRefund),
             minWidth: 72,
+            child: const Text(AppMessages.chipRefund),
           ),
         ],
       ),
@@ -431,32 +445,35 @@ class _ReceiptListScreenState extends State<ReceiptListScreen> {
           }
 
           return AlertDialog(
-            title: Row(
+            title: Wrap(
+              alignment: WrapAlignment.spaceBetween,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              runSpacing: 8,
               children: [
                 const Text(AppMessages.receiptDetailsTitle),
-                const Spacer(),
                 DropdownButton<String>(
                   value: payment,
                   underline: const SizedBox.shrink(),
                   items: const [
                     DropdownMenuItem(
                       value: PaymentMethods.cash,
-                      child: Text(AppMessages.cashLabel),
+                      child: Text(PaymentMethods.cash),
                     ),
                     DropdownMenuItem(
-                      value: '轉帳',
-                      child: Text(AppMessages.transferLabel),
+                      value: PaymentMethods.transfer,
+                      child: Text(PaymentMethods.transfer),
                     ),
                     DropdownMenuItem(
-                      value: 'LinePay',
-                      child: Text(AppMessages.linePayLabel),
+                      value: PaymentMethods.linePay,
+                      child: Text(PaymentMethods.linePay),
                     ),
                   ],
                   onChanged: (v) async {
                     if (v == null || v == payment) return;
-                    final okPin = await _confirmWithPin(
-                      warningText: AppMessages.changePaymentPinWarning,
-                      promptText: AppMessages.pinTitleMagic,
+                    final okPin = await PinDialog.show(
+                      context: context,
+                      pin: AppConfig.csvImportPin,
+                      subtitle: AppMessages.changePaymentPinWarning,
                     );
                     if (!okPin) return;
                     final updated = current.copyWith(paymentMethod: v);
@@ -534,7 +551,7 @@ class _ReceiptListScreenState extends State<ReceiptListScreen> {
                               ),
                             ),
                             trailing: refunded
-                                ? Icon(
+                                ? const Icon(
                                     Icons.assignment_return,
                                     color: AppColors.error,
                                   )
@@ -591,7 +608,6 @@ class _ReceiptListScreenState extends State<ReceiptListScreen> {
       ),
     );
     if (mounted) {
-      // 使用區塊形式避免 setState 閉包回傳 Future
       setState(() {
         _future = _loadReceipts();
       });
@@ -623,161 +639,6 @@ class _ReceiptListScreenState extends State<ReceiptListScreen> {
       ),
     );
     return confirmed;
-  }
-
-  Future<bool> _confirmWithPin({
-    required String warningText,
-    required String promptText,
-  }) async {
-    final pin = AppConfig.csvImportPin;
-    String input = '';
-    String? error;
-    bool ok = false;
-    await showDialog(
-      context: context,
-      barrierDismissible: true,
-      builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setS) {
-          Widget numKey(String d) => SizedBox(
-            width: 72,
-            height: 60,
-            child: ElevatedButton(
-              onPressed: input.length < 4
-                  ? () => setS(() {
-                      input += d;
-                      error = null;
-                      if (input.length == 4) {
-                        if (input == pin) {
-                          ok = true;
-                          Navigator.of(ctx).pop();
-                        } else {
-                          error = '密碼錯誤，請再試一次';
-                        }
-                      }
-                    })
-                  : null,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primaryContainer,
-                foregroundColor: AppColors.primary,
-              ),
-              child: Text(
-                d,
-                style: const TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-          );
-          Widget actionKey(String label, VoidCallback onTap) => SizedBox(
-            width: 72,
-            height: 60,
-            child: ElevatedButton(
-              onPressed: onTap,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.discount.withValues(alpha: 0.15),
-                foregroundColor: AppColors.discount,
-              ),
-              child: Text(label, style: const TextStyle(fontSize: 18)),
-            ),
-          );
-          final masked = ('••••'.substring(0, input.length)).padRight(4, '—');
-          return AlertDialog(
-            content: SizedBox(
-              width: 320,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    warningText,
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      color: AppColors.discount,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    promptText,
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.discount,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  Container(
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    decoration: BoxDecoration(
-                      border: Border.all(color: AppColors.neutralBorder),
-                      borderRadius: BorderRadius.circular(8),
-                      color: AppColors.darkCard,
-                    ),
-                    child: Text(
-                      masked,
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(
-                        fontSize: 24,
-                        letterSpacing: 4,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                  if (error != null) ...[
-                    const SizedBox(height: 8),
-                    Text(
-                      error!,
-                      style: TextStyle(color: AppColors.error, fontSize: 12),
-                    ),
-                  ],
-                  const SizedBox(height: 12),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: [numKey('1'), numKey('2'), numKey('3')],
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: [numKey('4'), numKey('5'), numKey('6')],
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: [numKey('7'), numKey('8'), numKey('9')],
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: [
-                      actionKey(
-                        '🧹',
-                        () => setS(() {
-                          input = '';
-                          error = null;
-                        }),
-                      ),
-                      numKey('0'),
-                      actionKey(
-                        '⌫',
-                        () => setS(() {
-                          if (input.isNotEmpty) {
-                            input = input.substring(0, input.length - 1);
-                          }
-                          error = null;
-                        }),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          );
-        },
-      ),
-    );
-    return ok;
   }
 }
 

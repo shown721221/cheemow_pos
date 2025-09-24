@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 /// 通用數字鍵盤元件
 /// 透過 keys 參數自訂佈局，例如：
-///  - 付款對話框：[['1','2','3'],['4','5','6'],['7','8','9'],['00','0','⌫']]
+///  - 付款對話框：[['1','2','3'],['4','5','6'],['7','8','9'],['ESC','0','⌫']]
 ///  - 價格/折扣輸入：[['1','2','3'],['4','5','6'],['7','8','9'],['🧹','0','✅']]
 class NumericKeypad extends StatelessWidget {
   final List<List<String>> keys;
@@ -28,7 +28,8 @@ class NumericKeypad extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final style = textStyle ?? const TextStyle(fontSize: 20, fontWeight: FontWeight.w700);
+    final style =
+        textStyle ?? const TextStyle(fontSize: 20, fontWeight: FontWeight.w700);
     return Column(
       children: [
         for (int r = 0; r < keys.length; r++) ...[
@@ -45,7 +46,10 @@ class NumericKeypad extends StatelessWidget {
                         child: OutlinedButton(
                           onPressed: () => onKeyTap(keys[r][c]),
                           style: OutlinedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(vertical: 0, horizontal: 0),
+                            padding: const EdgeInsets.symmetric(
+                              vertical: 0,
+                              horizontal: 0,
+                            ),
                           ),
                           child: Text(keys[r][c], style: style),
                         ),

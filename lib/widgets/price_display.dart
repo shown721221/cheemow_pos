@@ -17,7 +17,7 @@ class PriceDisplay extends StatelessWidget {
     this.fontSize = 16.0,
     this.color,
     this.fontWeight,
-  this.thousands = false,
+    this.thousands = false,
   });
 
   @override
@@ -25,8 +25,8 @@ class PriceDisplay extends StatelessWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-  Text('\$', style: TextStyle(fontSize: iconSize)),
-  SizedBox(width: 6.0),
+        Text('\$', style: TextStyle(fontSize: iconSize)),
+        SizedBox(width: 6.0),
         Text(
           thousands ? MoneyFormatter.thousands(amount) : amount.toString(),
           style: TextStyle(
@@ -51,10 +51,10 @@ class LargePriceDisplay extends StatelessWidget {
     return PriceDisplay(
       amount: amount,
       iconSize: 28.0,
-  fontSize: 24.0,
+      fontSize: 24.0,
       fontWeight: FontWeight.bold,
       color: Colors.green[700],
-  thousands: true,
+      thousands: true,
     );
   }
 }

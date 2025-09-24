@@ -9,6 +9,7 @@ class PinDialog {
     required String pin,
     String title = AppMessages.pinTitleMagic,
     String? subtitle,
+    bool subtitleEmphasis = false,
     bool barrierDismissible = true,
   }) async {
     String input = '';
@@ -89,14 +90,29 @@ class PinDialog {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   if (subtitle != null) ...[
-                    Text(
-                      subtitle,
-                      style: const TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.deepOrange,
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        vertical: 6,
+                        horizontal: 8,
                       ),
-                      textAlign: TextAlign.center,
+                      decoration: subtitleEmphasis
+                          ? BoxDecoration(
+                              color: Colors.orange[50],
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(color: Colors.orange[200]!),
+                            )
+                          : null,
+                      child: Text(
+                        subtitle,
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                          color: subtitleEmphasis
+                              ? Colors.deepOrange
+                              : Colors.deepOrange,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
                     ),
                     const SizedBox(height: 6),
                   ],
@@ -139,10 +155,21 @@ class PinDialog {
                         child: ElevatedButton(
                           onPressed: () => setS(() => input = ''),
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.orange[50],
-                            foregroundColor: Colors.orange[700],
+                            backgroundColor: Colors.grey[200],
+                            foregroundColor: Colors.grey[700],
+                            padding: const EdgeInsets.symmetric(horizontal: 4),
                           ),
-                          child: const Icon(Icons.backspace_outlined),
+                          child: const FittedBox(
+                            fit: BoxFit.scaleDown,
+                            child: Text(
+                              'ESC',
+                              maxLines: 1,
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                          ),
                         ),
                       ),
                       numKey('0'),
@@ -150,12 +177,16 @@ class PinDialog {
                         width: 70,
                         height: 56,
                         child: ElevatedButton(
-                          onPressed: () => Navigator.of(ctx).pop(),
+                          onPressed: () => setS(() {
+                            if (input.isNotEmpty) {
+                              input = input.substring(0, input.length - 1);
+                            }
+                          }),
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.grey[200],
-                            foregroundColor: Colors.grey[700],
+                            backgroundColor: Colors.orange[50],
+                            foregroundColor: Colors.orange[700],
                           ),
-                          child: const Icon(Icons.close_rounded),
+                          child: const Icon(Icons.backspace_outlined),
                         ),
                       ),
                     ],

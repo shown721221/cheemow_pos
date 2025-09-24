@@ -8,6 +8,7 @@ class PaymentOptionButton extends StatelessWidget {
   final VoidCallback onTap;
   final String? imageAsset;
   final double imageHeight;
+  final TextStyle? textStyle;
   const PaymentOptionButton({
     super.key,
     required this.label,
@@ -15,6 +16,7 @@ class PaymentOptionButton extends StatelessWidget {
     required this.onTap,
     this.imageAsset,
     this.imageHeight = 20,
+    this.textStyle,
   });
 
   @override
@@ -23,7 +25,7 @@ class PaymentOptionButton extends StatelessWidget {
     final ButtonStyle unselectedStyle = StyleConfig.payOptionUnselectedStyle;
     final Widget content;
     if (imageAsset == null) {
-      content = Text(label);
+      content = Text(label, style: textStyle);
     } else {
       content = Semantics(
         label: label,
