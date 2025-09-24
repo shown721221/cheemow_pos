@@ -59,8 +59,11 @@ class SearchFilterManager {
   }
 
   /// 套用篩選條件，可搭配文字搜尋（多關鍵字以空白切分，任一命中即通過）
-  List<Product> filter(List<Product> products, List<String> selectedFilters,
-      {String searchQuery = ''}) {
+  List<Product> filter(
+    List<Product> products,
+    List<String> selectedFilters, {
+    String searchQuery = '',
+  }) {
     final terms = searchQuery
         .toLowerCase()
         .split(' ')
@@ -100,11 +103,11 @@ class SearchFilterManager {
           case '香港':
             final matchesHongKong =
                 name.contains('香港disney限定') ||
-                    name.contains('香港迪士尼限定') ||
-                    name.contains('香港disney') ||
-                    name.contains('香港迪士尼') ||
-                    name.contains('hongkong') ||
-                    name.contains('hk');
+                name.contains('香港迪士尼限定') ||
+                name.contains('香港disney') ||
+                name.contains('香港迪士尼') ||
+                name.contains('hongkong') ||
+                name.contains('hk');
             if (!matchesHongKong) return false;
             break;
           case 'Duffy':
@@ -129,7 +132,8 @@ class SearchFilterManager {
             if (!name.contains('linabell')) return false;
             break;
           case '其他角色':
-            final isKnown = name.contains('duffy') ||
+            final isKnown =
+                name.contains('duffy') ||
                 name.contains('gelatoni') ||
                 name.contains('olumel') ||
                 name.contains('shelliemay') ||
@@ -180,4 +184,3 @@ class SearchFilterManager {
     return a.name.compareTo(b.name);
   }
 }
- 
