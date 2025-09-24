@@ -5,7 +5,7 @@ class SearchFilterManager {
   static const List<String> locationGroup = ['東京', '上海', '香港'];
   static const List<String> characterGroup = [
     'Duffy',
-    'Gelatoni',
+    'GelaToni',
     'OluMel',
     'ShellieMay',
     'StellaLou',
@@ -113,7 +113,7 @@ class SearchFilterManager {
           case 'Duffy':
             if (!name.contains('duffy')) return false;
             break;
-          case 'Gelatoni':
+          case 'GelaToni':
             if (!name.contains('gelatoni')) return false;
             break;
           case 'OluMel':

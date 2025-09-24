@@ -45,7 +45,7 @@ class PopularityExportHelper {
       final popularityColors = <String, Color>{
         'Duffy': Colors.brown[400]!,
         'ShellieMay': Colors.pink[300]!,
-        'Gelatoni': Colors.teal[400]!,
+        'GelaToni': Colors.teal[400]!,
         'StellaLou': Colors.purple[300]!,
         'CookieAnn': Colors.amber[400]!,
         'OluMel': Colors.green[300]!,
