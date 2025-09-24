@@ -94,7 +94,18 @@ class PettyCashDialog {
                 backgroundColor: Colors.orange[50],
                 foregroundColor: Colors.orange[700],
               ),
-              child: Text(label, style: const TextStyle(fontSize: 18)),
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text(
+                  label,
+                  maxLines: 1,
+                  softWrap: false,
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
             ),
           );
 
