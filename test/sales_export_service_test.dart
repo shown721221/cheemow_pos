@@ -61,8 +61,11 @@ void main() {
     // special: preorder from r1 + discount from r2 => header + 2 rows
     expect(specialRows.length, 3);
 
-    // leading zero preserved with prefix '
-    expect(salesRows[1].contains("'000123"), isTrue);
+    // 商品代碼、條碼皆以 ="..." 文字形式（外層整欄被雙引號包住，內部雙引號成對）
+    // 第一欄 商品代碼："=""001"""
+    expect(salesRows[1].startsWith('"=""001"""'), isTrue);
+    // 第三欄 條碼：,"=""000123"""
+    expect(salesRows[1].contains(',"=""000123"""'), isTrue);
 
     // 付款方式代碼：現金=1 轉帳=2
     expect(
@@ -81,6 +84,28 @@ void main() {
     expect(bundle.specialCsv.contains('普通商品'), isFalse);
     expect(bundle.specialCsv.contains('預約奇妙'), isTrue);
     expect(bundle.specialCsv.contains('祝您有奇妙的一天'), isTrue);
+  });
+
+  test('barcode exported as Excel-safe text for very long numbers', () {
+    final p = Product(
+      id: 'A1',
+      barcode: '4011600135879000300123',
+      name: '超長碼',
+      price: 1,
+    );
+    final r = Receipt(
+      id: '9-001',
+      timestamp: DateTime(2025, 9, 10, 12, 0, 0),
+      items: [CartItem(product: p, quantity: 1)],
+      totalAmount: 1,
+      totalQuantity: 1,
+      paymentMethod: '現金',
+    );
+    final bundle = SalesExportService.instance.buildCsvsForReceipts([r]);
+    final salesRows = bundle.salesCsv.trim().split('\n');
+    expect(salesRows.length, 2);
+    // 應包含 ="<條碼>"（CSV 內部雙引號轉義）
+    expect(salesRows[1].contains(',"=""4011600135879000300123"""'), isTrue);
   });
 
   test('skips refunded items', () {

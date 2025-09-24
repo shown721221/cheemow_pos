@@ -60,11 +60,11 @@ class SalesExportService {
       return v;
     }
 
-    String preserveLeadingZeros(String v) {
-      if (RegExp(r'^0\d+$').hasMatch(v)) {
-        return "'$v";
-      }
-      return v;
+    // 讓 Excel 以文字顯示，避免長數字被轉成科學記號或四捨五入
+    String asExcelText(String v) {
+      // 產出形如 ="1234567890123456"
+      // 實際 CSV 會再經過 esc() 包裝，內部雙引號會被正確轉義
+      return '="$v"';
     }
 
     for (final r in receipts) {
@@ -81,9 +81,9 @@ class SalesExportService {
         if (!p.isSpecialProduct) {
           salesBuffer.writeln(
             [
-              esc(preserveLeadingZeros(p.id)),
+              esc(asExcelText(p.id)),
               esc(p.name),
-              esc(preserveLeadingZeros(p.barcode)),
+              esc(asExcelText(p.barcode)),
               qty.toString(),
               esc(r.id),
               esc(dateTimeStr),
