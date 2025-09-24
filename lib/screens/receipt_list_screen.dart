@@ -191,8 +191,14 @@ class _ReceiptListScreenState extends State<ReceiptListScreen> {
     if (discountQty > 0) {
       addSeg('折扣 $discountQty 件', color: AppColors.discount);
     }
-    if (r.refundedProductIds.isNotEmpty) {
-      addSeg('已退 ${r.refundedProductIds.length} 件', color: AppColors.error);
+    if (r.items.isNotEmpty) {
+      int refundedCount = 0;
+      for (final it in r.items) {
+        refundedCount += r.refundedQtyFor(it.product.id, it.quantity);
+      }
+      if (refundedCount > 0) {
+        addSeg('已退 $refundedCount 件', color: AppColors.error);
+      }
     }
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
@@ -367,35 +373,123 @@ class _ReceiptListScreenState extends State<ReceiptListScreen> {
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setS) {
           Future<void> refundItem(CartItem item) async {
-            final confirm = await showDialog<bool>(
-              context: ctx,
-              builder: (c2) => AlertDialog(
-                title: Row(
-                  children: const [
-                    Icon(Icons.warning_amber_rounded, color: Colors.orange),
-                    SizedBox(width: 8),
-                    Text(AppMessages.refundDialogTitle),
-                  ],
-                ),
-                content: Text(
-                  AppMessages.refundDialogMessage(
-                    item.product.name,
-                    item.quantity,
-                  ),
-                ),
-                actions: [
-                  TextButton(
-                    onPressed: () => Navigator.pop(c2, false),
-                    child: const Text(AppMessages.cancel),
-                  ),
-                  FilledButton(
-                    onPressed: () => Navigator.pop(c2, true),
-                    child: const Text(AppMessages.confirm),
-                  ),
-                ],
-              ),
+            final purchased = item.quantity;
+            final alreadyRefunded = current.refundedQtyFor(
+              item.product.id,
+              purchased,
             );
-            if (confirm != true) return;
+            final remaining = (purchased - alreadyRefunded).clamp(0, purchased);
+            if (remaining <= 0) return;
+
+            int? chooseQty = await showDialog<int>(
+              context: ctx,
+              barrierDismissible: true,
+              builder: (c2) {
+                int currentVal = remaining > 0 ? 1 : 0;
+                return StatefulBuilder(
+                  builder: (c2, setLocal) => AlertDialog(
+                    title: Row(
+                      children: const [
+                        Icon(Icons.assignment_return, color: AppColors.error),
+                        SizedBox(width: 8),
+                        Text('設定退貨數量'),
+                      ],
+                    ),
+                    content: SizedBox(
+                      width: 360,
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            item.product.name,
+                            style: const TextStyle(fontWeight: FontWeight.w600),
+                          ),
+                          const SizedBox(height: 8),
+                          Text('可退：$remaining 件'),
+                          const SizedBox(height: 12),
+                          Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.symmetric(
+                              vertical: 12,
+                              horizontal: 12,
+                            ),
+                            decoration: BoxDecoration(
+                              border: Border.all(color: Colors.grey),
+                              borderRadius: BorderRadius.circular(8),
+                              color: Colors.white,
+                            ),
+                            child: Text(
+                              '選擇：$currentVal 件',
+                              style: const TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.black87,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: SizedBox(
+                                  height: 56,
+                                  child: FilledButton(
+                                    onPressed: currentVal > 0
+                                        ? () => setLocal(() {
+                                            currentVal = (currentVal - 1).clamp(
+                                              0,
+                                              remaining,
+                                            );
+                                          })
+                                        : null,
+                                    child: const Text(
+                                      '-',
+                                      style: TextStyle(fontSize: 20),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: SizedBox(
+                                  height: 56,
+                                  child: FilledButton(
+                                    onPressed: currentVal < remaining
+                                        ? () => setLocal(() {
+                                            currentVal = (currentVal + 1).clamp(
+                                              0,
+                                              remaining,
+                                            );
+                                          })
+                                        : null,
+                                    child: const Text(
+                                      '+',
+                                      style: TextStyle(fontSize: 20),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                    actions: [
+                      FilledButton(
+                        onPressed: currentVal > 0
+                            ? () => Navigator.pop(c2, currentVal)
+                            : null,
+                        child: const Text(AppMessages.confirm),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            );
+            if (chooseQty == null) return;
+
+            // 更新庫存（非特殊商品）
             if (!item.product.isSpecialProduct) {
               final products = await LocalDatabaseService.instance
                   .getProducts();
@@ -403,40 +497,59 @@ class _ReceiptListScreenState extends State<ReceiptListScreen> {
               final stock = idx >= 0 ? products[idx].stock : item.product.stock;
               await LocalDatabaseService.instance.updateProductStock(
                 item.product.id,
-                stock + item.quantity,
+                stock + chooseQty,
               );
             }
-            final newRefunded = List<String>.from(current.refundedProductIds);
-            if (!newRefunded.contains(item.product.id)) {
-              newRefunded.add(item.product.id);
-            }
-            final hasNonDiscountUnrefunded = current.items.any(
-              (it) =>
-                  !it.product.isDiscountProduct &&
-                  !newRefunded.contains(it.product.id),
+
+            // 更新退貨映射與舊欄位相容
+            final newRefundedIds = List<String>.from(
+              current.refundedProductIds,
             );
-            if (!hasNonDiscountUnrefunded) {
+            final newMap = Map<String, int>.from(current.refundedQuantities);
+            final nowRefunded = (newMap[item.product.id] ?? 0) + chooseQty;
+            final clamped = nowRefunded.clamp(0, purchased);
+            newMap[item.product.id] = clamped;
+            if (clamped >= purchased) {
+              if (!newRefundedIds.contains(item.product.id)) {
+                newRefundedIds.add(item.product.id);
+              }
+            } else {
+              newRefundedIds.remove(item.product.id);
+            }
+
+            // 若所有「非折扣」品項皆已無剩餘數量，則將折扣品也一併標記為退貨（全退）
+            bool hasNonDiscountRemaining = current.items.any((it) {
+              if (it.product.isDiscountProduct) return false;
+              final refunded = (it.product.id == item.product.id
+                  ? clamped
+                  : (newMap[it.product.id] ?? 0));
+              return refunded < it.quantity;
+            });
+            if (!hasNonDiscountRemaining) {
               for (final it in current.items.where(
                 (e) => e.product.isDiscountProduct,
               )) {
-                if (!newRefunded.contains(it.product.id)) {
-                  newRefunded.add(it.product.id);
+                newMap[it.product.id] = it.quantity;
+                if (!newRefundedIds.contains(it.product.id)) {
+                  newRefundedIds.add(it.product.id);
                 }
               }
             }
-            final effectiveItems = current.items.where(
-              (it) => !newRefunded.contains(it.product.id),
-            );
-            final newTotal = effectiveItems.fold<int>(
-              0,
-              (s, it) => s + it.subtotal,
-            );
-            final newQty = effectiveItems.fold<int>(
-              0,
-              (s, it) => s + it.quantity,
-            );
+
+            // 以剩餘數量重算總額與件數
+            int newTotal = 0;
+            int newQty = 0;
+            for (final it in current.items) {
+              final refunded = newMap[it.product.id] ?? 0;
+              final remain = (it.quantity - refunded).clamp(0, it.quantity);
+              if (remain <= 0) continue;
+              newQty += remain;
+              newTotal += it.product.price * remain;
+            }
+
             final updated = current.copyWith(
-              refundedProductIds: newRefunded,
+              refundedProductIds: newRefundedIds,
+              refundedQuantities: newMap,
               totalAmount: newTotal,
               totalQuantity: newQty,
             );
@@ -515,8 +628,9 @@ class _ReceiptListScreenState extends State<ReceiptListScreen> {
                         separatorBuilder: (_, __) => const SizedBox(height: 4),
                         itemBuilder: (_, idx) {
                           final it = current.items[idx];
-                          final refunded = current.refundedProductIds.contains(
+                          final fullyRefunded = current.isFullyRefunded(
                             it.product.id,
+                            it.quantity,
                           );
                           return ListTile(
                             dense: true,
@@ -527,30 +641,45 @@ class _ReceiptListScreenState extends State<ReceiptListScreen> {
                               it.product.name,
                               style: TextStyle(
                                 fontWeight: FontWeight.w600,
-                                color: refunded
+                                color: fullyRefunded
                                     ? AppColors.error
                                     : (it.product.isDiscountProduct
                                           ? AppColors.discount
                                           : (it.product.isPreOrderProduct
                                                 ? AppColors.preorder
                                                 : AppColors.onDarkPrimary)),
-                                decoration: refunded
+                                decoration: fullyRefunded
                                     ? TextDecoration.lineThrough
                                     : null,
                               ),
                             ),
-                            subtitle: Text(
-                              '單價 ${MoneyFormatter.symbol(it.product.price)} × ${it.quantity}',
-                              style: TextStyle(
-                                color: refunded
-                                    ? AppColors.error
-                                    : AppColors.onDarkSecondary,
-                                decoration: refunded
-                                    ? TextDecoration.lineThrough
-                                    : null,
-                              ),
+                            subtitle: Builder(
+                              builder: (_) {
+                                final refunded = current.refundedQtyFor(
+                                  it.product.id,
+                                  it.quantity,
+                                );
+                                final remain = (it.quantity - refunded).clamp(
+                                  0,
+                                  it.quantity,
+                                );
+                                final text = remain == it.quantity
+                                    ? '單價 ${MoneyFormatter.symbol(it.product.price)} × ${it.quantity}'
+                                    : '單價 ${MoneyFormatter.symbol(it.product.price)} × $remain（已退$refunded）';
+                                return Text(
+                                  text,
+                                  style: TextStyle(
+                                    color: fullyRefunded
+                                        ? AppColors.error
+                                        : AppColors.onDarkSecondary,
+                                    decoration: fullyRefunded
+                                        ? TextDecoration.lineThrough
+                                        : null,
+                                  ),
+                                );
+                              },
                             ),
-                            trailing: refunded
+                            trailing: fullyRefunded
                                 ? const Icon(
                                     Icons.assignment_return,
                                     color: AppColors.error,
@@ -572,9 +701,20 @@ class _ReceiptListScreenState extends State<ReceiptListScreen> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         const Text(AppMessages.totalQuantityLabel),
-                        Text(
-                          '${current.items.where((i) => !current.refundedProductIds.contains(i.product.id)).fold<int>(0, (s, it) => s + it.quantity)}',
-                        ),
+                        Text(() {
+                          int qty = 0;
+                          for (final it in current.items) {
+                            final refunded = current.refundedQtyFor(
+                              it.product.id,
+                              it.quantity,
+                            );
+                            qty += (it.quantity - refunded).clamp(
+                              0,
+                              it.quantity,
+                            );
+                          }
+                          return '$qty';
+                        }()),
                       ],
                     ),
                     const SizedBox(height: 4),
@@ -586,15 +726,21 @@ class _ReceiptListScreenState extends State<ReceiptListScreen> {
                           style: TextStyle(fontWeight: FontWeight.bold),
                         ),
                         Text(
-                          MoneyFormatter.symbol(
-                            current.items
-                                .where(
-                                  (i) => !current.refundedProductIds.contains(
-                                    i.product.id,
-                                  ),
-                                )
-                                .fold<int>(0, (s, it) => s + it.subtotal),
-                          ),
+                          () {
+                            int total = 0;
+                            for (final it in current.items) {
+                              final refunded = current.refundedQtyFor(
+                                it.product.id,
+                                it.quantity,
+                              );
+                              final remain = (it.quantity - refunded).clamp(
+                                0,
+                                it.quantity,
+                              );
+                              total += it.product.price * remain;
+                            }
+                            return MoneyFormatter.symbol(total);
+                          }(),
                           style: const TextStyle(fontWeight: FontWeight.bold),
                         ),
                       ],

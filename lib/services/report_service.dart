@@ -42,7 +42,9 @@ class ReportService {
   ReportService._();
 
   /// 彙總今日營收（排除退貨項目）
-  static Future<RevenueSummary> computeTodayRevenueSummary({DateTime? now}) async {
+  static Future<RevenueSummary> computeTodayRevenueSummary({
+    DateTime? now,
+  }) async {
     // ReceiptService.getTodayReceipts 內已以 TimeService.now 計算區間
     final receipts = await ReceiptService.instance.getTodayReceipts();
     int total = 0;
@@ -53,7 +55,7 @@ class ReportService {
     int linepay = 0;
 
     for (final r in receipts) {
-      total += r.totalAmount; // 已排除退貨
+      total += r.totalAmount; // 已排除退貨（由 ReceiptDetail 重算）
       switch (r.paymentMethod) {
         case PaymentMethods.cash:
           cash += r.totalAmount;
@@ -65,13 +67,15 @@ class ReportService {
           linepay += r.totalAmount;
           break;
       }
-      final refunded = r.refundedProductIds.toSet();
       for (final it in r.items) {
-        if (refunded.contains(it.product.id)) continue;
+        final refunded = r.refundedQtyFor(it.product.id, it.quantity);
+        final remain = (it.quantity - refunded).clamp(0, it.quantity);
+        if (remain <= 0) continue;
+        final line = it.product.price * remain;
         if (it.product.isPreOrderProduct) {
-          preorder += it.subtotal;
+          preorder += line;
         } else if (it.product.isDiscountProduct) {
-          discount += it.subtotal;
+          discount += line;
         }
       }
     }
@@ -93,19 +97,20 @@ class ReportService {
     final Map<String, int> categoryCount = {};
     int preorderQty = 0, discountQty = 0, normalQty = 0;
     for (final r in receipts) {
-      final refunded = r.refundedProductIds.toSet();
       for (final it in r.items) {
-        if (refunded.contains(it.product.id)) continue;
+        final refunded = r.refundedQtyFor(it.product.id, it.quantity);
+        final remain = (it.quantity - refunded).clamp(0, it.quantity);
+        if (remain <= 0) continue;
         final p = it.product;
         if (p.isPreOrderProduct) {
-          preorderQty += it.quantity;
+          preorderQty += remain;
         } else if (p.isDiscountProduct) {
-          discountQty += it.quantity;
+          discountQty += remain;
         } else {
-          normalQty += it.quantity;
+          normalQty += remain;
         }
         final cat = p.category.isEmpty ? '未分類' : p.category;
-        categoryCount.update(cat, (v) => v + it.quantity, ifAbsent: () => it.quantity);
+        categoryCount.update(cat, (v) => v + remain, ifAbsent: () => remain);
       }
     }
     final totalAll = normalQty + preorderQty + discountQty;

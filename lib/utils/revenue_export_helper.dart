@@ -135,6 +135,12 @@ class RevenueExportHelper {
       Color bg4 = StyleConfig.revenueBgTransfer;
       String mask(int v, bool show) => show ? money(v) : '💰';
 
+      String moodEmoji(int total) {
+        if (total <= 70000) return '😿';
+        if (total <= 120000) return '😻';
+        return '🤑';
+      }
+
       Widget revenueWidget({required bool showNumbers, Key? key}) {
         return ExportPanel(
           repaintBoundaryKey: key,
@@ -145,6 +151,11 @@ class RevenueExportHelper {
             children: [
               Row(
                 children: [
+                  Text(
+                    moodEmoji(summary.total),
+                    style: const TextStyle(fontSize: 28),
+                  ),
+                  const SizedBox(width: 8),
                   Text(AppMessages.revenueTodayTitle, style: tsHeadline),
                   const Spacer(),
                   Text(dateStr, style: StyleConfig.revenueDateTextStyle),

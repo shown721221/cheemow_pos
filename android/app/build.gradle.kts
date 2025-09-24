@@ -1,5 +1,6 @@
 import java.util.Properties
 import java.io.FileInputStream
+import org.gradle.api.tasks.Copy
 
 plugins {
     id("com.android.application")
@@ -95,6 +96,8 @@ android {
         }
     }
 }
+
+// (Removed rename hook to keep Flutter build stable)
 
 flutter {
     source = "../.."

@@ -11,6 +11,9 @@ class Receipt {
   final String paymentMethod;
   // 已退貨的品項（以 product.id 標記）。此清單中的品項僅保留於明細顯示，不計入合計與件數。
   final List<String> refundedProductIds;
+  // 部分退貨：記錄各商品已退貨數量（key=product.id, value=已退數量）。
+  // 若同時存在舊欄位 refundedProductIds，代表該商品視為全退（相容舊資料）。
+  final Map<String, int> refundedQuantities;
 
   Receipt({
     required this.id,
@@ -18,9 +21,11 @@ class Receipt {
     required this.items,
     required this.totalAmount,
     required this.totalQuantity,
-  this.paymentMethod = PaymentMethods.cash,
+    this.paymentMethod = PaymentMethods.cash,
     List<String>? refundedProductIds,
-  }) : refundedProductIds = refundedProductIds ?? const [];
+    Map<String, int>? refundedQuantities,
+  }) : refundedProductIds = refundedProductIds ?? const [],
+       refundedQuantities = refundedQuantities ?? const {};
 
   /// 從 JSON 建立 Receipt 物件
   factory Receipt.fromJson(Map<String, dynamic> json) {
@@ -28,6 +33,16 @@ class Receipt {
     final refundedIds = rawRefunded is List
         ? rawRefunded.map((e) => e.toString()).toList()
         : <String>[];
+    // 讀取部分退貨映射（若無則為空）
+    final Map<String, int> refundedQtyMap = {};
+    final rawRefundedMap = json['refundedQuantities'];
+    if (rawRefundedMap is Map) {
+      rawRefundedMap.forEach((k, v) {
+        final key = k.toString();
+        final val = int.tryParse(v.toString());
+        if (val != null && val > 0) refundedQtyMap[key] = val;
+      });
+    }
 
     return Receipt(
       id: json['id'],
@@ -37,8 +52,9 @@ class Receipt {
           .toList(),
       totalAmount: json['totalAmount'],
       totalQuantity: json['totalQuantity'],
-  paymentMethod: json['paymentMethod'] ?? PaymentMethods.cash,
+      paymentMethod: json['paymentMethod'] ?? PaymentMethods.cash,
       refundedProductIds: refundedIds,
+      refundedQuantities: refundedQtyMap,
     );
   }
 
@@ -52,6 +68,7 @@ class Receipt {
       'totalQuantity': totalQuantity,
       'paymentMethod': paymentMethod,
       'refundedProductIds': refundedProductIds,
+      'refundedQuantities': refundedQuantities,
     };
   }
 
@@ -87,7 +104,7 @@ class Receipt {
       items: List.from(cartItems), // 建立副本避免引用問題
       totalAmount: totalAmount,
       totalQuantity: totalQuantity,
-  paymentMethod: PaymentMethods.cash,
+      paymentMethod: PaymentMethods.cash,
       refundedProductIds: const [],
     );
   }
@@ -101,6 +118,7 @@ class Receipt {
     int? totalQuantity,
     String? paymentMethod,
     List<String>? refundedProductIds,
+    Map<String, int>? refundedQuantities,
   }) {
     return Receipt(
       id: id ?? this.id,
@@ -110,6 +128,21 @@ class Receipt {
       totalQuantity: totalQuantity ?? this.totalQuantity,
       paymentMethod: paymentMethod ?? this.paymentMethod,
       refundedProductIds: refundedProductIds ?? this.refundedProductIds,
+      refundedQuantities: refundedQuantities ?? this.refundedQuantities,
     );
+  }
+
+  /// 回傳該商品已退貨數量（若舊欄位標示全退，視為退購買總數）。
+  int refundedQtyFor(String productId, int purchasedQty) {
+    final byMap = refundedQuantities[productId] ?? 0;
+    if (refundedProductIds.contains(productId)) {
+      return purchasedQty; // 舊資料：全退
+    }
+    return byMap.clamp(0, purchasedQty);
+  }
+
+  /// 是否已全數退貨
+  bool isFullyRefunded(String productId, int purchasedQty) {
+    return refundedQtyFor(productId, purchasedQty) >= purchasedQty;
   }
 }

@@ -68,11 +68,11 @@ class SalesExportService {
     }
 
     for (final r in receipts) {
-      final refunded = r.refundedProductIds.toSet();
       for (final it in r.items) {
         final p = it.product;
-        if (refunded.contains(p.id)) continue; // 排除已退貨項目
-        final qty = it.quantity;
+        final refunded = r.refundedQtyFor(p.id, it.quantity);
+        final qty = (it.quantity - refunded).clamp(0, it.quantity);
+        if (qty <= 0) continue; // 全退或無剩餘則不輸出
         final unitPrice = p.price; // 折扣品可能為負
         final lineTotal = unitPrice * qty;
         final ts = r.timestamp;
