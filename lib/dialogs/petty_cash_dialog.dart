@@ -56,7 +56,7 @@ class PettyCashDialog {
               color: Colors.grey[50],
             ),
             child: Text(
-              '💲 ${current.isEmpty ? '0' : current}',
+              '\$ ${current.isEmpty ? '0' : current}',
               style: TextStyle(
                 fontSize: 24,
                 fontWeight: FontWeight.bold,

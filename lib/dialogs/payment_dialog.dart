@@ -113,7 +113,7 @@ class PaymentDialog {
                                     ) ...[
                                       Expanded(
                                         child: _QuickAmountButton(
-                                          label: '💲 ${suggestions[i]}',
+                                          label: '\$ ${suggestions[i]}',
                                           selected:
                                               cashController.text ==
                                               suggestions[i].toString(),

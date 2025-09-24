@@ -179,7 +179,7 @@ class AppMessages {
 
   // 零用金
   static const String setPettyCash = '💰 設定零用金';
-  static String pettyCashCurrent(int amount) => '目前零用金：💲$amount';
+    static String pettyCashCurrent(int amount) => '目前零用金：\$$amount';
   static const String unknownPaymentMethod = '未知方式';
 
   // PIN 對話框

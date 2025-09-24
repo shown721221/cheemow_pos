@@ -14,6 +14,6 @@ class MoneyFormatter {
     return amount < 0 ? '-$base' : base;
   }
 
-  /// 前面加上 💲 符號（或可改成設定）
-  static String symbol(int amount) => '💲 ${thousands(amount)}';
+  /// 前面加上 $ 符號（避免 emoji 相容性問題）
+  static String symbol(int amount) => '\$ ${thousands(amount)}';
 }

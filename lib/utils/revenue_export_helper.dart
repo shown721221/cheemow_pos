@@ -78,8 +78,7 @@ class RevenueExportHelper {
                           Flexible(
                             child: Text(
                               title,
-                              style:
-                                  titleStyleOverride ??
+                              style: titleStyleOverride ??
                                   const TextStyle(
                                     fontSize: 14,
                                     fontWeight: FontWeight.w600,
@@ -199,7 +198,7 @@ class RevenueExportHelper {
                 children: [
                   Expanded(
                     child: metricCard(
-                      icon: '�',
+                      icon: '\$',
                       title: 'Cash',
                       value: mask(summary.cash, showNumbers),
                       bg: bg3,
