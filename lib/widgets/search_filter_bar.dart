@@ -4,10 +4,17 @@ import '../config/app_messages.dart';
 
 /// 以固定佈局呈現搜尋篩選按鈕列（不含狀態，樣式與行為交由呼叫方提供）
 class SearchFilterBar extends StatelessWidget {
-  const SearchFilterBar({super.key, required this.buildFilterButton});
+  const SearchFilterBar({
+    super.key,
+    required this.buildFilterButton,
+    this.buttonHeight = 70,
+  });
 
   /// 由外部提供，負責建構單一按鈕（可含選取樣式與 onTap）
   final Widget Function(String label, {bool isSpecial}) buildFilterButton;
+
+  /// 統一控制每個按鈕的高度
+  final double buttonHeight;
 
   @override
   Widget build(BuildContext context) {
@@ -65,11 +72,17 @@ class SearchFilterBar extends StatelessWidget {
   Widget _row(List<Widget> children) {
     return Row(
       children: [
-        Expanded(child: children[0]),
+        Expanded(
+          child: SizedBox(height: buttonHeight, child: children[0]),
+        ),
         const SizedBox(width: 8),
-        Expanded(child: children[1]),
+        Expanded(
+          child: SizedBox(height: buttonHeight, child: children[1]),
+        ),
         const SizedBox(width: 8),
-        Expanded(child: children[2]),
+        Expanded(
+          child: SizedBox(height: buttonHeight, child: children[2]),
+        ),
       ],
     );
   }

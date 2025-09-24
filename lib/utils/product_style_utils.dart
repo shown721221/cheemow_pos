@@ -19,6 +19,17 @@ class ProductStyleUtils {
     return AppColors.onDarkPrimary.withValues(alpha: 0.85);
   }
 
+  /// 針對主頁商品卡的名稱顯示做簡化：
+  /// - 將名稱中的「Disney限定」全部替換為「..」。
+  /// - 其他內容維持原樣。
+  static String formatProductNameForMainCard(String name) {
+    if (name.isEmpty) return name;
+    return name
+        .replaceAll('Disney限定', '..')
+        .replaceAll(RegExp(r'\s{2,}'), ' ')
+        .trim();
+  }
+
   /// 根據商品類型取得卡片的邊框顏色
   static Color? getCardBorderColor(Product product) {
     if (product.isPreOrderProduct) {

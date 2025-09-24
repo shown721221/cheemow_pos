@@ -67,6 +67,13 @@ dev_dependencies:
   # rules and activating additional ones.
   flutter_lints: ^5.0.0
 
+  # 產生 App 圖示
+  flutter_launcher_icons: ^0.13.1
+  
+  # 產生 splash 辨識圖的邊距版本用
+  image: ^4.2.0
+  flutter_native_splash: ^2.4.0
+
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
 
@@ -81,6 +88,28 @@ flutter:
   # 專案資源
   assets:
     - assets/images/
+
+# flutter_launcher_icons 設定
+flutter_launcher_icons:
+  android: true
+  ios: false
+  image_path: assets/images/icon.png
+  adaptive_icon_foreground: assets/images/icon.png
+  adaptive_icon_background: "#FFFFFF"
+
+# Splash 載入畫面設定（使用 title.png 作為品牌圖，Android 12 會顯示在系統 icon 下層）
+flutter_native_splash:
+  android: true
+  ios: false
+  color: "#FFFFFF"
+  image: assets/images/icon.png
+  android_gravity: center
+  # Android 12 專屬：系統會顯示 icon，但我們放品牌圖來提升滿版感
+  android_12:
+    color: "#FFFFFF"
+    image: assets/images/splash_android12_padded.png
+    # 注意：若圖案溢出或被裁切，請在素材本身四周加 6-10% 留白；
+    # Android 12 不支援以程式設定縮放比例，需透過圖檔本身留白控制視覺大小。
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

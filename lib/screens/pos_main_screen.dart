@@ -257,7 +257,17 @@ class _PosMainScreenState extends State<PosMainScreen> {
       resizeToAvoidBottomInset: false, // 防止鍵盤影響佈局
       backgroundColor: Colors.white,
       appBar: PrimaryAppBar(
-        titleText: AppMessages.appTitle,
+        titleWidget: SizedBox(
+          height: kToolbarHeight - 12, // 預留上下內距，避免撐高 AppBar
+          child: FittedBox(
+            fit: BoxFit.contain,
+            child: Image.asset(
+              'assets/images/title.png',
+              errorBuilder: (context, error, stack) =>
+                  Text(AppMessages.appTitle),
+            ),
+          ),
+        ),
         actions: [
           PosMoreMenu(
             onImport: () async {

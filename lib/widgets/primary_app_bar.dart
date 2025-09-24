@@ -5,11 +5,12 @@ import '../config/app_theme.dart';
 class PrimaryAppBar extends AppBar {
   PrimaryAppBar({
     super.key,
-    required String titleText,
+    String? titleText,
+    Widget? titleWidget,
     super.actions,
     super.bottom,
   }) : super(
-         title: Text(titleText),
+         title: titleWidget ?? (titleText != null ? Text(titleText) : null),
          centerTitle: true,
          backgroundColor: AppColors.success,
          foregroundColor: Colors.white,

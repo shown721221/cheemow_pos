@@ -5,6 +5,7 @@ import '../widgets/price_display.dart';
 import '../utils/product_sorter.dart';
 import '../widgets/empty_state.dart';
 import '../config/app_messages.dart';
+import '../utils/product_style_utils.dart';
 
 class ProductListWidget extends StatefulWidget {
   final List<Product> products;
@@ -139,7 +140,9 @@ class _ProductListWidgetState extends State<ProductListWidget> {
                                 child: Row(
                                   children: [
                                     Text(
-                                      product.name,
+                                      ProductStyleUtils.formatProductNameForMainCard(
+                                        product.name,
+                                      ),
                                       style: TextStyle(
                                         fontWeight: FontWeight.w600,
                                         fontSize: 18,
