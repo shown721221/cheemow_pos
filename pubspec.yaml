@@ -88,6 +88,15 @@ flutter:
   # 專案資源
   assets:
     - assets/images/
+  
+  # 自訂字體：思源黑體 (Traditional Chinese)
+  fonts:
+    - family: SourceHanSansTC
+      fonts:
+        - asset: assets/fonts/SourceHanSansTC-Regular.otf
+          weight: 400
+        - asset: assets/fonts/SourceHanSansTC-Bold.otf
+          weight: 700
 
 # flutter_launcher_icons 設定
 flutter_launcher_icons:

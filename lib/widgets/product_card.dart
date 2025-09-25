@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../models/product.dart';
 import '../widgets/price_display.dart';
 import '../utils/product_style_utils.dart';
+import '../config/font_config.dart';
 
 /// 商品卡片組件
 class ProductCard extends StatelessWidget {
@@ -35,8 +36,10 @@ class ProductCard extends StatelessWidget {
         ),
         title: Row(
           children: [
-      Text(ProductStyleUtils.getProductEmoji(product),
-        style: const TextStyle(fontSize: 18)),
+      Text(
+        ProductStyleUtils.getProductEmoji(product),
+        style: const TextStyle(fontSize: 18),
+      ),
             const SizedBox(width: 8),
             Expanded(
               child: Row(
@@ -44,6 +47,7 @@ class ProductCard extends StatelessWidget {
                   Text(
                     product.name,
                     style: TextStyle(
+                      fontFamily: FontConfig.productFontFamily,
                       fontWeight: FontWeight.w600,
                       fontSize: 18,
                       color: ProductStyleUtils.getProductNameColor(product),
@@ -53,6 +57,7 @@ class ProductCard extends StatelessWidget {
                   Text(
                     ProductStyleUtils.getStockText(product.stock),
                     style: TextStyle(
+                      fontFamily: FontConfig.productFontFamily,
                       color: ProductStyleUtils.getStockColor(product.stock),
                       fontWeight: FontWeight.w500,
                       fontSize: 12,
@@ -62,12 +67,15 @@ class ProductCard extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 16),
-            PriceDisplay(
-              amount: product.price,
-              iconSize: 20,
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: Colors.green[700],
+            DefaultTextStyle.merge(
+              style: const TextStyle(fontFamily: FontConfig.productFontFamily),
+              child: PriceDisplay(
+                amount: product.price,
+                iconSize: 20,
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Colors.green[700],
+              ),
             ),
           ],
         ),
@@ -107,11 +115,15 @@ class ProductGridCard extends StatelessWidget {
             children: [
               Row(
                 children: [
-          Text(ProductStyleUtils.getProductEmoji(product),
-            style: const TextStyle(fontSize: 18)),
+          Text(
+            ProductStyleUtils.getProductEmoji(product),
+            style: const TextStyle(fontSize: 18),
+          ),
                   const Spacer(),
-          Text(ProductStyleUtils.getStockStatusEmoji(product.stock),
-            style: const TextStyle(fontSize: 14)),
+          Text(
+            ProductStyleUtils.getStockStatusEmoji(product.stock),
+            style: const TextStyle(fontSize: 14),
+          ),
                 ],
               ),
               const SizedBox(height: 8),
@@ -119,6 +131,7 @@ class ProductGridCard extends StatelessWidget {
                 child: Text(
                   product.name,
                   style: TextStyle(
+                    fontFamily: FontConfig.productFontFamily,
                     fontWeight: FontWeight.w600,
                     fontSize: 14,
                     color: ProductStyleUtils.getProductNameColor(product),
@@ -131,18 +144,22 @@ class ProductGridCard extends StatelessWidget {
               Text(
                 ProductStyleUtils.getStockText(product.stock),
                 style: TextStyle(
+                  fontFamily: FontConfig.productFontFamily,
                   color: ProductStyleUtils.getStockColor(product.stock),
                   fontWeight: FontWeight.w500,
                   fontSize: 10,
                 ),
               ),
               const SizedBox(height: 4),
-              PriceDisplay(
-                amount: product.price,
-                iconSize: 14,
-                fontSize: 14,
-                fontWeight: FontWeight.bold,
-                color: Colors.green[700],
+              DefaultTextStyle.merge(
+                style: const TextStyle(fontFamily: FontConfig.productFontFamily),
+                child: PriceDisplay(
+                  amount: product.price,
+                  iconSize: 14,
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.green[700],
+                ),
               ),
             ],
           ),
