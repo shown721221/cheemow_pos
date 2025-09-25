@@ -17,7 +17,9 @@ class PopularityExportHelper {
     try {
       final pop = await ReportService.computeTodayPopularityStats();
       // 以集中定義的角色清單初始化映射
-      final Map<String, int> baseMap = {for (final c in CharacterCatalog.ordered) c: 0};
+      final Map<String, int> baseMap = {
+        for (final c in CharacterCatalog.ordered) c: 0,
+      };
       int others = 0;
       pop.categoryCount.forEach((String k, int v) {
         if (baseMap.containsKey(k)) {

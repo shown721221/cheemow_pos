@@ -9,9 +9,7 @@ class ProductStyleUtils {
   static const int stockLowThreshold = 10;
 
   /// 名稱替換規則：後續若需要再擴充（例如加入『期間限定』等）。
-  static const List<String> nameReplaceTokens = [
-    'Disney限定',
-  ];
+  static const List<String> nameReplaceTokens = ['Disney限定'];
 
   /// 根據商品類型取得商品名稱的顏色
   static Color getProductNameColor(Product product) {

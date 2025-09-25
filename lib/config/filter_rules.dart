@@ -7,15 +7,9 @@ class FilterRules {
 
   /// 地區 → 關鍵字列表（皆為小寫）
   static const Map<String, List<String>> location = {
-    '東京': [
-      '東京disney限定', '東京迪士尼限定', '東京disney', '東京迪士尼', 'tokyo',
-    ],
-    '上海': [
-      '上海disney限定', '上海迪士尼限定', '上海disney', '上海迪士尼', 'shanghai',
-    ],
-    '香港': [
-      '香港disney限定', '香港迪士尼限定', '香港disney', '香港迪士尼', 'hongkong', 'hk',
-    ],
+    '東京': ['東京disney限定', '東京迪士尼限定', '東京disney', '東京迪士尼', 'tokyo'],
+    '上海': ['上海disney限定', '上海迪士尼限定', '上海disney', '上海迪士尼', 'shanghai'],
+    '香港': ['香港disney限定', '香港迪士尼限定', '香港disney', '香港迪士尼', 'hongkong', 'hk'],
   };
 
   /// 角色 → 關鍵字列表

@@ -29,11 +29,21 @@ class StatMetricCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     const gold = Color(0xFFB68600);
-    final tsMetricValueLg = const TextStyle(fontSize: 24, fontWeight: FontWeight.w800, color: gold);
-    final tsMetricValue = const TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: gold);
+    final tsMetricValueLg = const TextStyle(
+      fontSize: 24,
+      fontWeight: FontWeight.w800,
+      color: gold,
+    );
+    final tsMetricValue = const TextStyle(
+      fontSize: 18,
+      fontWeight: FontWeight.w700,
+      color: gold,
+    );
     final valueText = Text(
       value,
-      style: (largeValue ? tsMetricValueLg : tsMetricValue).copyWith(color: valueColor ?? gold),
+      style: (largeValue ? tsMetricValueLg : tsMetricValue).copyWith(
+        color: valueColor ?? gold,
+      ),
       textAlign: TextAlign.center,
     );
     return Container(
@@ -48,13 +58,19 @@ class StatMetricCard extends StatelessWidget {
         children: [
           SizedBox(
             height: 24,
-            child: iconWidget ?? (icon != null ? Text(icon!, style: TextStyle(fontSize: iconSize)) : const SizedBox.shrink()),
+            child:
+                iconWidget ??
+                (icon != null
+                    ? Text(icon!, style: TextStyle(fontSize: iconSize))
+                    : const SizedBox.shrink()),
           ),
           if (title != null) ...[
             const SizedBox(height: 6),
             Text(
               title!,
-              style: titleStyleOverride ?? const TextStyle(fontSize: 14, color: Colors.black54),
+              style:
+                  titleStyleOverride ??
+                  const TextStyle(fontSize: 14, color: Colors.black54),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 2),

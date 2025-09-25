@@ -25,7 +25,9 @@ class ExportPanelHeader extends StatelessWidget {
         const SizedBox(width: 8),
         Text(
           title,
-          style: titleStyle ?? const TextStyle(fontSize: 28, fontWeight: FontWeight.w900),
+          style:
+              titleStyle ??
+              const TextStyle(fontSize: 28, fontWeight: FontWeight.w900),
         ),
         const Spacer(),
         Text(dateText, style: StyleConfig.revenueDateTextStyle),

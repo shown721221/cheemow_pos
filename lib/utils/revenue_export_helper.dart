@@ -93,54 +93,62 @@ class RevenueExportHelper {
                 ),
               ),
               const SizedBox(height: 16),
-              Row(children: [
-                Expanded(
-                  child: StatMetricCard(
-                    icon: '💰',
-                    title: null,
-                    value: mask(summary.cash, showNumbers),
-                    background: bg3,
+              Row(
+                children: [
+                  Expanded(
+                    child: StatMetricCard(
+                      icon: '💰',
+                      title: null,
+                      value: mask(summary.cash, showNumbers),
+                      background: bg3,
+                    ),
                   ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: StatMetricCard(
-                    icon: '🏦',
-                    title: null,
-                    value: mask(summary.transfer, showNumbers),
-                    background: bg4,
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: StatMetricCard(
+                      icon: '🏦',
+                      title: null,
+                      value: mask(summary.transfer, showNumbers),
+                      background: bg4,
+                    ),
                   ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: StatMetricCard(
-                    iconWidget: Image.asset('assets/images/linepay.png', height: 20, fit: BoxFit.contain),
-                    title: null,
-                    value: mask(summary.linepay, showNumbers),
-                    background: bg2,
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: StatMetricCard(
+                      iconWidget: Image.asset(
+                        'assets/images/linepay.png',
+                        height: 20,
+                        fit: BoxFit.contain,
+                      ),
+                      title: null,
+                      value: mask(summary.linepay, showNumbers),
+                      background: bg2,
+                    ),
                   ),
-                ),
-              ]),
+                ],
+              ),
               const SizedBox(height: 16),
-              Row(children: [
-                Expanded(
-                  child: StatMetricCard(
-                    icon: '🎁',
-                    title: AppMessages.metricPreorderSubtotal,
-                    value: mask(summary.preorder, showNumbers),
-                    background: bg1,
+              Row(
+                children: [
+                  Expanded(
+                    child: StatMetricCard(
+                      icon: '🎁',
+                      title: AppMessages.metricPreorderSubtotal,
+                      value: mask(summary.preorder, showNumbers),
+                      background: bg1,
+                    ),
                   ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: StatMetricCard(
-                    icon: '💸',
-                    title: AppMessages.metricDiscountSubtotal,
-                    value: mask(summary.discount, showNumbers),
-                    background: const Color(0xFFFFEEF0),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: StatMetricCard(
+                      icon: '💸',
+                      title: AppMessages.metricDiscountSubtotal,
+                      value: mask(summary.discount, showNumbers),
+                      background: const Color(0xFFFFEEF0),
+                    ),
                   ),
-                ),
-              ]),
+                ],
+              ),
               const SizedBox(height: 8),
               const Align(
                 alignment: Alignment.centerRight,
