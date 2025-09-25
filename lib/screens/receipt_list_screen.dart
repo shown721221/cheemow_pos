@@ -262,7 +262,8 @@ class _ReceiptListScreenState extends State<ReceiptListScreen> {
             onTap: () => selectPay(PaymentMethods.cash),
             minWidth: 72,
             height: 44,
-            child: const Text('💰', style: TextStyle(fontSize: 20)),
+            // 放大現金 emoji，與轉帳一致提高辨識度
+            child: const Text('💰', style: TextStyle(fontSize: 26)),
           ),
           FilterPillButton(
             selected: _selectedPay == PaymentMethods.transfer,

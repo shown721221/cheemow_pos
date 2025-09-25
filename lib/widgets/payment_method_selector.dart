@@ -23,7 +23,8 @@ class PaymentMethodSelector extends StatelessWidget {
             label: '💰',
             selected: method == PaymentMethods.cash,
             onTap: () => onChanged(PaymentMethods.cash),
-            textStyle: const TextStyle(fontSize: 22),
+            // 放大現金 emoji 與銀行一致
+            textStyle: const TextStyle(fontSize: 28),
           ),
         ),
         const SizedBox(width: StyleConfig.gap8),

@@ -210,7 +210,8 @@ class RevenueExportHelper {
                 children: [
                   Expanded(
                     child: metricCard(
-                      icon: '\$',
+                      // 改用與其它處一致的現金 emoji，視覺更統一
+                      icon: '💰',
                       title: 'Cash',
                       value: mask(summary.cash, showNumbers),
                       bg: bg3,
