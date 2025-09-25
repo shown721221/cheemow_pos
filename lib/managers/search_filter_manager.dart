@@ -15,6 +15,7 @@ class SearchFilterManager {
     '其他角色',
   ];
   static const List<String> typeGroup = ['娃娃', '站姿吊飾', '坐姿吊飾', '其他吊飾'];
+  static const List<String> multiSelectableTypes = ['站姿吊飾', '坐姿吊飾', '其他吊飾'];
 
   /// 切換篩選標籤，並處理互斥群組
   List<String> toggleFilter(List<String> selected, String label) {
@@ -33,7 +34,25 @@ class SearchFilterManager {
     } else if (characterGroup.contains(label)) {
       toggleInGroup(characterGroup, label);
     } else if (typeGroup.contains(label)) {
-      toggleInGroup(typeGroup, label);
+      if (label == '娃娃') {
+        // 選娃娃時移除所有 multiSelectableTypes
+        result.removeWhere((f) => multiSelectableTypes.contains(f));
+        if (result.contains(label)) {
+          result.remove(label);
+        } else {
+          result.add(label);
+        }
+      } else if (multiSelectableTypes.contains(label)) {
+        // 選多選吊飾類型時取消娃娃
+        result.remove('娃娃');
+        if (result.contains(label)) {
+          result.remove(label);
+        } else {
+          result.add(label);
+        }
+      } else {
+        toggleInGroup(typeGroup, label);
+      }
     } else {
       // 其他（如 有庫存）為單獨切換
       if (result.contains(label)) {
@@ -71,31 +90,38 @@ class SearchFilterManager {
         .where((t) => t.trim().isNotEmpty)
         .toList();
 
-    final filtered = products.where((p) {
-      final name = p.name.toLowerCase();
+    final selectedTypeSingles = <String>[]; // 僅會有 '娃娃' 或空
+    final selectedTypeMulti = <String>[]; // 站姿吊飾 / 坐姿吊飾 / 其他吊飾 可多個
 
-      // 先處理文字搜尋（任一 term 命中名稱或條碼即可）
+    for (final f in selectedFilters) {
+      if (FilterRules.isTypeLabel(f)) {
+        if (f == '娃娃') {
+          selectedTypeSingles.add(f);
+        } else if (multiSelectableTypes.contains(f)) {
+          selectedTypeMulti.add(f);
+        }
+      }
+    }
+
+    final filtered = products.where((p) {
+      final nameLower = p.name.toLowerCase();
+
       if (terms.isNotEmpty) {
-        final hit = terms.any((t) => name.contains(t) || p.barcode.contains(t));
+        final hit = terms.any((t) => nameLower.contains(t) || p.barcode.contains(t));
         if (!hit) return false;
       }
 
-      // 套用每個篩選條件（全部需滿足）資料導向
       for (final f in selectedFilters) {
         if (FilterRules.isLocationLabel(f)) {
-          if (!FilterRules.matchLocation(f, name)) return false;
+          if (!FilterRules.matchLocation(f, nameLower)) return false;
           continue;
         }
         if (FilterRules.isCharacterLabel(f)) {
           if (f == '其他角色') {
-            if (FilterRules.isKnownCharacterName(name)) return false;
-          } else if (!FilterRules.matchCharacter(f, name)) {
+            if (FilterRules.isKnownCharacterName(nameLower)) return false;
+          } else if (!FilterRules.matchCharacter(f, nameLower)) {
             return false;
           }
-          continue;
-        }
-        if (FilterRules.isTypeLabel(f)) {
-          if (!FilterRules.matchType(f, name)) return false;
           continue;
         }
         if (f == '有庫存') {
@@ -103,6 +129,20 @@ class SearchFilterManager {
           continue;
         }
       }
+
+      // 類型邏輯：
+      // 若選了 '娃娃' => 必須符合娃娃
+      if (selectedTypeSingles.isNotEmpty) {
+        if (!FilterRules.matchType('娃娃', nameLower)) return false;
+        return true; // 選娃娃時忽略 multiSelectableTypes（互斥）
+      }
+
+      // 未選娃娃，若 multiSelectableTypes 有任一被選 => OR
+      if (selectedTypeMulti.isNotEmpty) {
+        final anyMatch = selectedTypeMulti.any((t) => FilterRules.matchType(t, nameLower));
+        if (!anyMatch) return false;
+      }
+
       return true;
     }).toList();
 
