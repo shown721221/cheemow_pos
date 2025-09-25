@@ -307,7 +307,7 @@ class _ReceiptListScreenState extends State<ReceiptListScreen> {
             child: const Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text('🎁', style: TextStyle(fontSize: 16)),
+                Text('📦', style: TextStyle(fontSize: 16)), // 原為 '🎁'
                 SizedBox(width: 4),
                 Text('預購商品'),
               ],

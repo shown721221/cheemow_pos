@@ -132,7 +132,7 @@ class RevenueExportHelper {
                 children: [
                   Expanded(
                     child: StatMetricCard(
-                      icon: '🎁',
+                      icon: '📦', // 原為 '🎁'
                       title: AppMessages.metricPreorderSubtotal,
                       value: mask(summary.preorder, showNumbers),
                       background: bg1,

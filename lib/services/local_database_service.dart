@@ -25,7 +25,7 @@ class LocalDatabaseService {
       Product(
         id: '1',
         barcode: AppConstants.barcodePreOrder,
-        name: '🎁 預約奇妙',
+        name: '📦 預約奇妙', // 圖示改為 📦
         price: 0,
         category: AppConstants.specialCategory,
         stock: 99,
@@ -57,7 +57,7 @@ class LocalDatabaseService {
       final preOrderProduct = Product(
         id: 'special_001',
         barcode: AppConstants.barcodePreOrder,
-        name: '🎁 預約奇妙',
+        name: '📦 預約奇妙', // 圖示改為 📦
         price: 0,
         category: AppConstants.specialCategory,
         stock: 99,
@@ -102,7 +102,7 @@ class LocalDatabaseService {
 
       // 更新預約商品名稱
       if (product.barcode == AppConstants.barcodePreOrder) {
-        final shouldFixName = !product.name.startsWith('🎁');
+        final shouldFixName = !product.name.startsWith('📦'); // 改判斷 📦
         final shouldFixCategory =
             product.category != AppConstants.specialCategory;
         final shouldFixPrice = product.price != 0;
@@ -114,7 +114,7 @@ class LocalDatabaseService {
           updatedProducts[i] = Product(
             id: product.id,
             barcode: product.barcode,
-            name: '🎁 預約奇妙',
+            name: '📦 預約奇妙', // 圖示改為 📦
             price: 0,
             category: AppConstants.specialCategory,
             stock: 99,

@@ -132,7 +132,7 @@ class AppMessages {
   static const String receiptSearchHint = '搜尋商品名稱';
   // 收據篩選用標籤（使用 emoji 與文字分離於 UI, 仍保留整體字串供其他情境需要）
   static const String chipDiscount = '💸 折扣';
-  static const String chipPreorder = '🎁 預購商品';
+  static const String chipPreorder = '📦 預購商品';
   static const String chipRefund = '♻️ 退貨';
   static const String refundDialogTitle = '是否要退貨';
   static String refundDialogMessage(String name, int qty) =>
