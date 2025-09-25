@@ -17,7 +17,7 @@ class PopularityExportHelper {
       final fixedCats = [
         'Duffy',
         'ShellieMay',
-        'Gelatoni',
+        'GelaToni',
         'StellaLou',
         'CookieAnn',
         'OluMel',
