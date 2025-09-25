@@ -146,7 +146,7 @@ class AppMessages {
   // 付款方式顯示
   // 現金：改為英文顯示，保留錢幣 emoji。若需更換可用：💰, �, 💶, 💷, 💴（目前採用通用 �）。
   static const String cashLabel = '\$ Cash'; // 產出字串 "$ Cash"
-  static const String transferLabel = '🔁 轉帳';
+    static const String transferLabel = '🏦';
   static const String linePayLabel = '📲 LinePay';
   static const String enterPaidAmount = '輸入實收金額';
   static const String changeLabel = '找零';
