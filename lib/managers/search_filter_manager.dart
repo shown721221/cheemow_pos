@@ -18,7 +18,14 @@ class SearchFilterManager {
   // ---- 群組宣告 ----
   static const List<String> locationGroup = ['東京', '上海', '香港'];
   static const List<String> characterGroup = [
-    'Duffy', 'ShellieMay', 'GelaToni', 'StellaLou', 'CookieAnn', 'OluMel', 'LinaBell', otherRoleLabel,
+    'Duffy',
+    'ShellieMay',
+    'GelaToni',
+    'StellaLou',
+    'CookieAnn',
+    'OluMel',
+    'LinaBell',
+    otherRoleLabel,
   ];
   static const List<String> typeGroup = [dollLabel, '站姿吊飾', '坐姿吊飾', '其他吊飾'];
 
@@ -41,7 +48,11 @@ class SearchFilterManager {
   }
 
   // --- 私有：互斥群組通用切換 ---
-  List<String> _toggleExclusive(List<String> selected, List<String> group, String label) {
+  List<String> _toggleExclusive(
+    List<String> selected,
+    List<String> group,
+    String label,
+  ) {
     final next = <String>[];
     for (final f in selected) {
       if (!group.contains(f)) next.add(f); // 移除同群組其它
@@ -155,27 +166,33 @@ class SearchFilterManager {
 
       // 文字搜尋 (任一詞命中名稱或條碼)
       if (terms.isNotEmpty) {
-        final hit = terms.any((t) => nameLower.contains(t) || barcodeLower.contains(t));
+        final hit = terms.any(
+          (t) => nameLower.contains(t) || barcodeLower.contains(t),
+        );
         if (!hit) return false;
       }
 
       // 地區
-      if (selectedLocation != null && !FilterRules.matchLocation(selectedLocation, nameLower)) {
+      if (selectedLocation != null &&
+          !FilterRules.matchLocation(selectedLocation, nameLower)) {
         return false;
       }
 
       // 角色
       if (selectedCharacter != null) {
-        if (!FilterRules.matchCharacter(selectedCharacter, nameLower)) return false;
+        if (!FilterRules.matchCharacter(selectedCharacter, nameLower))
+          return false;
       } else if (selectOtherRole) {
-        if (FilterRules.isKnownCharacterName(nameLower)) return false; // 其它角色 => 不得包含已知角色關鍵字
+        if (FilterRules.isKnownCharacterName(nameLower))
+          return false; // 其它角色 => 不得包含已知角色關鍵字
       }
 
       // 庫存
       if (requireStock && p.stock <= 0) return false;
 
       // 類型
-      if (!_matchTypes(nameLower, dollSelected, multiTypeSelected)) return false;
+      if (!_matchTypes(nameLower, dollSelected, multiTypeSelected))
+        return false;
 
       return true;
     }).toList();
@@ -188,7 +205,11 @@ class SearchFilterManager {
   /// - 選了娃娃 => 必須是娃娃
   /// - 未選娃娃且有多選吊飾 => 任一匹配
   /// - 若完全沒選類型 => 不限制
-  bool _matchTypes(String nameLower, bool dollSelected, Set<String> multiTypes) {
+  bool _matchTypes(
+    String nameLower,
+    bool dollSelected,
+    Set<String> multiTypes,
+  ) {
     if (dollSelected) {
       return FilterRules.matchType(dollLabel, nameLower);
     }

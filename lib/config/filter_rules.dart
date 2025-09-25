@@ -50,8 +50,10 @@ class FilterRules {
     if (label == '其他吊飾') {
       // 必須包含吊飾，但不能包含 站姿 / 坐姿
       if (!nameLower.contains('吊飾')) return false;
-      if (nameLower.contains('站姿吊飾') || nameLower.contains('坐姿吊飾')) return false;
-      if (nameLower.contains('站姿') || nameLower.contains('坐姿')) return false; // 兼容舊資料
+      if (nameLower.contains('站姿吊飾') || nameLower.contains('坐姿吊飾'))
+        return false;
+      if (nameLower.contains('站姿') || nameLower.contains('坐姿'))
+        return false; // 兼容舊資料
       return true;
     }
     final kws = types[label];

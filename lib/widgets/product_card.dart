@@ -22,7 +22,7 @@ class ProductCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final borderSide = ProductStyleUtils.getCardBorderSide(product);
-    
+
     return Card(
       margin: margin ?? const EdgeInsets.only(bottom: 8),
       shape: RoundedRectangleBorder(
@@ -30,16 +30,14 @@ class ProductCard extends StatelessWidget {
         side: borderSide ?? BorderSide.none,
       ),
       child: ListTile(
-        contentPadding: padding ?? const EdgeInsets.symmetric(
-          horizontal: 16,
-          vertical: 8,
-        ),
+        contentPadding:
+            padding ?? const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         title: Row(
           children: [
-      Text(
-        ProductStyleUtils.getProductEmoji(product),
-        style: const TextStyle(fontSize: 18),
-      ),
+            Text(
+              ProductStyleUtils.getProductEmoji(product),
+              style: const TextStyle(fontSize: 18),
+            ),
             const SizedBox(width: 8),
             Expanded(
               child: Row(
@@ -99,7 +97,7 @@ class ProductGridCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final borderSide = ProductStyleUtils.getCardBorderSide(product);
-    
+
     return Card(
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
@@ -115,15 +113,15 @@ class ProductGridCard extends StatelessWidget {
             children: [
               Row(
                 children: [
-          Text(
-            ProductStyleUtils.getProductEmoji(product),
-            style: const TextStyle(fontSize: 18),
-          ),
+                  Text(
+                    ProductStyleUtils.getProductEmoji(product),
+                    style: const TextStyle(fontSize: 18),
+                  ),
                   const Spacer(),
-          Text(
-            ProductStyleUtils.getStockStatusEmoji(product.stock),
-            style: const TextStyle(fontSize: 14),
-          ),
+                  Text(
+                    ProductStyleUtils.getStockStatusEmoji(product.stock),
+                    style: const TextStyle(fontSize: 14),
+                  ),
                 ],
               ),
               const SizedBox(height: 8),
@@ -152,7 +150,9 @@ class ProductGridCard extends StatelessWidget {
               ),
               const SizedBox(height: 4),
               DefaultTextStyle.merge(
-                style: const TextStyle(fontFamily: FontConfig.productFontFamily),
+                style: const TextStyle(
+                  fontFamily: FontConfig.productFontFamily,
+                ),
                 child: PriceDisplay(
                   amount: product.price,
                   iconSize: 14,
