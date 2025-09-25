@@ -9,6 +9,9 @@ import 'package:cheemeow_pos/config/style_config.dart';
 import 'package:cheemeow_pos/services/time_service.dart';
 import 'package:cheemeow_pos/widgets/export_panel.dart';
 import 'package:cheemeow_pos/utils/date_util.dart';
+import 'package:cheemeow_pos/utils/mood_helper.dart';
+import 'package:cheemeow_pos/widgets/export_panel_header.dart';
+import 'package:cheemeow_pos/widgets/stat_metric_card.dart';
 
 /// 營收匯出版：封裝原先在 PosMainScreen 的巨量方法，減少檔案行數
 class RevenueExportHelper {
@@ -20,113 +23,8 @@ class RevenueExportHelper {
       final now = TimeService.now();
       final dateStr = DateUtil.ymd(now);
 
-      final tsHeadline = const TextStyle(
-        fontSize: 28,
-        fontWeight: FontWeight.w900,
-      );
+      const tsHeadline = TextStyle(fontSize: 28, fontWeight: FontWeight.w900);
       const gold = Color(0xFFB68600); // 金色
-      final tsMetricValueLg = const TextStyle(
-        fontSize: 24,
-        fontWeight: FontWeight.w800,
-        color: gold,
-      );
-      final tsMetricValue = const TextStyle(
-        fontSize: 18,
-        fontWeight: FontWeight.w700,
-        color: gold,
-      );
-
-      Widget metricCard({
-        String? icon,
-        Widget? iconWidget,
-        String? title,
-        required String value,
-        required Color bg,
-        Color? valueColor,
-        bool large = false,
-        bool inline = false,
-        TextStyle? titleStyleOverride,
-      }) {
-        final valueText = Text(
-          value,
-          style: (large ? tsMetricValueLg : tsMetricValue).copyWith(
-            color: valueColor ?? gold,
-          ),
-          textAlign: TextAlign.center,
-        );
-        return Container(
-          padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
-          decoration: BoxDecoration(
-            color: bg,
-            borderRadius: BorderRadius.circular(16),
-          ),
-          child: inline
-              ? Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        if (iconWidget != null)
-                          SizedBox(height: 24, child: iconWidget)
-                        else if (icon != null)
-                          Text(icon, style: const TextStyle(fontSize: 22)),
-                        if (title != null) ...[
-                          const SizedBox(width: 6),
-                          Flexible(
-                            child: Text(
-                              title,
-                              style:
-                                  titleStyleOverride ??
-                                  const TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w600,
-                                    color: Colors.black87,
-                                  ),
-                              overflow: TextOverflow.ellipsis,
-                              textAlign: TextAlign.center,
-                            ),
-                          ),
-                        ],
-                      ],
-                    ),
-                    const SizedBox(height: 6),
-                    valueText,
-                  ],
-                )
-              : Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    SizedBox(
-                      height: 24,
-                      child:
-                          iconWidget ??
-                          (icon != null
-                              ? Text(icon, style: const TextStyle(fontSize: 22))
-                              : const SizedBox.shrink()),
-                    ),
-                    if (title != null) ...[
-                      const SizedBox(height: 6),
-                      Text(
-                        title,
-                        style:
-                            titleStyleOverride ??
-                            const TextStyle(
-                              fontSize: 14,
-                              color: Colors.black54,
-                            ),
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: 2),
-                    ],
-                    valueText,
-                  ],
-                ),
-        );
-      }
 
       String money(int v) => MoneyFormatter.thousands(v);
       Color bg1 = StyleConfig.revenueBgPreorder;
@@ -135,11 +33,7 @@ class RevenueExportHelper {
       Color bg4 = StyleConfig.revenueBgTransfer;
       String mask(int v, bool show) => show ? money(v) : '💰';
 
-      String moodEmoji(int total) {
-        if (total <= 70000) return '😿';
-        if (total <= 120000) return '😻';
-        return '🤑';
-      }
+      // 心情圖示改用共用 helper
 
       Widget revenueWidget({required bool showNumbers, Key? key}) {
         return ExportPanel(
@@ -149,17 +43,10 @@ class RevenueExportHelper {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Row(
-                children: [
-                  Text(
-                    moodEmoji(summary.total),
-                    style: const TextStyle(fontSize: 28),
-                  ),
-                  const SizedBox(width: 8),
-                  Text(AppMessages.revenueTodayTitle, style: tsHeadline),
-                  const Spacer(),
-                  Text(dateStr, style: StyleConfig.revenueDateTextStyle),
-                ],
+              ExportPanelHeader(
+                leadingEmoji: MoodHelper.moodEmoji(summary.total),
+                title: AppMessages.revenueTodayTitle,
+                dateText: dateStr,
               ),
               if (AppConfig.pettyCash > 0) ...[
                 const SizedBox(height: 4),
@@ -206,71 +93,54 @@ class RevenueExportHelper {
                 ),
               ),
               const SizedBox(height: 16),
-              Row(
-                children: [
-                  Expanded(
-                    child: metricCard(
-                      // 改用與其它處一致的現金 emoji，視覺更統一
-                      icon: '💰',
-                      // 不顯示文字標籤，僅保留圖示
-                      title: null,
-                      value: mask(summary.cash, showNumbers),
-                      bg: bg3,
-                      inline: true,
-                    ),
+              Row(children: [
+                Expanded(
+                  child: StatMetricCard(
+                    icon: '💰',
+                    title: null,
+                    value: mask(summary.cash, showNumbers),
+                    background: bg3,
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: metricCard(
-                      icon: '🏦',
-                      title: null,
-                      value: mask(summary.transfer, showNumbers),
-                      bg: bg4,
-                      inline: true,
-                      titleStyleOverride: const TextStyle(fontSize: 16),
-                    ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: StatMetricCard(
+                    icon: '🏦',
+                    title: null,
+                    value: mask(summary.transfer, showNumbers),
+                    background: bg4,
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: metricCard(
-                      iconWidget: Image.asset(
-                        'assets/images/linepay.png',
-                        height: 20,
-                        fit: BoxFit.contain,
-                      ),
-                      title: null,
-                      value: mask(summary.linepay, showNumbers),
-                      bg: bg2,
-                      inline: true,
-                    ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: StatMetricCard(
+                    iconWidget: Image.asset('assets/images/linepay.png', height: 20, fit: BoxFit.contain),
+                    title: null,
+                    value: mask(summary.linepay, showNumbers),
+                    background: bg2,
                   ),
-                ],
-              ),
+                ),
+              ]),
               const SizedBox(height: 16),
-              Row(
-                children: [
-                  Expanded(
-                    child: metricCard(
-                      icon: '🎁',
-                      title: AppMessages.metricPreorderSubtotal,
-                      value: mask(summary.preorder, showNumbers),
-                      bg: bg1,
-                      inline: true,
-                    ),
+              Row(children: [
+                Expanded(
+                  child: StatMetricCard(
+                    icon: '🎁',
+                    title: AppMessages.metricPreorderSubtotal,
+                    value: mask(summary.preorder, showNumbers),
+                    background: bg1,
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: metricCard(
-                      icon: '💸',
-                      title: AppMessages.metricDiscountSubtotal,
-                      value: mask(summary.discount, showNumbers),
-                      bg: const Color(0xFFFFEEF0),
-                      valueColor: gold,
-                      inline: true,
-                    ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: StatMetricCard(
+                    icon: '💸',
+                    title: AppMessages.metricDiscountSubtotal,
+                    value: mask(summary.discount, showNumbers),
+                    background: const Color(0xFFFFEEF0),
                   ),
-                ],
-              ),
+                ),
+              ]),
               const SizedBox(height: 8),
               const Align(
                 alignment: Alignment.centerRight,

@@ -7,6 +7,7 @@ import 'package:cheemeow_pos/services/time_service.dart';
 import 'package:cheemeow_pos/config/style_config.dart';
 import 'package:cheemeow_pos/utils/date_util.dart';
 import 'package:cheemeow_pos/widgets/export_panel.dart';
+import 'package:cheemeow_pos/widgets/export_panel_header.dart';
 import 'package:cheemeow_pos/config/character_catalog.dart';
 
 class PopularityExportHelper {
@@ -50,15 +51,14 @@ class PopularityExportHelper {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             // Header（與營收面板統一字級，改成獎台風格圖示）
-            Row(
-              children: [
-                const Text(
-                  '🥇🥈🥉 寶寶人氣指數',
-                  style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900),
-                ),
-                const Spacer(),
-                Text(dateStr, style: StyleConfig.revenueDateTextStyle),
-              ],
+            const ExportPanelHeader(
+              leadingEmoji: '🥇',
+              title: '寶寶人氣指數',
+              dateText: '', // 日期另外顯示（下方對齊），此處若要合併可改實際字串
+            ),
+            Align(
+              alignment: Alignment.centerRight,
+              child: Text(dateStr, style: StyleConfig.revenueDateTextStyle),
             ),
             const SizedBox(height: 14),
             // 統計摘要：強制單行（與面板同寬 800 − padding），以 Row+Expanded 平均分配避免換行。
