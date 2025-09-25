@@ -48,7 +48,8 @@ class ProductCard extends StatelessWidget {
                     product.name,
                     style: TextStyle(
                       fontFamily: FontConfig.productFontFamily,
-                      fontWeight: FontWeight.w600,
+                      // 使用 Bold (700) 以對應實際提供的字重 (Regular/Bold)，避免 600 落在模擬插值
+                      fontWeight: FontWeight.w700,
                       fontSize: 18,
                       color: ProductStyleUtils.getProductNameColor(product),
                     ),
@@ -59,7 +60,8 @@ class ProductCard extends StatelessWidget {
                     style: TextStyle(
                       fontFamily: FontConfig.productFontFamily,
                       color: ProductStyleUtils.getStockColor(product.stock),
-                      fontWeight: FontWeight.w500,
+                      // 使用 Regular (400)
+                      fontWeight: FontWeight.w400,
                       fontSize: 12,
                     ),
                   ),
@@ -132,7 +134,7 @@ class ProductGridCard extends StatelessWidget {
                   product.name,
                   style: TextStyle(
                     fontFamily: FontConfig.productFontFamily,
-                    fontWeight: FontWeight.w600,
+                    fontWeight: FontWeight.w700,
                     fontSize: 14,
                     color: ProductStyleUtils.getProductNameColor(product),
                   ),
@@ -146,7 +148,7 @@ class ProductGridCard extends StatelessWidget {
                 style: TextStyle(
                   fontFamily: FontConfig.productFontFamily,
                   color: ProductStyleUtils.getStockColor(product.stock),
-                  fontWeight: FontWeight.w500,
+                  fontWeight: FontWeight.w400,
                   fontSize: 10,
                 ),
               ),
