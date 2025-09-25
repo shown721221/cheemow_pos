@@ -2,5 +2,8 @@
 class FontConfig {
   FontConfig._();
   static const productFontFamily = 'SourceHanSansTC';
+  // Debug 用：快速驗證是否真的套用到商品卡文字。完成確認後可改為 false 或移除。
+  static const enableProductFontDebugVisual = true;
+  // 後續若要全域套用，可在 AppTheme 中引用此常數。
   // 後續若要全域套用，可在 AppTheme 中引用此常數。
 }

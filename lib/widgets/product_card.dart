@@ -48,10 +48,14 @@ class ProductCard extends StatelessWidget {
                     product.name,
                     style: TextStyle(
                       fontFamily: FontConfig.productFontFamily,
-                      // 使用 Bold (700) 以對應實際提供的字重 (Regular/Bold)，避免 600 落在模擬插值
                       fontWeight: FontWeight.w700,
                       fontSize: 18,
                       color: ProductStyleUtils.getProductNameColor(product),
+                      letterSpacing: FontConfig.enableProductFontDebugVisual ? 1.2 : null,
+                      shadows: FontConfig.enableProductFontDebugVisual
+                          ? const [Shadow(color: Colors.purpleAccent, offset: Offset(0, 0), blurRadius: 4)]
+                          : null,
+                      backgroundColor: FontConfig.enableProductFontDebugVisual ? Colors.yellow.withValues(alpha: .25) : null,
                     ),
                   ),
                   const SizedBox(width: 8),
@@ -60,9 +64,10 @@ class ProductCard extends StatelessWidget {
                     style: TextStyle(
                       fontFamily: FontConfig.productFontFamily,
                       color: ProductStyleUtils.getStockColor(product.stock),
-                      // 使用 Regular (400)
                       fontWeight: FontWeight.w400,
                       fontSize: 12,
+                      letterSpacing: FontConfig.enableProductFontDebugVisual ? 1.2 : null,
+                      backgroundColor: FontConfig.enableProductFontDebugVisual ? Colors.lightBlueAccent.withValues(alpha: .2) : null,
                     ),
                   ),
                 ],
@@ -137,6 +142,8 @@ class ProductGridCard extends StatelessWidget {
                     fontWeight: FontWeight.w700,
                     fontSize: 14,
                     color: ProductStyleUtils.getProductNameColor(product),
+                    letterSpacing: FontConfig.enableProductFontDebugVisual ? 1.1 : null,
+                    backgroundColor: FontConfig.enableProductFontDebugVisual ? Colors.yellow.withValues(alpha: .25) : null,
                   ),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
@@ -150,6 +157,8 @@ class ProductGridCard extends StatelessWidget {
                   color: ProductStyleUtils.getStockColor(product.stock),
                   fontWeight: FontWeight.w400,
                   fontSize: 10,
+                  letterSpacing: FontConfig.enableProductFontDebugVisual ? 1.1 : null,
+                  backgroundColor: FontConfig.enableProductFontDebugVisual ? Colors.lightBlueAccent.withValues(alpha: .2) : null,
                 ),
               ),
               const SizedBox(height: 4),
