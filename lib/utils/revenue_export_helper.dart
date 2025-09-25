@@ -225,6 +225,7 @@ class RevenueExportHelper {
                       value: mask(summary.transfer, showNumbers),
                       bg: bg4,
                       inline: true,
+                      titleStyleOverride: const TextStyle(fontSize: 16),
                     ),
                   ),
                   const SizedBox(width: 12),

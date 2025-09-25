@@ -269,7 +269,7 @@ class _ReceiptListScreenState extends State<ReceiptListScreen> {
             onTap: () => selectPay(PaymentMethods.transfer),
             minWidth: 72,
             height: 44,
-            child: const Text('🏦', style: TextStyle(fontSize: 20)),
+            child: const Text('🏦', style: TextStyle(fontSize: 26)),
           ),
           FilterPillButton(
             selected: _selectedPay == PaymentMethods.linePay,
