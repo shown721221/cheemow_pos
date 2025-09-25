@@ -6,11 +6,11 @@ class SearchFilterManager {
   static const List<String> locationGroup = ['東京', '上海', '香港'];
   static const List<String> characterGroup = [
     'Duffy',
-    'GelaToni',
-    'OluMel',
     'ShellieMay',
+    'GelaToni',
     'StellaLou',
     'CookieAnn',
+    'OluMel',
     'LinaBell',
     '其他角色',
   ];
