@@ -18,8 +18,8 @@ class ProductStyleUtils {
     } else if (product.isDiscountProduct) {
       return AppColors.discount; // 折扣商品：橘色
     }
-    // 一般商品：在暗色背景改用淺色文字（若未啟用暗色主題仍可接受）
-    return AppColors.onDarkPrimary.withValues(alpha: 0.85);
+    // 一般商品：改用亮青色強調 (#00E6E6)
+    return AppColors.productCardCyan;
   }
 
   /// 針對主頁商品卡的名稱顯示做簡化：

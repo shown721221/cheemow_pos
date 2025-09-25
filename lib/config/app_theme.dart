@@ -43,6 +43,8 @@ class AppColors {
 
   // 自訂：櫻花粉 (tab 選中用)
   static const sakuraPink = Color(0xFFFFB7C5);
+  // 自訂：商品卡一般名稱字色 (亮青色 #00E6E6)
+  static const productCardCyan = Color(0xFF00E6E6);
 }
 
 /// 提供給 MaterialApp 使用的主題；如尚未需要可先不套用，或依需求在 main.dart 合併。
