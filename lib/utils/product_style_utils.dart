@@ -20,12 +20,12 @@ class ProductStyleUtils {
   }
 
   /// 針對主頁商品卡的名稱顯示做簡化：
-  /// - 將名稱中的「Disney限定」全部替換為「..」。
+  /// - 將名稱中的「Disney限定」全部替換為「_」。
   /// - 其他內容維持原樣。
   static String formatProductNameForMainCard(String name) {
     if (name.isEmpty) return name;
-    return name
-        .replaceAll('Disney限定', '..')
+  return name
+    .replaceAll('Disney限定', '_')
         .replaceAll(RegExp(r'\s{2,}'), ' ')
         .trim();
   }
