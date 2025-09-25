@@ -638,11 +638,11 @@ class _ReceiptListScreenState extends State<ReceiptListScreen> {
                                 fontWeight: FontWeight.w600,
                                 color: fullyRefunded
                                     ? AppColors.error
-                                    : (it.product.isDiscountProduct
-                                          ? AppColors.discount
-                                          : (it.product.isPreOrderProduct
-                                                ? AppColors.preorder
-                                                : AppColors.onDarkPrimary)),
+            : (it.product.isDiscountProduct
+              ? AppColors.wonderfulDay
+              : (it.product.isPreOrderProduct
+                ? AppColors.preorderMysterious
+                : AppColors.onDarkPrimary)),
                                 decoration: fullyRefunded
                                     ? TextDecoration.lineThrough
                                     : null,
