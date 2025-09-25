@@ -7,6 +7,7 @@ import 'package:cheemeow_pos/services/time_service.dart';
 import 'package:cheemeow_pos/config/style_config.dart';
 import 'package:cheemeow_pos/utils/date_util.dart';
 import 'package:cheemeow_pos/widgets/export_panel.dart';
+import 'package:cheemeow_pos/config/character_catalog.dart';
 
 class PopularityExportHelper {
   PopularityExportHelper._();
@@ -14,16 +15,8 @@ class PopularityExportHelper {
   static Future<void> exportTodayPopularityImage(BuildContext context) async {
     try {
       final pop = await ReportService.computeTodayPopularityStats();
-      final fixedCats = [
-        'Duffy',
-        'ShellieMay',
-        'GelaToni',
-        'StellaLou',
-        'CookieAnn',
-        'OluMel',
-        'LinaBell',
-      ];
-      final Map<String, int> baseMap = {for (final c in fixedCats) c: 0};
+      // 以集中定義的角色清單初始化映射
+      final Map<String, int> baseMap = {for (final c in CharacterCatalog.ordered) c: 0};
       int others = 0;
       pop.categoryCount.forEach((String k, int v) {
         if (baseMap.containsKey(k)) {
@@ -42,16 +35,7 @@ class PopularityExportHelper {
       ]..sort((a, b) => b.value.compareTo(a.value));
       // 角色顯示用 emoji 已轉為垂直圖內純文字 (若需回復再加入)。
 
-      final popularityColors = <String, Color>{
-        'Duffy': Colors.brown[400]!,
-        'ShellieMay': Colors.pink[300]!,
-        'GelaToni': Colors.teal[400]!,
-        'StellaLou': Colors.purple[300]!,
-        'CookieAnn': Colors.amber[400]!,
-        'OluMel': Colors.green[300]!,
-        'LinaBell': Colors.pink[200]!,
-        '其他角色': Colors.blueGrey[300]!,
-      };
+      final popularityColors = CharacterCatalog.colors;
       final now = TimeService.now();
       final dateStr = DateUtil.ymd(now);
 

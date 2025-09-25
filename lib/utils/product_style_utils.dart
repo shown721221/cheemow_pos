@@ -8,6 +8,11 @@ class ProductStyleUtils {
   // 閾值設定（可集中管理與後續調整）
   static const int stockLowThreshold = 10;
 
+  /// 名稱替換規則：後續若需要再擴充（例如加入『期間限定』等）。
+  static const List<String> nameReplaceTokens = [
+    'Disney限定',
+  ];
+
   /// 根據商品類型取得商品名稱的顏色
   static Color getProductNameColor(Product product) {
     if (product.isPreOrderProduct) {
@@ -24,10 +29,11 @@ class ProductStyleUtils {
   /// - 其他內容維持原樣。
   static String formatProductNameForMainCard(String name) {
     if (name.isEmpty) return name;
-  return name
-    .replaceAll('Disney限定', '_')
-        .replaceAll(RegExp(r'\s{2,}'), ' ')
-        .trim();
+    var out = name;
+    for (final token in nameReplaceTokens) {
+      out = out.replaceAll(token, '_');
+    }
+    return out.replaceAll(RegExp(r'\s{2,}'), ' ').trim();
   }
 
   /// 根據商品類型取得卡片的邊框顏色

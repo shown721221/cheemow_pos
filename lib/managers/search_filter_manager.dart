@@ -1,4 +1,5 @@
 import '../models/product.dart';
+import '../config/filter_rules.dart';
 
 /// 集中管理商品搜尋與篩選邏輯，讓 UI 更輕量、易於測試
 class SearchFilterManager {
@@ -79,85 +80,27 @@ class SearchFilterManager {
         if (!hit) return false;
       }
 
-      // 套用每個篩選條件（全部需滿足）
+      // 套用每個篩選條件（全部需滿足）資料導向
       for (final f in selectedFilters) {
-        switch (f) {
-          case '東京':
-            if (!name.contains('東京disney限定') &&
-                !name.contains('東京迪士尼限定') &&
-                !name.contains('東京disney') &&
-                !name.contains('東京迪士尼') &&
-                !name.contains('tokyo')) {
-              return false;
-            }
-            break;
-          case '上海':
-            if (!name.contains('上海disney限定') &&
-                !name.contains('上海迪士尼限定') &&
-                !name.contains('上海disney') &&
-                !name.contains('上海迪士尼') &&
-                !name.contains('shanghai')) {
-              return false;
-            }
-            break;
-          case '香港':
-            final matchesHongKong =
-                name.contains('香港disney限定') ||
-                name.contains('香港迪士尼限定') ||
-                name.contains('香港disney') ||
-                name.contains('香港迪士尼') ||
-                name.contains('hongkong') ||
-                name.contains('hk');
-            if (!matchesHongKong) return false;
-            break;
-          case 'Duffy':
-            if (!name.contains('duffy')) return false;
-            break;
-          case 'GelaToni':
-            if (!name.contains('gelatoni')) return false;
-            break;
-          case 'OluMel':
-            if (!name.contains('olumel')) return false;
-            break;
-          case 'ShellieMay':
-            if (!name.contains('shelliemay')) return false;
-            break;
-          case 'StellaLou':
-            if (!name.contains('stellalou')) return false;
-            break;
-          case 'CookieAnn':
-            if (!name.contains('cookieann')) return false;
-            break;
-          case 'LinaBell':
-            if (!name.contains('linabell')) return false;
-            break;
-          case '其他角色':
-            final isKnown =
-                name.contains('duffy') ||
-                name.contains('gelatoni') ||
-                name.contains('olumel') ||
-                name.contains('shelliemay') ||
-                name.contains('stellalou') ||
-                name.contains('cookieann') ||
-                name.contains('linabell');
-            if (isKnown) return false;
-            break;
-          case '娃娃':
-            if (!name.contains('娃娃')) return false;
-            break;
-          case '站姿':
-            if (!name.contains('站姿')) return false;
-            break;
-          case '坐姿':
-            if (!name.contains('坐姿')) return false;
-            break;
-          case '其他吊飾':
-            if (!name.contains('吊飾')) return false;
-            if (name.contains('站姿') || name.contains('坐姿')) return false;
-            break;
-          case '有庫存':
-            if (p.stock <= 0) return false;
-            break;
+        if (FilterRules.isLocationLabel(f)) {
+          if (!FilterRules.matchLocation(f, name)) return false;
+          continue;
+        }
+        if (FilterRules.isCharacterLabel(f)) {
+          if (f == '其他角色') {
+            if (FilterRules.isKnownCharacterName(name)) return false;
+          } else if (!FilterRules.matchCharacter(f, name)) {
+            return false;
+          }
+          continue;
+        }
+        if (FilterRules.isTypeLabel(f)) {
+          if (!FilterRules.matchType(f, name)) return false;
+          continue;
+        }
+        if (f == '有庫存') {
+          if (p.stock <= 0) return false;
+          continue;
         }
       }
       return true;
