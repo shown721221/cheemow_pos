@@ -32,8 +32,8 @@ class PaymentMethodSelector extends StatelessWidget {
             label: AppMessages.transferLabel,
             selected: method == PaymentMethods.transfer,
             onTap: () => onChanged(PaymentMethods.transfer),
-            imageAsset: 'assets/images/cathay.png',
-            imageHeight: 28,
+            // 以銀行 emoji 取代 cathay.png
+            textStyle: const TextStyle(fontSize: 20),
           ),
         ),
         const SizedBox(width: StyleConfig.gap8),

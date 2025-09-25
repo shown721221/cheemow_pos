@@ -269,13 +269,7 @@ class _ReceiptListScreenState extends State<ReceiptListScreen> {
             onTap: () => selectPay(PaymentMethods.transfer),
             minWidth: 72,
             height: 44,
-            child: Image.asset(
-              'assets/images/cathay.png',
-              height: 24,
-              fit: BoxFit.contain,
-              errorBuilder: (_, __, ___) =>
-                  const Text(AppMessages.transferLabel),
-            ),
+            child: const Text('🏦', style: TextStyle(fontSize: 20)),
           ),
           FilterPillButton(
             selected: _selectedPay == PaymentMethods.linePay,

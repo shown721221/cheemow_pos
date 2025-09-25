@@ -220,12 +220,7 @@ class RevenueExportHelper {
                   const SizedBox(width: 12),
                   Expanded(
                     child: metricCard(
-                      iconWidget: Image.asset(
-                        'assets/images/cathay.png',
-                        height: 24,
-                        fit: BoxFit.contain,
-                      ),
-                      // no title per requirement
+                      icon: '🏦',
                       title: null,
                       value: mask(summary.transfer, showNumbers),
                       bg: bg4,

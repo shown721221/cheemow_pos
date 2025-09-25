@@ -3,10 +3,10 @@ import 'package:cheemeow_pos/utils/product_style_utils.dart';
 
 void main() {
   group('formatProductNameForMainCard', () {
-    test('任意位置的「Disney限定」應替換為「..」', () {
+    test('任意位置的「Disney限定」應替換為「_」', () {
       const input = '東京Disney限定 達菲20週年 LinaBell 站姿吊飾';
       final out = ProductStyleUtils.formatProductNameForMainCard(input);
-      expect(out, '東京.. 達菲20週年 LinaBell 站姿吊飾');
+      expect(out, '東京_ 達菲20週年 LinaBell 站姿吊飾');
     });
 
     test('不含Disney限定，維持原樣', () {
@@ -27,16 +27,16 @@ void main() {
       expect(out, input);
     });
 
-    test('只有Disney限定一詞時，替換為「..」', () {
+    test('只有Disney限定一詞時，替換為「_」', () {
       const input = 'Disney限定';
       final out = ProductStyleUtils.formatProductNameForMainCard(input);
-      expect(out, '..');
+      expect(out, '_');
     });
 
-    test('多次出現Disney限定皆替換為「..」並壓平多空白', () {
+    test('多次出現Disney限定皆替換為「_」並壓平多空白', () {
       const input = '大阪 Disney限定 特別版 Disney限定 造型';
       final out = ProductStyleUtils.formatProductNameForMainCard(input);
-      expect(out, '大阪 .. 特別版 .. 造型');
+      expect(out, '大阪 _ 特別版 _ 造型');
     });
   });
 }
