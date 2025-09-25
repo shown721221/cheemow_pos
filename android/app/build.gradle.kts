@@ -95,6 +95,17 @@ android {
             isShrinkResources = false
         }
     }
+
+    // 自訂輸出 APK 檔名：CheeMeow_POS-v<versionName>-vc<versionCode>.apk
+    applicationVariants.all {
+        outputs.all {
+            if (this is com.android.build.gradle.internal.api.BaseVariantOutputImpl) {
+                val vName = versionName
+                val vCode = versionCode
+                outputFileName = "CheeMeow_POS-v${vName}-vc${vCode}.apk"
+            }
+        }
+    }
 }
 
 // (Removed rename hook to keep Flutter build stable)
