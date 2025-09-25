@@ -251,32 +251,33 @@ class RevenueExportHelper {
         borderRadius: BorderRadius.circular(16),
       ),
       child: Row(
+        mainAxisAlignment: MainAxisAlignment.center, // 整行內容置中
         children: [
           Text(
             icon,
             style: const TextStyle(fontSize: 20),
           ),
           const SizedBox(width: 6), // 圖示右邊的空格距離
-          Expanded(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: const TextStyle(fontSize: 12, color: Colors.black54),
+          Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.center, // 文字內容置中
+            children: [
+              Text(
+                title,
+                style: const TextStyle(fontSize: 12, color: Colors.black54),
+                textAlign: TextAlign.center, // 文字對齊置中
+              ),
+              const SizedBox(height: 2),
+              Text(
+                value,
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                  color: gold,
                 ),
-                const SizedBox(height: 2),
-                Text(
-                  value,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w700,
-                    color: gold,
-                  ),
-                ),
-              ],
-            ),
+                textAlign: TextAlign.center, // 文字對齊置中
+              ),
+            ],
           ),
         ],
       ),
