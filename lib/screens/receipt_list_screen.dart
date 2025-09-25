@@ -126,15 +126,11 @@ class _ReceiptListScreenState extends State<ReceiptListScreen> {
                     ),
                   );
                 }
-                return ListView.builder(
-                  itemCount: filtered.length * 2 - 1, // 包含分隔線
-                  itemExtent: 48.0, // 固定高度優化：項目和分隔線統一高度
+                return ListView.separated(
+                  itemCount: filtered.length,
+                  separatorBuilder: (_, __) => const Divider(height: 1, thickness: 1),
                   itemBuilder: (_, index) {
-                    if (index.isOdd) {
-                      return const Divider(height: 1, thickness: 1);
-                    }
-                    final i = index ~/ 2;
-                    return _buildReceiptTile(filtered[i]);
+                    return _buildReceiptTile(filtered[index]);
                   },
                 );
               },
@@ -217,20 +213,28 @@ class _ReceiptListScreenState extends State<ReceiptListScreen> {
           dense: false,
           contentPadding: const EdgeInsets.symmetric(
             horizontal: 12,
-            vertical: 6,
+            vertical: 8,
           ),
-          minVerticalPadding: 4,
-          title: RichText(
-            text: TextSpan(
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w700,
-                color: AppColors.onDarkPrimary,
-                height: 1.25,
+          minVerticalPadding: 6,
+          title: SizedBox(
+            height: 48, // 固定標題區域高度
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: RichText(
+                text: TextSpan(
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.onDarkPrimary,
+                    height: 1.25,
+                  ),
+                  children: spans,
+                ),
+                textScaler: const TextScaler.linear(1.0),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
               ),
-              children: spans,
             ),
-            textScaler: const TextScaler.linear(1.0),
           ),
           trailing: const Icon(Icons.chevron_right, size: 22),
           onTap: () => _showReceiptDetailDialog(r),
@@ -633,27 +637,32 @@ class _ReceiptListScreenState extends State<ReceiptListScreen> {
                             it.product.id,
                             it.quantity,
                           );
-                          return ListTile(
-                            dense: true,
-                            contentPadding: const EdgeInsets.symmetric(
-                              horizontal: 0,
-                            ),
-                            title: Text(
-                              it.product.name,
-                              style: TextStyle(
-                                fontWeight: FontWeight.w600,
-                                color: fullyRefunded
-                                    ? AppColors.error
-            : (it.product.isDiscountProduct
-              ? AppColors.wonderfulDay
-              : (it.product.isPreOrderProduct
-                ? AppColors.preorderMysterious
-                : AppColors.onDarkPrimary)),
-                                decoration: fullyRefunded
-                                    ? TextDecoration.lineThrough
-                                    : null,
+                          return SizedBox(
+                            height: 56, // 固定項目高度
+                            child: ListTile(
+                              dense: true,
+                              contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 0,
+                                vertical: 4,
                               ),
-                            ),
+                              title: Text(
+                                it.product.name,
+                                style: TextStyle(
+                                  fontWeight: FontWeight.w600,
+                                  color: fullyRefunded
+                                      ? AppColors.error
+              : (it.product.isDiscountProduct
+                ? AppColors.wonderfulDay
+                : (it.product.isPreOrderProduct
+                  ? AppColors.preorderMysterious
+                  : AppColors.onDarkPrimary)),
+                                  decoration: fullyRefunded
+                                      ? TextDecoration.lineThrough
+                                      : null,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
                             subtitle: Builder(
                               builder: (_) {
                                 final refunded = current.refundedQtyFor(
@@ -680,19 +689,20 @@ class _ReceiptListScreenState extends State<ReceiptListScreen> {
                                 );
                               },
                             ),
-                            trailing: fullyRefunded
-                                ? const Icon(
-                                    Icons.assignment_return,
-                                    color: AppColors.error,
-                                  )
-                                : IconButton(
-                                    icon: const Icon(
+                              trailing: fullyRefunded
+                                  ? const Icon(
                                       Icons.assignment_return,
-                                      color: AppColors.success,
+                                      color: AppColors.error,
+                                    )
+                                  : IconButton(
+                                      icon: const Icon(
+                                        Icons.assignment_return,
+                                        color: AppColors.success,
+                                      ),
+                                      tooltip: AppMessages.refundTooltip,
+                                      onPressed: () => refundItem(it),
                                     ),
-                                    tooltip: AppMessages.refundTooltip,
-                                    onPressed: () => refundItem(it),
-                                  ),
+                            ),
                           );
                         },
                       ),

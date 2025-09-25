@@ -57,12 +57,13 @@ class StatMetricCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           SizedBox(
-            height: 24,
-            child:
-                iconWidget ??
-                (icon != null
-                    ? Text(icon!, style: TextStyle(fontSize: iconSize))
-                    : const SizedBox.shrink()),
+            height: 32, // 增加圖示容器高度，避免底部被裁掉
+            child: Center( // 確保圖示居中
+              child: iconWidget ??
+                  (icon != null
+                      ? Text(icon!, style: TextStyle(fontSize: iconSize))
+                      : const SizedBox.shrink()),
+            ),
           ),
           if (title != null) ...[
             const SizedBox(height: 6),
@@ -74,6 +75,8 @@ class StatMetricCard extends StatelessWidget {
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 2),
+          ] else ...[
+            const SizedBox(height: 12), // 當沒有標題時，增加圖示與數值間距
           ],
           valueText,
         ],

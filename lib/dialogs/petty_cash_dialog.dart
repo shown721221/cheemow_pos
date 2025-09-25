@@ -68,17 +68,20 @@ class PettyCashDialog {
           Widget numKey(String n, VoidCallback onTap) => SizedBox(
             width: 72,
             height: 60,
-            child: ElevatedButton(
+            child: OutlinedButton(
               onPressed: onTap,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.blue[50],
-                foregroundColor: Colors.blue[700],
+              style: OutlinedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(
+                  vertical: 0,
+                  horizontal: 0,
+                ),
               ),
               child: Text(
                 n,
                 style: const TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.bold,
+                  fontSize: 20,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.white,
                 ),
               ),
             ),
@@ -87,21 +90,23 @@ class PettyCashDialog {
           Widget actionKey(String label, VoidCallback onTap) => SizedBox(
             width: 72,
             height: 60,
-            child: ElevatedButton(
+            child: OutlinedButton(
               onPressed: onTap,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.orange[50],
-                foregroundColor: Colors.orange[700],
+              style: OutlinedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(
+                  vertical: 0,
+                  horizontal: 0,
+                ),
               ),
               child: FittedBox(
                 fit: BoxFit.scaleDown,
                 child: Text(
                   label,
                   maxLines: 1,
-                  softWrap: false,
                   style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
+                    fontSize: 20,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.white,
                   ),
                 ),
               ),

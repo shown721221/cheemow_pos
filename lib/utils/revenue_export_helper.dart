@@ -101,6 +101,7 @@ class RevenueExportHelper {
                       title: null,
                       value: mask(summary.cash, showNumbers),
                       background: bg3,
+                      padding: const EdgeInsets.symmetric(vertical: 28, horizontal: 12), // 再增加高度
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -110,6 +111,7 @@ class RevenueExportHelper {
                       title: null,
                       value: mask(summary.transfer, showNumbers),
                       background: bg4,
+                      padding: const EdgeInsets.symmetric(vertical: 28, horizontal: 12), // 再增加高度
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -123,6 +125,7 @@ class RevenueExportHelper {
                       title: null,
                       value: mask(summary.linepay, showNumbers),
                       background: bg2,
+                      padding: const EdgeInsets.symmetric(vertical: 28, horizontal: 12), // 再增加高度
                     ),
                   ),
                 ],
@@ -131,8 +134,8 @@ class RevenueExportHelper {
               Row(
                 children: [
                   Expanded(
-                    child: StatMetricCard(
-                      icon: '📦', // 原為 '🎁'
+                    child: _buildCompactStatCard(
+                      icon: '📦',
                       title: AppMessages.metricPreorderSubtotal,
                       value: mask(summary.preorder, showNumbers),
                       background: bg1,
@@ -140,7 +143,7 @@ class RevenueExportHelper {
                   ),
                   const SizedBox(width: 12),
                   Expanded(
-                    child: StatMetricCard(
+                    child: _buildCompactStatCard(
                       icon: '💸',
                       title: AppMessages.metricDiscountSubtotal,
                       value: mask(summary.discount, showNumbers),
@@ -231,5 +234,52 @@ class RevenueExportHelper {
       );
       return false;
     }
+  }
+
+  /// 構建緊湊型統計卡片，文字在圖示右邊
+  static Widget _buildCompactStatCard({
+    required String icon,
+    required String title,
+    required String value,
+    required Color background,
+  }) {
+    const gold = Color(0xFFB68600);
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12), // 減少高度
+      decoration: BoxDecoration(
+        color: background,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Row(
+        children: [
+          Text(
+            icon,
+            style: const TextStyle(fontSize: 20),
+          ),
+          const SizedBox(width: 6), // 圖示右邊的空格距離
+          Expanded(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(fontSize: 12, color: Colors.black54),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  value,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                    color: gold,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }

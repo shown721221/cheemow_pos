@@ -21,9 +21,8 @@ class PinDialog {
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setS) {
           Widget numKey(String d) => SizedBox(
-            width: 70,
-            height: 56,
-            child: ElevatedButton(
+            height: 60,
+            child: OutlinedButton(
               onPressed: input.length < 4
                   ? () => setS(() {
                       input += d;
@@ -41,15 +40,18 @@ class PinDialog {
                       }
                     })
                   : null,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.blue[50],
-                foregroundColor: Colors.blue[700],
+              style: OutlinedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(
+                  vertical: 0,
+                  horizontal: 0,
+                ),
               ),
               child: Text(
                 d,
                 style: const TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.bold,
+                  fontSize: 20,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.white,
                 ),
               ),
             ),
@@ -132,61 +134,85 @@ class PinDialog {
                   ),
                   const SizedBox(height: 12),
                   Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: [numKey('1'), numKey('2'), numKey('3')],
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: [numKey('4'), numKey('5'), numKey('6')],
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: [numKey('7'), numKey('8'), numKey('9')],
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     children: [
-                      SizedBox(
-                        width: 70,
-                        height: 56,
-                        child: ElevatedButton(
-                          onPressed: () => setS(() => input = ''),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.grey[200],
-                            foregroundColor: Colors.grey[700],
-                            padding: const EdgeInsets.symmetric(horizontal: 4),
-                          ),
-                          child: const FittedBox(
-                            fit: BoxFit.scaleDown,
-                            child: Text(
-                              'ESC',
-                              maxLines: 1,
-                              style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.w800,
+                      Expanded(child: Padding(padding: const EdgeInsets.symmetric(horizontal: 2), child: numKey('1'))),
+                      Expanded(child: Padding(padding: const EdgeInsets.symmetric(horizontal: 2), child: numKey('2'))),
+                      Expanded(child: Padding(padding: const EdgeInsets.symmetric(horizontal: 2), child: numKey('3'))),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Expanded(child: Padding(padding: const EdgeInsets.symmetric(horizontal: 2), child: numKey('4'))),
+                      Expanded(child: Padding(padding: const EdgeInsets.symmetric(horizontal: 2), child: numKey('5'))),
+                      Expanded(child: Padding(padding: const EdgeInsets.symmetric(horizontal: 2), child: numKey('6'))),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Expanded(child: Padding(padding: const EdgeInsets.symmetric(horizontal: 2), child: numKey('7'))),
+                      Expanded(child: Padding(padding: const EdgeInsets.symmetric(horizontal: 2), child: numKey('8'))),
+                      Expanded(child: Padding(padding: const EdgeInsets.symmetric(horizontal: 2), child: numKey('9'))),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 2),
+                          child: SizedBox(
+                            height: 60,
+                            child: OutlinedButton(
+                              onPressed: () => setS(() => input = ''),
+                              style: OutlinedButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 0,
+                                  horizontal: 0,
+                                ),
+                              ),
+                              child: const FittedBox(
+                                fit: BoxFit.scaleDown,
+                                child: Text(
+                                  'ESC',
+                                  maxLines: 1,
+                                  style: TextStyle(
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.w700,
+                                    color: Colors.white,
+                                  ),
+                                ),
                               ),
                             ),
                           ),
                         ),
                       ),
-                      numKey('0'),
-                      SizedBox(
-                        width: 70,
-                        height: 56,
-                        child: ElevatedButton(
-                          onPressed: () => setS(() {
-                            if (input.isNotEmpty) {
-                              input = input.substring(0, input.length - 1);
-                            }
-                          }),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.orange[50],
-                            foregroundColor: Colors.orange[700],
+                      Expanded(child: Padding(padding: const EdgeInsets.symmetric(horizontal: 2), child: numKey('0'))),
+                      Expanded(
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 2),
+                          child: SizedBox(
+                            height: 60,
+                            child: OutlinedButton(
+                              onPressed: () => setS(() {
+                                if (input.isNotEmpty) {
+                                  input = input.substring(0, input.length - 1);
+                                }
+                              }),
+                              style: OutlinedButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 0,
+                                  horizontal: 0,
+                                ),
+                              ),
+                              child: const Icon(
+                                Icons.backspace_outlined,
+                                color: Colors.white,
+                                size: 28, // 放大倒退圖示
+                              ),
+                            ),
                           ),
-                          child: const Icon(Icons.backspace_outlined),
                         ),
                       ),
                     ],

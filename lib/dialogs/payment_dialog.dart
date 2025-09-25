@@ -170,6 +170,12 @@ class PaymentDialog {
                                 ['7', '8', '9'],
                                 ['ESC', '0', '⌫'],
                               ],
+                              buttonHeight: 60,
+                              textStyle: const TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.w700,
+                                color: Colors.white,
+                              ),
                               onKeyTap: (key) {
                                 String t = cashController.text;
                                 if (key == '⌫') {

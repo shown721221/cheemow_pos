@@ -81,10 +81,16 @@ class PriceInputDialogManager {
                         ['1', '2', '3'],
                         ['4', '5', '6'],
                         ['7', '8', '9'],
-                        ['🧹', '0', '✅'],
+                        ['ESC', '0', '✅'],
                       ],
+                      buttonHeight: 60,
+                      textStyle: const TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.white,
+                      ),
                       onKeyTap: (k) {
-                        if (k == '🧹') {
+                        if (k == 'ESC') {
                           setState(() => currentPrice = '');
                           return;
                         }
