@@ -14,9 +14,9 @@ class ProductStyleUtils {
   /// 根據商品類型取得商品名稱的顏色
   static Color getProductNameColor(Product product) {
     if (product.isPreOrderProduct) {
-      return AppColors.preorder; // 預約商品：紫色
+      return AppColors.preorderMysterious; // 預約奇妙指定色 #85CDF1
     } else if (product.isDiscountProduct) {
-      return AppColors.discount; // 折扣商品：橘色
+      return AppColors.wonderfulDay; // 祝您有奇妙的一天指定色 #FFE27A
     }
     // 一般商品：改用亮青色強調 (#00E6E6)
     return AppColors.productCardCyan;
@@ -37,24 +37,22 @@ class ProductStyleUtils {
   /// 根據商品類型取得卡片的邊框顏色
   static Color? getCardBorderColor(Product product) {
     if (product.isPreOrderProduct) {
-      return AppColors.preorder.withValues(alpha: 0.4); // 淺紫
+      return AppColors.preorderMysterious.withValues(alpha: 0.4); // 淺紫
     } else if (product.isDiscountProduct) {
-      return AppColors.discount.withValues(alpha: 0.4); // 淺橘
+      return AppColors.wonderfulDay.withValues(alpha: 0.4); // 淺橘
     }
     return null; // 一般商品：無特殊邊框
   }
 
   /// 根據庫存數量回傳對應的顏色
   static Color getStockColor(int stock) {
-    if (stock > 0) return AppColors.stockPositive;
-    if (stock == 0) return AppColors.stockZero;
-    return AppColors.error;
+    if (stock > 0) return AppColors.stockPositiveCustom;
+    if (stock == 0) return AppColors.stockZeroCustom;
+    return AppColors.stockNegativeCustom;
   }
 
   /// 根據庫存數量回傳顯示文字
-  static String getStockText(int stock) {
-    return AppMessages.stockLabel(stock);
-  }
+  static String getStockText(int stock) => AppMessages.stockLabel(stock);
 
   /// 取得商品卡片的邊框樣式
   static BorderSide? getCardBorderSide(Product product) {
@@ -66,15 +64,12 @@ class ProductStyleUtils {
   }
 
   /// 取得商品 emoji 圖示（字串）
-  static String getProductEmoji(Product product) {
-    // 商品卡片一律使用購物袋 emoji
-    return '🛍️';
-  }
+  static String getProductEmoji(Product product) => '🛍️';
 
   /// 取得商品圖標顏色
   static Color getProductIconColor(Product product) {
-    if (product.isPreOrderProduct) return AppColors.preorder;
-    if (product.isDiscountProduct) return AppColors.discount;
+    if (product.isPreOrderProduct) return AppColors.preorderMysterious;
+    if (product.isDiscountProduct) return AppColors.wonderfulDay;
     return Colors.grey[600]!;
   }
 

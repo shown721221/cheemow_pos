@@ -28,8 +28,12 @@ class NumericKeypad extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final style =
-        textStyle ?? const TextStyle(fontSize: 20, fontWeight: FontWeight.w700);
+    final style = textStyle ??
+        const TextStyle(
+          fontSize: 20,
+          fontWeight: FontWeight.w700,
+          color: Colors.white,
+        );
     return Column(
       children: [
         for (int r = 0; r < keys.length; r++) ...[

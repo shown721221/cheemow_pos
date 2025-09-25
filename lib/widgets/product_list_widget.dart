@@ -57,33 +57,9 @@ class _ProductListWidgetState extends State<ProductListWidget> {
     }
   }
 
-  // 根據商品類型取得商品名稱的顏色
-  Color _getProductNameColor(Product product) {
-    if (product.isPreOrderProduct) return AppColors.preorder;
-    if (product.isDiscountProduct) return AppColors.discount;
-    return AppColors.onDarkPrimary.withValues(alpha: .95);
-  }
-
-  // 根據商品類型取得卡片的邊框顏色
-  Color? _getCardBorderColor(Product product) {
-    if (product.isPreOrderProduct) {
-      return AppColors.preorder.withValues(alpha: .35);
-    }
-    if (product.isDiscountProduct) {
-      return AppColors.discount.withValues(alpha: .35);
-    }
-    return null;
-  }
-
-  // 根據庫存數量回傳對應的顏色（紅<0 / 黃=0 / 綠>0，類似紅綠燈）
-  Color _getStockColor(int stock) {
-    if (stock > 0) return AppColors.stockPositive;
-    if (stock == 0) return AppColors.stockZero;
-    return AppColors.error;
-  }
-
-  // 根據庫存數量回傳顯示文字
-  String _getStockText(int stock) => AppMessages.stockLabel(stock);
+  // 已集中至 ProductStyleUtils / AppColors (新色彩語意)
+  Color? _getCardBorderColor(Product product) =>
+      ProductStyleUtils.getCardBorderColor(product);
 
   @override
   Widget build(BuildContext context) {
@@ -143,17 +119,26 @@ class _ProductListWidgetState extends State<ProductListWidget> {
                                       ProductStyleUtils.formatProductNameForMainCard(
                                         product.name,
                                       ),
-                                      style: TextStyle(
-                                        fontWeight: FontWeight.w600,
-                                        fontSize: 18,
-                                        color: _getProductNameColor(product),
-                                      ),
+                    style: TextStyle(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 18,
+                    color: product.isPreOrderProduct
+                      ? AppColors.preorderMysterious
+                      : product.isDiscountProduct
+                        ? AppColors.wonderfulDay
+                        : AppColors.onDarkPrimary
+                          .withValues(alpha: .95),
+                    ),
                                     ),
                                     SizedBox(width: 8),
                                     Text(
-                                      _getStockText(product.stock),
+                                      ProductStyleUtils.getStockText(
+                                        product.stock,
+                                      ),
                                       style: TextStyle(
-                                        color: _getStockColor(product.stock),
+                                        color: ProductStyleUtils.getStockColor(
+                                          product.stock,
+                                        ),
                                         fontWeight: FontWeight.w500,
                                         fontSize: 12,
                                       ),
@@ -166,8 +151,6 @@ class _ProductListWidgetState extends State<ProductListWidget> {
                                 amount: product.price,
                                 iconSize: 20,
                                 fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                                color: AppColors.stockPositive,
                               ),
                             ],
                           ),

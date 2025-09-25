@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cheemeow_pos/config/app_config.dart';
 import 'package:cheemeow_pos/config/app_messages.dart';
 import 'package:cheemeow_pos/dialogs/pin_dialog.dart';
+import '../widgets/price_display.dart';
 
 /// 零用金設定對話框抽離
 class PettyCashDialog {
@@ -48,23 +49,21 @@ class PettyCashDialog {
           }
 
           Widget priceDisplay() => Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              border: Border.all(color: Colors.grey[400]!),
-              borderRadius: BorderRadius.circular(8),
-              color: Colors.grey[50],
-            ),
-            child: Text(
-              '\$ ${current.isEmpty ? '0' : current}',
-              style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-                color: Colors.blueGrey[800],
-              ),
-              textAlign: TextAlign.center,
-            ),
-          );
+                width: double.infinity,
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  border: Border.all(color: Colors.grey[400]!),
+                  borderRadius: BorderRadius.circular(8),
+                  color: Colors.grey[50],
+                ),
+                child: Center(
+                  child: PriceDisplay(
+                    amount: int.tryParse(current.isEmpty ? '0' : current) ?? 0,
+                    iconSize: 24,
+                    fontSize: 24,
+                  ),
+                ),
+              );
 
           Widget numKey(String n, VoidCallback onTap) => SizedBox(
             width: 72,

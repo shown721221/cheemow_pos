@@ -184,12 +184,12 @@ class _ReceiptListScreenState extends State<ReceiptListScreen> {
     // 總金額（已是扣除退貨後的淨額）
     addSeg(MoneyFormatter.symbol(r.totalAmount));
     addSeg('售出 $nonSpecialQty 件');
-    // 使用與商品清單一致的顏色：預購=紫色、折扣=橘色（取自 ProductStyleUtils 規則）
+    // 使用統一語意顏色：預約奇妙(#85CDF1) / 祝您有奇妙的一天(#FFE27A)
     if (preorderQty > 0) {
-      addSeg('預購 $preorderQty 件', color: AppColors.preorder);
+      addSeg('預購 $preorderQty 件', color: AppColors.preorderMysterious);
     }
     if (discountQty > 0) {
-      addSeg('折扣 $discountQty 件', color: AppColors.discount);
+      addSeg('折扣 $discountQty 件', color: AppColors.wonderfulDay);
     }
     if (r.items.isNotEmpty) {
       int refundedCount = 0;

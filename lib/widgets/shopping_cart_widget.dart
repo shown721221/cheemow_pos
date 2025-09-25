@@ -61,13 +61,7 @@ class ShoppingCartWidget extends StatelessWidget {
               children: [
                 if (!showingPostCheckout && cartItems.isNotEmpty)
                   IconButton(
-                    icon: Text(
-                      '🗑️',
-                      style: TextStyle(
-                        fontSize: 22,
-                        color: AppColors.onDarkSecondary,
-                      ),
-                    ),
+                    icon: const Icon(Icons.delete_forever_outlined, size: 33),
                     onPressed: onClearCart,
                     tooltip: AppMessages.clearCartTooltip,
                     color: AppColors.onDarkSecondary,
@@ -167,19 +161,20 @@ class ShoppingCartWidget extends StatelessWidget {
                                           style: TextStyle(
                                             fontSize: 15,
                                             fontWeight: FontWeight.w500,
-                                            color: item.product.isSpecialProduct
-                                                ? (item
-                                                          .product
-                                                          .isPreOrderProduct
-                                                      ? AppColors.preorder
-                                                      : AppColors.discount)
-                                                : AppColors.onDarkPrimary,
+                                            color: item.product.isPreOrderProduct
+                                                ? AppColors.preorderMysterious
+                                                : item.product.isDiscountProduct
+                                                    ? AppColors.wonderfulDay
+                                                    : Colors.white,
                                           ),
                                           overflow: TextOverflow.ellipsis,
                                         ),
                                         SizedBox(height: 6),
-                                        SmallPriceDisplay(
+                                        PriceDisplay(
                                           amount: item.product.price,
+                                          iconSize: 16,
+                                          fontSize: 14,
+                                          color: Colors.white, // 僅覆寫數字顏色，符號維持品牌色
                                         ),
                                       ],
                                     ),
@@ -190,28 +185,30 @@ class ShoppingCartWidget extends StatelessWidget {
                                     child: Column(
                                       mainAxisSize: MainAxisSize.min,
                                       children: [
-                                        Text(
+                                        const Text(
                                           AppMessages.qtyLabel,
                                           style: TextStyle(
                                             fontSize: 10,
-                                            color: AppColors.onDarkSecondary,
+                                            color: Colors.white,
                                           ),
                                         ),
                                         SizedBox(height: 2),
                                         Text(
                                           '${item.quantity}',
-                                          style: TextStyle(
+                                          style: const TextStyle(
                                             fontWeight: FontWeight.bold,
                                             fontSize: 16,
+                                            color: Colors.white,
                                           ),
                                         ),
                                         SizedBox(height: 4),
                                         // 使用簡單的 Text 來避免溢出問題
                                         Text(
                                           '${AppMessages.subtotalLabel}: ${item.subtotal}',
-                                          style: TextStyle(
+                                          style: const TextStyle(
                                             fontSize: 10,
                                             fontWeight: FontWeight.bold,
+                                            color: Colors.white,
                                           ),
                                           textAlign: TextAlign.center,
                                           overflow: TextOverflow.ellipsis,

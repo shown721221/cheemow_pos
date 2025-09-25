@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../models/product.dart';
 import '../widgets/price_display.dart';
 import '../utils/product_style_utils.dart';
+import '../config/app_theme.dart';
 import '../config/font_config.dart';
 
 /// 商品卡片組件
@@ -48,7 +49,11 @@ class ProductCard extends StatelessWidget {
                       fontFamily: FontConfig.productFontFamily,
                       fontWeight: FontWeight.w700,
                       fontSize: 18,
-                      color: ProductStyleUtils.getProductNameColor(product),
+            color: product.isPreOrderProduct
+              ? AppColors.preorderMysterious
+              : product.isDiscountProduct
+                ? AppColors.wonderfulDay
+                : AppColors.onDarkPrimary,
                     ),
                   ),
                   const SizedBox(width: 8),
@@ -65,15 +70,10 @@ class ProductCard extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 16),
-            DefaultTextStyle.merge(
-              style: const TextStyle(fontFamily: FontConfig.productFontFamily),
-              child: PriceDisplay(
-                amount: product.price,
-                iconSize: 20,
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: Colors.green[700],
-              ),
+            PriceDisplay(
+              amount: product.price,
+              iconSize: 20,
+              fontSize: 18,
             ),
           ],
         ),
@@ -132,7 +132,11 @@ class ProductGridCard extends StatelessWidget {
                     fontFamily: FontConfig.productFontFamily,
                     fontWeight: FontWeight.w700,
                     fontSize: 14,
-                    color: ProductStyleUtils.getProductNameColor(product),
+          color: product.isPreOrderProduct
+            ? AppColors.preorderMysterious
+            : product.isDiscountProduct
+              ? AppColors.wonderfulDay
+              : AppColors.onDarkPrimary,
                   ),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
@@ -149,18 +153,7 @@ class ProductGridCard extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 4),
-              DefaultTextStyle.merge(
-                style: const TextStyle(
-                  fontFamily: FontConfig.productFontFamily,
-                ),
-                child: PriceDisplay(
-                  amount: product.price,
-                  iconSize: 14,
-                  fontSize: 14,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.green[700],
-                ),
-              ),
+              PriceDisplay(amount: product.price, iconSize: 14, fontSize: 14),
             ],
           ),
         ),

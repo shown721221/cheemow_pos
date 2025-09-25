@@ -13,7 +13,7 @@ void main() async {
     overlays: [SystemUiOverlay.top, SystemUiOverlay.bottom],
   );
 
-  // 設置正常的系統UI樣式
+  // 設置正常的系統UI樣式（藍色狀態列）
   SystemChrome.setSystemUIOverlayStyle(
     SystemUiOverlayStyle(
       statusBarColor: Colors.blue[800], // 配合 AppBar 顏色

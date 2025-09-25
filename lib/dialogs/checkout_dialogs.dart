@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import '../utils/money_formatter.dart';
 import '../models/receipt.dart';
 import '../widgets/price_display.dart';
+import '../config/app_theme.dart';
 import '../config/app_messages.dart';
 
 /// 結帳相關對話框
@@ -18,13 +18,14 @@ class CheckoutDialogs {
             return AlertDialog(
               title: const Row(
                 children: [
-                  Icon(Icons.payment, color: Colors.green),
+                  Icon(Icons.payment, color: Colors.black87),
                   SizedBox(width: 8),
                   Text(AppMessages.checkoutConfirmTitle),
                 ],
               ),
               content: Column(
                 mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -42,7 +43,7 @@ class CheckoutDialogs {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 8),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -53,7 +54,14 @@ class CheckoutDialogs {
                           fontWeight: FontWeight.bold,
                         ),
                       ),
-                      LargePriceDisplay(amount: totalAmount),
+                      PriceDisplay(
+                        amount: totalAmount,
+                        iconSize: 38,
+                        fontSize: 34,
+                        thousands: true,
+                        color: AppColors.cartTotalNumber,
+                        symbolColor: AppColors.cartTotalNumber,
+                      ),
                     ],
                   ),
                 ],
@@ -69,10 +77,6 @@ class CheckoutDialogs {
                   onPressed: () {
                     Navigator.of(context).pop(true);
                   },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.green,
-                    foregroundColor: Colors.white,
-                  ),
                   child: const Text(AppMessages.checkoutConfirmTitle),
                 ),
               ],
@@ -94,7 +98,7 @@ class CheckoutDialogs {
         return AlertDialog(
           title: const Row(
             children: [
-              Icon(Icons.check_circle, color: Colors.green, size: 28),
+              Icon(Icons.check_circle, color: Colors.black87, size: 28),
               SizedBox(width: 8),
               Text(AppMessages.checkoutFinishedTitle),
             ],
@@ -104,18 +108,30 @@ class CheckoutDialogs {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text('${AppMessages.receiptIdLabel}: ${receipt.id}'),
-              const SizedBox(height: 8),
+              const SizedBox(height: 6),
               Text('${AppMessages.dateLabel}: ${receipt.formattedDateTime}'),
-              const SizedBox(height: 8),
+              const SizedBox(height: 6),
               Text('總數量: ${receipt.totalQuantity} 件'),
-              const SizedBox(height: 8),
-              Text(
-                '${AppMessages.totalAmountLabel}: ${MoneyFormatter.symbol(receipt.totalAmount)}',
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.green,
-                ),
+              const SizedBox(height: 6),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.start,
+                children: [
+                  const Text(
+                    '${AppMessages.totalAmountLabel}: ',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  PriceDisplay(
+                    amount: receipt.totalAmount,
+                    iconSize: 38,
+                    fontSize: 34,
+                    thousands: true,
+                    color: AppColors.cartTotalNumber,
+                    symbolColor: AppColors.cartTotalNumber,
+                  ),
+                ],
               ),
             ],
           ),

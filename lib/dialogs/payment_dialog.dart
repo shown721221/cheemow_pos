@@ -8,6 +8,7 @@ import '../config/app_theme.dart';
 import '../utils/money_util.dart';
 import '../utils/payment_compute.dart';
 import '../widgets/payment_method_selector.dart';
+import '../widgets/price_display.dart';
 
 class PaymentResult {
   final String method; // 現金/轉帳/LinePay
@@ -66,31 +67,45 @@ class PaymentDialog {
                         children: [
                           // 頂部：左側總金額，右側找零（僅現金），使用頂對齊避免 baseline 斷言
                           Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                            crossAxisAlignment: CrossAxisAlignment.end,
                             children: [
                               Expanded(
-                                child: Text(
-                                  MoneyFormatter.symbol(totalAmount),
-                                  style: TextStyle(
-                                    fontSize: 24,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.green[700],
-                                  ),
+                                child: PriceDisplay(
+                                  amount: totalAmount,
+                                  iconSize: 38,
+                                  fontSize: 34,
+                                  thousands: true,
+                                  color: AppColors.cartTotalNumber,
+                                  symbolColor: AppColors.priceSymbol, // 使用 #f9ffd2
                                 ),
                               ),
                               if (method == PaymentMethods.cash)
-                                Text(
-                                  compute.change >= 0
-                                      ? '${AppMessages.changeLabel} ${MoneyFormatter.symbol(compute.change)}'
-                                      : '${AppMessages.insufficient} ${MoneyFormatter.symbol(-compute.change)}',
-                                  textAlign: TextAlign.right,
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w700,
-                                    color: compute.change < 0
-                                        ? AppColors.error
-                                        : AppColors.success,
-                                  ),
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.end,
+                                  children: [
+                                    if (compute.change >= 0) ...[
+                                      // 顯示：找零：金額（無 $ 符號），字體 20，底部對齊左側總金額
+                                      Text(
+                                        '找零：${MoneyFormatter.thousands(compute.change)}',
+                                        style: TextStyle(
+                                          fontSize: 20,
+                                          fontWeight: FontWeight.w700,
+                                          color: AppColors.onDarkSecondary,
+                                        ),
+                                      ),
+                                    ] else ...[
+                                      // 不足顯示（沿用紅色）
+                                      Text(
+                                        '${AppMessages.insufficient} ${MoneyFormatter.symbol(-compute.change)}',
+                                        textAlign: TextAlign.right,
+                                        style: TextStyle(
+                                          fontSize: 18,
+                                          fontWeight: FontWeight.w700,
+                                          color: AppColors.error,
+                                        ),
+                                      ),
+                                    ],
+                                  ],
                                 ),
                             ],
                           ),
@@ -237,22 +252,25 @@ class _QuickAmountButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final Color baseColor = AppColors.info;
-    final bool sel = selected;
-    final bg = sel ? baseColor.withValues(alpha: .18) : AppColors.darkCard;
-    final border = sel ? baseColor : baseColor.withValues(alpha: .55);
-    final fg = sel ? baseColor : baseColor;
+  final Color baseColor = AppColors.info;
+  final bool sel = selected;
+  // 背景：選取時給淡底色
+  final Color bg = sel ? baseColor.withValues(alpha: .20) : Colors.transparent;
+  // 邊框：選取時更粗且實色
+  final Color border = sel ? baseColor : baseColor.withValues(alpha: .55);
+  // 文字全部白色
+  const Color fg = Colors.white;
     return OutlinedButton(
       onPressed: onTap,
       style: OutlinedButton.styleFrom(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         minimumSize: Size(0, height),
-        backgroundColor: bg,
-        side: BorderSide(color: border, width: 1.4),
+  backgroundColor: bg,
+  side: BorderSide(color: border, width: sel ? 2.0 : 1.4),
         foregroundColor: fg,
-        textStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
+        textStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14, color: Colors.white),
       ),
-      child: Text(label),
+      child: Text(label, style: const TextStyle(color: Colors.white)),
     );
   }
 }

@@ -17,6 +17,20 @@ class AppColors {
   static const stockPositive = Color(0xFF15803D); // green-700
   static const stockZero = Color(0xFFDD6B20); // orange-600
 
+  // 新需求：特殊商品名稱 + 訊息色
+  static const preorderMysterious = Color(0xFF85CDF1); // 預約奇妙 名稱色
+  static const wonderfulDay = Color(0xFFFFE27A); // 祝您有奇妙的一天 名稱色
+
+  // 價格顏色細分
+  static const priceSymbol = Color(0xFFF9FFD2); // $ 符號
+  static const priceNumber = Color(0xFFFF73F3); // 數字
+  static const cartTotalNumber = Color(0xFFFF73F3); // 購物車總價
+
+  // 庫存數字顏色 (覆蓋策略)
+  static const stockPositiveCustom = Color(0xFFA2FFC4); // >0
+  static const stockZeroCustom = Color(0xFFFFBE73); // =0
+  static const stockNegativeCustom = Color(0xFFFF4581); // <0
+
   // 警示 / 錯誤
   static const error = Color(0xFFDC2626);
 

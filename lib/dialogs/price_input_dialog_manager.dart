@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import '../config/app_messages.dart';
 import '../models/product.dart';
 import '../widgets/numeric_keypad.dart';
-import '../utils/money_formatter.dart';
+import '../widgets/price_display.dart';
+import '../config/app_theme.dart';
 
 /// 價格輸入對話框管理器
 /// 負責處理特殊商品的價格輸入界面
@@ -33,7 +34,11 @@ class PriceInputDialogManager {
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
-                        color: Colors.grey[800],
+                        color: product.isPreOrderProduct
+                            ? AppColors.preorderMysterious
+                            : product.isDiscountProduct
+                                ? AppColors.wonderfulDay
+                                : Colors.grey[800],
                       ),
                       textAlign: TextAlign.center,
                     ),
@@ -43,20 +48,24 @@ class PriceInputDialogManager {
                     if (product.isPreOrderProduct)
                       Text(
                         AppMessages.preorderInputNote,
-                        style: TextStyle(
-                          color: Colors.purple[700],
+                        style: const TextStyle(
+                          color: AppColors.preorderMysterious,
                           fontSize: 12,
+                          fontWeight: FontWeight.w600,
                         ),
+                        textAlign: TextAlign.center,
                       )
                     else if (product.isDiscountProduct)
                       Text(
                         AppMessages.discountInputNote,
-                        style: TextStyle(
-                          color: Colors.orange[700],
+                        style: const TextStyle(
+                          color: AppColors.wonderfulDay,
                           fontSize: 12,
+                          fontWeight: FontWeight.w600,
                         ),
+                        textAlign: TextAlign.center,
                       ),
-                    SizedBox(height: 16),
+                    SizedBox(height: 12),
 
                     // 價格顯示區域
                     _buildPriceDisplay(
@@ -65,7 +74,7 @@ class PriceInputDialogManager {
                       isPreorder: product.isPreOrderProduct,
                     ),
 
-                    SizedBox(height: 16),
+                    SizedBox(height: 12),
 
                     NumericKeypad(
                       keys: const [
@@ -119,13 +128,12 @@ class PriceInputDialogManager {
     required bool isDiscount,
     required bool isPreorder,
   }) {
-    Color priceColor;
+    // 依商品類型覆寫數字顏色（符號顏色仍由 PriceDisplay 控制）
+    Color? overrideNumberColor;
     if (isDiscount) {
-      priceColor = Colors.orange[700]!;
+      overrideNumberColor = AppColors.wonderfulDay;
     } else if (isPreorder) {
-      priceColor = Colors.purple[700]!;
-    } else {
-      priceColor = Colors.blueGrey[800]!; // 一般情況統一一個深色
+      overrideNumberColor = AppColors.preorderMysterious;
     }
     return Container(
       width: double.infinity,
@@ -135,16 +143,13 @@ class PriceInputDialogManager {
         borderRadius: BorderRadius.circular(8),
         color: Colors.grey[50],
       ),
-      child: Text(
-        MoneyFormatter.symbol(
-          int.tryParse(currentPrice.isEmpty ? '0' : currentPrice) ?? 0,
-        ),
-        style: TextStyle(
+      child: Center(
+        child: PriceDisplay(
+          amount: int.tryParse(currentPrice.isEmpty ? '0' : currentPrice) ?? 0,
+          iconSize: 24,
           fontSize: 24,
-          fontWeight: FontWeight.bold,
-          color: priceColor,
+          color: overrideNumberColor, // 若為 null 則使用預設品牌色
         ),
-        textAlign: TextAlign.center,
       ),
     );
   }
