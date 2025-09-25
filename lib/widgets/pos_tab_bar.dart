@@ -60,17 +60,20 @@ class PosTabBar extends StatelessWidget {
     required String label,
     required VoidCallback onTap,
   }) {
+    const double iconTextGap = 8; // 圖示與文字間距
+    const Color activeColor = AppColors.sakuraPink; // 櫻花粉
+    final Color inactiveColor = AppColors.onDarkSecondary;
     return Expanded(
       child: GestureDetector(
         onTap: onTap,
         child: Container(
           decoration: BoxDecoration(
             color: selected
-                ? AppColors.primaryContainer.withValues(alpha: 0.15)
+                ? activeColor.withValues(alpha: 0.12)
                 : Colors.transparent,
             border: Border(
               bottom: BorderSide(
-                color: selected ? AppColors.primary : Colors.transparent,
+                color: selected ? activeColor : Colors.transparent,
                 width: 3,
               ),
             ),
@@ -83,20 +86,17 @@ class PosTabBar extends StatelessWidget {
                   icon,
                   style: TextStyle(
                     fontSize: 18,
-                    color: selected
-                        ? AppColors.primary
-                        : AppColors.onDarkSecondary,
+                    color: selected ? activeColor : inactiveColor,
                   ),
                 ),
-                const SizedBox(width: 4),
+                const SizedBox(width: iconTextGap),
                 Text(
+                  // 在文字前後不手動加空格，改用 SizedBox 控制距離
                   label,
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: selected ? FontWeight.bold : FontWeight.normal,
-                    color: selected
-                        ? AppColors.primary
-                        : AppColors.onDarkSecondary,
+                    color: selected ? activeColor : inactiveColor,
                   ),
                 ),
               ],

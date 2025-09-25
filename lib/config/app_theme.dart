@@ -40,6 +40,9 @@ class AppColors {
   static const neutralBorder = Color(0xFF2F2F2F);
   static const neutralTextSecondary = Color(0xFF9CA3AF); // gray-400
   static const neutralTextFaint = Color(0xFF6B7280); // gray-500
+
+  // 自訂：櫻花粉 (tab 選中用)
+  static const sakuraPink = Color(0xFFFFB7C5);
 }
 
 /// 提供給 MaterialApp 使用的主題；如尚未需要可先不套用，或依需求在 main.dart 合併。
