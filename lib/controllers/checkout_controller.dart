@@ -7,6 +7,7 @@ import '../services/product_update_service.dart';
 import '../controllers/pos_cart_controller.dart';
 import '../utils/app_logger.dart';
 import '../utils/post_checkout_reorder.dart';
+import '../utils/product_sorter.dart';
 
 /// 封裝結帳與後處理邏輯，讓畫面 State 更精簡，維持原先行為。
 class CheckoutResult {
@@ -35,6 +36,10 @@ class CheckoutController {
   Future<CheckoutResult> finalize(String paymentMethod) async {
     // 在清空購物車之前拍下快照
     final itemsSnapshot = List<CartItem>.from(cartItems);
+    
+    // 標記售出商品用於智能快取
+    final soldProductIds = cartItems.map((item) => item.product.id).toSet().toList();
+    ProductSorter.markAsSold(soldProductIds);
 
     final outcome = await ProductUpdateService.instance.applyCheckout(
       products: productsRef,

@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:wakelock_plus/wakelock_plus.dart';
 import 'package:cheemeow_pos/utils/app_logger.dart';
 import '../widgets/pos_tab_bar.dart';
 import '../widgets/pos_more_menu.dart';
@@ -101,6 +102,9 @@ class _PosMainScreenState extends State<PosMainScreen> {
         setState(() {});
       },
     )..start();
+
+    // 啟用螢幕常亮，避免營業時間螢幕關閉
+    WakelockPlus.enable();
   }
 
   @override
@@ -109,6 +113,10 @@ class _PosMainScreenState extends State<PosMainScreen> {
     _searchController.dispose();
     _barcodeCoordinator?.dispose();
     _pettyCashScheduler?.dispose();
+    
+    // 停用螢幕常亮
+    WakelockPlus.disable();
+    
     super.dispose();
   }
 

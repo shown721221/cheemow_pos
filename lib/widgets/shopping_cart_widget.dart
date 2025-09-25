@@ -3,8 +3,6 @@ import '../models/cart_item.dart';
 import '../widgets/price_display.dart';
 import '../config/app_messages.dart';
 import '../config/app_theme.dart';
-import 'empty_state.dart';
-import '../config/ui_tokens.dart';
 
 class ShoppingCartWidget extends StatelessWidget {
   final List<CartItem> cartItems;
@@ -100,16 +98,43 @@ class ShoppingCartWidget extends StatelessWidget {
             Expanded(
               child: displayItems.isEmpty
                   ? Center(
-                      child: EmptyState(
-                        emoji: UiTokens.cartEmptyEmoji,
-                        title: AppMessages.cartEmptyTitle,
-                        titleSize: 26,
-                        titleColor: AppColors.discount.withValues(alpha: 0.75),
-                        message: null,
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            '🛒',
+                            style: TextStyle(fontSize: 64),
+                          ),
+                          SizedBox(height: 20),
+                          RichText(
+                            textAlign: TextAlign.center,
+                            text: TextSpan(
+                              children: [
+                                TextSpan(
+                                  text: AppMessages.cartEmptyTitle,
+                                  style: TextStyle(
+                                    fontSize: 26,
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                                TextSpan(
+                                  text: ' 💕',
+                                  style: TextStyle(
+                                    fontSize: 26,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
                       ),
                     )
                   : ListView.builder(
                       itemCount: displayItems.length,
+                      // 移除 itemExtent：購物車項目高度動態，避免 overflow
                       itemBuilder: (context, index) {
                         final item = displayItems[index];
                         return Card(
@@ -174,7 +199,8 @@ class ShoppingCartWidget extends StatelessWidget {
                                           amount: item.product.price,
                                           iconSize: 16,
                                           fontSize: 14,
-                                          color: Colors.white, // 僅覆寫數字顏色，符號維持品牌色
+                                          color: Colors.white,
+                                          symbolColor: Colors.white,
                                         ),
                                       ],
                                     ),
@@ -268,7 +294,7 @@ class ShoppingCartWidget extends StatelessWidget {
                       height: 50,
                       child: ElevatedButton.icon(
                         onPressed: onCheckout,
-                        icon: Icon(Icons.shopping_bag_outlined, size: 22),
+                        icon: Icon(Icons.shopping_cart_outlined, size: 22),
                         label: Text(
                           AppMessages.checkoutLabel,
                           style: TextStyle(fontSize: 18),

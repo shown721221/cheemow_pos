@@ -3,6 +3,27 @@ import '../services/time_service.dart';
 
 /// 與商品排序相關的純函式工具。
 class ProductSorter {
+  // 智能快取：基礎排序結果 + 售出商品追蹤
+  static final Map<String, List<Product>> _baseSortCache = {};
+  static final Set<String> _recentlySoldIds = <String>{};
+  static String? _lastCacheDay;
+
+  /// 清除快取（跨日或資料更新時）
+  static void _clearCacheIfNeeded() {
+    final today = TimeService.now();
+    final todayKey = '${today.year}-${today.month}-${today.day}';
+    
+    if (_lastCacheDay != todayKey) {
+      _baseSortCache.clear();
+      _recentlySoldIds.clear();
+      _lastCacheDay = todayKey;
+    }
+  }
+
+  /// 記錄售出商品，用於動態置頂
+  static void markAsSold(List<String> productIds) {
+    _recentlySoldIds.addAll(productIds);
+  }
   /// 排序模式
   /// daily: 既有規則
   /// dailyStock: 在既有規則大類順序（今日售出→未售出特殊→其它 或 強制特殊置頂後）中，對每一群再依庫存數量由高到低，最後以名稱當 tie-breaker。
@@ -15,6 +36,8 @@ class ProductSorter {
     bool forcePinSpecial = false,
     bool byStock = false,
   }) {
+    _clearCacheIfNeeded();
+    
     if (!byStock) {
       return sortDaily(
         list,
@@ -80,7 +103,16 @@ class ProductSorter {
     bool recencyDominatesSpecial = true,
     bool forcePinSpecial = false,
   }) {
+    _clearCacheIfNeeded();
     final current = now ?? TimeService.now();
+    
+    // 生成快取 key
+    final cacheKey = '${list.length}_${recencyDominatesSpecial}_$forcePinSpecial';
+    
+    // 檢查是否有基礎排序快取
+    if (_baseSortCache.containsKey(cacheKey) && _recentlySoldIds.isEmpty) {
+      return List.from(_baseSortCache[cacheKey]!);
+    }
     bool isToday(DateTime? dt) =>
         dt != null &&
         dt.year == current.year &&
@@ -156,7 +188,39 @@ class ProductSorter {
         others.add(p);
       }
     }
-    return [...preOrders, ...discounts, ...others];
+    final result = [...preOrders, ...discounts, ...others];
+    
+    // 儲存基礎排序到快取
+    if (_recentlySoldIds.isEmpty) {
+      _baseSortCache[cacheKey] = List.from(result);
+    }
+    
+    // 動態置頂：將最近售出的商品移到對應分組的前面
+    if (_recentlySoldIds.isNotEmpty) {
+      return _applyRecentSoldPriority(result);
+    }
+    
+    return result;
+  }
+  
+  /// 將最近售出的商品在各自分組內置頂
+  static List<Product> _applyRecentSoldPriority(List<Product> sortedList) {
+    final reordered = <Product>[];
+    final deferred = <Product>[];
+    
+    // 分離最近售出和其他商品
+    for (final product in sortedList) {
+      if (_recentlySoldIds.contains(product.id)) {
+        reordered.add(product);
+      } else {
+        deferred.add(product);
+      }
+    }
+    
+    // 清除售出記錄（一次性置頂）
+    _recentlySoldIds.clear();
+    
+    return [...reordered, ...deferred];
   }
 }
 

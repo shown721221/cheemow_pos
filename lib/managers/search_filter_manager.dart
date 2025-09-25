@@ -180,19 +180,22 @@ class SearchFilterManager {
 
       // 角色
       if (selectedCharacter != null) {
-        if (!FilterRules.matchCharacter(selectedCharacter, nameLower))
+        if (!FilterRules.matchCharacter(selectedCharacter, nameLower)) {
           return false;
+        }
       } else if (selectOtherRole) {
-        if (FilterRules.isKnownCharacterName(nameLower))
+        if (FilterRules.isKnownCharacterName(nameLower)) {
           return false; // 其它角色 => 不得包含已知角色關鍵字
+        }
       }
 
       // 庫存
       if (requireStock && p.stock <= 0) return false;
 
       // 類型
-      if (!_matchTypes(nameLower, dollSelected, multiTypeSelected))
+      if (!_matchTypes(nameLower, dollSelected, multiTypeSelected)) {
         return false;
+      }
 
       return true;
     }).toList();

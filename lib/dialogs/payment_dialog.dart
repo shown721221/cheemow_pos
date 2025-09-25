@@ -49,22 +49,17 @@ class PaymentDialog {
               ),
               insetPadding: const EdgeInsets.symmetric(
                 horizontal: 24,
-                vertical: 24,
+                vertical: 12,
               ),
               scrollable: true,
               content: Builder(
                 builder: (innerCtx) {
-                  final bottomInset = MediaQuery.of(innerCtx).viewInsets.bottom;
                   return ConstrainedBox(
                     constraints: const BoxConstraints(maxWidth: 350),
-                    child: Padding(
-                      padding: EdgeInsets.only(
-                        bottom: bottomInset > 0 ? 12 : 0,
-                      ),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
                           // 頂部：左側總金額，右側找零（僅現金），使用頂對齊避免 baseline 斷言
                           Row(
                             crossAxisAlignment: CrossAxisAlignment.end,
@@ -76,7 +71,7 @@ class PaymentDialog {
                                   fontSize: 34,
                                   thousands: true,
                                   color: AppColors.cartTotalNumber,
-                                  symbolColor: AppColors.priceSymbol, // 使用 #f9ffd2
+                                  symbolColor: Colors.white,
                                 ),
                               ),
                               if (method == PaymentMethods.cash)
@@ -190,7 +185,7 @@ class PaymentDialog {
                                 setState(() {});
                               },
                             ),
-                            const SizedBox(height: StyleConfig.gap8),
+                            const SizedBox(height: 6),
                           ] else if (method == PaymentMethods.transfer) ...[
                             _PaymentPlaceholder(
                               label: AppMessages.paymentTransferPlaceholder,
@@ -200,34 +195,42 @@ class PaymentDialog {
                               label: AppMessages.paymentLinePayPlaceholder,
                             ),
                           ],
-                        ],
-                      ),
+                          const SizedBox(height: 12),
+                          SizedBox(
+                            width: double.infinity,
+                            height: 50,
+                            child: ElevatedButton(
+                              onPressed: compute.canConfirm
+                                  ? () {
+                                      Navigator.pop(
+                                        ctx,
+                                        PaymentResult(
+                                          method: method,
+                                          paidCash: method == PaymentMethods.cash
+                                              ? compute.effectivePaid
+                                              : 0,
+                                          change: method == PaymentMethods.cash
+                                              ? compute.change
+                                              : 0,
+                                        ),
+                                      );
+                                    }
+                                  : null,
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: AppColors.success,
+                                foregroundColor: AppColors.onDarkPrimary,
+                              ),
+                              child: const Text(
+                                AppMessages.confirmPayment,
+                                style: TextStyle(fontSize: 18),
+                              ),
+                            ),
+                          ),
+                      ],
                     ),
                   );
                 },
               ),
-              actions: [
-                ElevatedButton(
-                  onPressed: compute.canConfirm
-                      ? () {
-                          Navigator.pop(
-                            ctx,
-                            PaymentResult(
-                              method: method,
-                              paidCash: method == PaymentMethods.cash
-                                  ? compute.effectivePaid
-                                  : 0,
-                              change: method == PaymentMethods.cash
-                                  ? compute.change
-                                  : 0,
-                            ),
-                          );
-                        }
-                      : null,
-                  style: StyleConfig.primaryButtonStyle,
-                  child: const Text(AppMessages.confirmPayment),
-                ),
-              ],
             );
           },
         );

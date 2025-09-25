@@ -44,6 +44,9 @@ dependencies:
   # CSV檔案處理
   csv: ^6.0.0
   
+  # Collection utilities
+  collection: ^1.18.0
+  
   # 檔案選擇器
   file_picker: ^8.0.0+1
   
@@ -52,6 +55,9 @@ dependencies:
   
   # Android MediaStore（公用 Downloads 等共享媒體資料夾存取）
   media_store_plus: ^0.1.3
+  
+  # 螢幕常亮控制（營業時間防止休眠）
+  wakelock_plus: ^1.2.8
   
   # 藍芽功能（未來可能需要）
   # flutter_bluetooth_serial: ^0.4.0

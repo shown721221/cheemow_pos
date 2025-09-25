@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import '../models/product.dart';
 import '../managers/search_filter_manager.dart';
@@ -21,6 +22,9 @@ class PosSearchController extends ChangeNotifier {
   String _query = '';
   List<Product> _results = [];
   final List<String> _selectedFilters = [];
+  
+  // 防抖機制：避免快速輸入時的頻繁重建
+  Timer? _debounceTimer;
 
   String get query => _query;
   List<Product> get results => _results;
@@ -81,8 +85,16 @@ class PosSearchController extends ChangeNotifier {
     }
   }
 
-  /// 重新計算結果並通知 listener
+  /// 重新計算結果並通知 listener（使用防抖機制）
   void _recompute() {
+    _debounceTimer?.cancel();
+    _debounceTimer = Timer(const Duration(milliseconds: 300), () {
+      _performRecompute();
+    });
+  }
+
+  /// 實際執行重新計算的邏輯
+  void _performRecompute() {
     // 若同時有 filters，結果以 filter 為主（可包含 query 作為多詞條件）
     if (_selectedFilters.isNotEmpty) {
       _results = _filterManager.filter(
@@ -103,5 +115,11 @@ class PosSearchController extends ChangeNotifier {
       }
     }
     notifyListeners();
+  }
+
+  @override
+  void dispose() {
+    _debounceTimer?.cancel();
+    super.dispose();
   }
 }

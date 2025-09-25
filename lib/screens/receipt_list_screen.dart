@@ -126,10 +126,16 @@ class _ReceiptListScreenState extends State<ReceiptListScreen> {
                     ),
                   );
                 }
-                return ListView.separated(
-                  itemCount: filtered.length,
-                  separatorBuilder: (_, __) => const Divider(height: 1),
-                  itemBuilder: (_, i) => _buildReceiptTile(filtered[i]),
+                return ListView.builder(
+                  itemCount: filtered.length * 2 - 1, // 包含分隔線
+                  itemExtent: 48.0, // 固定高度優化：項目和分隔線統一高度
+                  itemBuilder: (_, index) {
+                    if (index.isOdd) {
+                      return const Divider(height: 1, thickness: 1);
+                    }
+                    final i = index ~/ 2;
+                    return _buildReceiptTile(filtered[i]);
+                  },
                 );
               },
             ),

@@ -263,7 +263,11 @@ class _VerticalPopularityChart extends StatelessWidget {
         );
     return LayoutBuilder(
       builder: (ctx, cons) {
-        final barWidth = (cons.maxWidth - (data.length - 1) * 12) / data.length;
+  final barWidth = (cons.maxWidth - (data.length - 1) * 12) / data.length;
+  // 動態計算可用高度，預留文字與間距 (~42)；避免因固定 180 導致溢位
+  final double rawH = cons.maxHeight.isFinite ? cons.maxHeight : 220;
+  // 預留下方百分比 + 上下間距 + 名稱兩行高度與額外安全距離：由 42 提升為 56
+  final double maxBarVisualHeight = (rawH - 56).clamp(90, 170);
         return Row(
           crossAxisAlignment: CrossAxisAlignment.end,
           children: [
@@ -276,6 +280,7 @@ class _VerticalPopularityChart extends StatelessWidget {
                 max: maxVal,
                 width: barWidth,
                 rank: i,
+    maxBarHeight: maxBarVisualHeight,
               ),
               if (i != data.length - 1) const SizedBox(width: 12),
             ],
@@ -294,6 +299,7 @@ class _VerticalBar extends StatelessWidget {
   final int max;
   final double width;
   final int rank; // 0,1,2 冠亞季
+  final double maxBarHeight;
   const _VerticalBar({
     required this.label,
     required this.value,
@@ -302,14 +308,15 @@ class _VerticalBar extends StatelessWidget {
     required this.max,
     required this.width,
     required this.rank,
+    required this.maxBarHeight,
   });
 
   @override
   Widget build(BuildContext context) {
     final ratio = value / max;
-    final double barHeight = (ratio * 180)
-        .clamp(4, 180)
-        .toDouble(); // 固定最大高度 180
+  final double barHeight = (ratio * maxBarHeight)
+    .clamp(4, maxBarHeight)
+    .toDouble(); // 動態最大高度
     final dark = HSLColor.fromColor(color)
         .withLightness(
           (HSLColor.fromColor(color).lightness * 0.55).clamp(0.0, 1.0),

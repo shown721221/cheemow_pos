@@ -23,7 +23,8 @@ class ReceiptService {
     try {
       final receipts = await getReceipts();
       receipts.insert(0, receipt);
-      if (receipts.length > 1000) receipts.removeRange(1000, receipts.length);
+      // 優化：限制記憶體中保留200筆收據，平衡效能與歷史資料需求
+      if (receipts.length > 200) receipts.removeRange(200, receipts.length);
       await ReceiptRepository.instance.saveAll(receipts);
 
       AppLogger.i('收據已儲存: ${receipt.id}, 時間: ${receipt.formattedDateTime}');

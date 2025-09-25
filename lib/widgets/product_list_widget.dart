@@ -91,6 +91,7 @@ class _ProductListWidgetState extends State<ProductListWidget> {
                 : ListView.builder(
                     controller: _scrollController, // 添加滾動控制器
                     itemCount: displayProducts.length,
+                    itemExtent: 88.0, // 固定高度優化：每個商品項目固定高度
                     itemBuilder: (context, index) {
                       final product = displayProducts[index];
                       return Card(
@@ -151,6 +152,7 @@ class _ProductListWidgetState extends State<ProductListWidget> {
                                 amount: product.price,
                                 iconSize: 20,
                                 fontSize: 18,
+                                symbolColor: Colors.white,
                               ),
                             ],
                           ),

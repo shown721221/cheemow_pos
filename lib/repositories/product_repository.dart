@@ -8,6 +8,8 @@ class ProductRepository {
   static final instance = ProductRepository._();
 
   SharedPreferences? _prefs;
+  List<Product>? _cachedProducts;
+  Map<String, Product>? _barcodeIndex;
 
   Future<void> initialize() async {
     _prefs ??= await SharedPreferences.getInstance();
@@ -25,14 +27,16 @@ class ProductRepository {
     if (_prefs == null) return;
     final data = products.map((e) => e.toJson()).toList();
     await _prefs!.setString('products', jsonEncode(data));
+    // 清除快取，下次存取時重建索引
+    _invalidateCache();
   }
 
   Future<Product?> getByBarcode(String barcode) async {
-    final all = await getAll();
-    return all
-        .where((p) => p.barcode == barcode)
-        .cast<Product?>()
-        .firstWhere((p) => p != null, orElse: () => null);
+    // 優化：使用快取索引進行 O(1) 查詢
+    if (_barcodeIndex == null) {
+      await _buildIndex();
+    }
+    return _barcodeIndex![barcode];
   }
 
   Future<void> updateStock(String id, int newStock) async {
@@ -51,5 +55,19 @@ class ProductRepository {
       lastCheckoutTime: p.lastCheckoutTime,
     );
     await saveAll(all);
+  }
+
+  /// 建立條碼索引快取，提升查詢效能
+  Future<void> _buildIndex() async {
+    _cachedProducts ??= await getAll();
+    _barcodeIndex = {
+      for (final p in _cachedProducts!) p.barcode: p
+    };
+  }
+
+  /// 清除快取，在資料更新後呼叫
+  void _invalidateCache() {
+    _cachedProducts = null;
+    _barcodeIndex = null;
   }
 }

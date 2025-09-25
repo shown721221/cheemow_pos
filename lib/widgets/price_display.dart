@@ -67,6 +67,7 @@ class LargePriceDisplay extends StatelessWidget {
       fontSize: 26.0,
       thousands: true,
       color: AppColors.cartTotalNumber,
+  symbolColor: Colors.white,
       fontWeight: FontWeight.bold,
     );
   }

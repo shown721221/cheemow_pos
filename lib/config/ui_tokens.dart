@@ -4,7 +4,7 @@ class UiTokens {
   // Emojis
   static const productTabEmoji = '🧸';
   static const searchTabEmoji = '🔎';
-  static const cartEmptyEmoji = '🛍️';
+  static const cartEmptyEmoji = '�';
 
   // Spacing (若與 StyleConfig 重疊，後續可合併；此處僅放視覺精簡需求)
   static const gap4 = 4.0;
