@@ -54,8 +54,8 @@ class SearchFilterBar extends StatelessWidget {
         const SizedBox(height: 4),
         // 類型（互斥）其餘
         _row([
-          buildFilterButton(type[1]), // 站姿
-          buildFilterButton(type[2]), // 坐姿
+          buildFilterButton(type[1]), // 站姿吊飾
+          buildFilterButton(type[2]), // 坐姿吊飾
           buildFilterButton(type[3]), // 其他吊飾
         ]),
         const SizedBox(height: 4),

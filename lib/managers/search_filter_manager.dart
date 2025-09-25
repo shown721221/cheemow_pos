@@ -14,7 +14,7 @@ class SearchFilterManager {
     'LinaBell',
     '其他角色',
   ];
-  static const List<String> typeGroup = ['娃娃', '站姿', '坐姿', '其他吊飾'];
+  static const List<String> typeGroup = ['娃娃', '站姿吊飾', '坐姿吊飾', '其他吊飾'];
 
   /// 切換篩選標籤，並處理互斥群組
   List<String> toggleFilter(List<String> selected, String label) {

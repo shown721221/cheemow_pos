@@ -26,8 +26,8 @@ class FilterRules {
   /// 類型 → 關鍵字列表（特例："其他吊飾" 需要排除站姿/坐姿）
   static const Map<String, List<String>> types = {
     '娃娃': ['娃娃'],
-    '站姿': ['站姿'],
-    '坐姿': ['坐姿'],
+    '站姿吊飾': ['站姿吊飾', '站姿'],
+    '坐姿吊飾': ['坐姿吊飾', '坐姿'],
     '其他吊飾': ['吊飾'],
   };
 
@@ -50,7 +50,8 @@ class FilterRules {
     if (label == '其他吊飾') {
       // 必須包含吊飾，但不能包含 站姿 / 坐姿
       if (!nameLower.contains('吊飾')) return false;
-      if (nameLower.contains('站姿') || nameLower.contains('坐姿')) return false;
+      if (nameLower.contains('站姿吊飾') || nameLower.contains('坐姿吊飾')) return false;
+      if (nameLower.contains('站姿') || nameLower.contains('坐姿')) return false; // 兼容舊資料
       return true;
     }
     final kws = types[label];
